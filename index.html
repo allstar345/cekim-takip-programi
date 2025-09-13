@@ -156,7 +156,7 @@
                             <option value="Uzay Arslantürk">Uzay Arslantürk</option>
                             <option value="Veysel Boynueğri">Veysel Boynueğri</option>
                             <option value="Yavuz Tuna">Yavuz Tuna</option>
-                            <option value="Yunus Turan">Yunus Turan</option>
+                            <option value="Yaşar Aslan">Yaşar Aslan</option> <option value="Yunus Turan">Yunus Turan</option>
                         </select>
                     </div>
                     <div class="md:col-span-2 lg:col-span-2">
@@ -267,7 +267,6 @@
         const formHeader = document.getElementById('form-header');
         const formWrapper = document.getElementById('form-wrapper');
         const toggleIcon = document.getElementById('toggle-icon');
-        // YENİ EKLENDİ: Filtre ve sayaç elementleri
         const filterDay = document.getElementById('filter-day');
         const filterStudio = document.getElementById('filter-studio');
         const recordCount = document.getElementById('record-count');
@@ -302,9 +301,7 @@
         }
 
         // --- ANA MANTIK ---
-        // GÜNCELLENDİ: Filtreleme mantığı eklendi
         function processAndRenderData() {
-            // 1. Filtreleri uygula
             const selectedDay = filterDay.value;
             const selectedStudio = filterStudio.value;
             
@@ -317,10 +314,8 @@
                 filteredShoots = filteredShoots.filter(shoot => shoot.studio === selectedStudio);
             }
 
-            // 2. Kayıt sayacını güncelle
             recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
 
-            // 3. Filtrelenmiş veriyi grupla
             groupedShoots = {};
             filteredShoots.forEach(shoot => {
                 if (shoot.date) {
@@ -335,9 +330,8 @@
                 }
             });
 
-            // 4. Haftaları sırala ve mevcut sayfayı render et
             sortedWeeks = Object.keys(groupedShoots).sort().reverse();
-            currentPage = 0; // Her filtrelemede ilk sayfaya dön
+            currentPage = 0;
             renderCurrentPage();
         }
 
@@ -489,7 +483,6 @@
             toggleIcon.classList.toggle('rotate-180');
         });
 
-        // YENİ EKLENDİ: Filtreler değiştiğinde veriyi yeniden işle
         filterDay.addEventListener('change', processAndRenderData);
         filterStudio.addEventListener('change', processAndRenderData);
 
@@ -566,7 +559,7 @@
                 loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
             } else {
                 allShoots = data;
-                processAndRenderData(); // Filtrelemeyi de içerecek şekilde veriyi işle
+                processAndRenderData();
             }
         }
         
@@ -576,7 +569,7 @@
                 { event: '*', schema: 'public', table: 'shoots' },
                 (payload) => {
                     console.log('Değişiklik algılandı!', payload);
-                    fetchInitialData(); // Veritabanı değiştiğinde ana listeyi güncelle ve yeniden filtrele/render et
+                    fetchInitialData();
                 }
             )
             .subscribe();
