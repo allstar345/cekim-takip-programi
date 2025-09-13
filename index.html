@@ -203,7 +203,7 @@
     </div>
     
     <script>
-        // --- DOĞRU SUPABASE AYARLARI ---
+        // --- SUPABASE AYARLARI ---
         const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 
@@ -483,6 +483,8 @@
                 console.error("Veri kaydetme/güncelleme hatası: ", error);
             } else {
                 resetFormState();
+                // YENİ EKLENDİ: Listeyi anında güncellemek için verileri yeniden çek.
+                fetchInitialData();
             }
         });
 
