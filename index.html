@@ -156,7 +156,8 @@
                             <option value="Uzay Arslantürk">Uzay Arslantürk</option>
                             <option value="Veysel Boynueğri">Veysel Boynueğri</option>
                             <option value="Yavuz Tuna">Yavuz Tuna</option>
-                            <option value="Yaşar Aslan">Yaşar Aslan</option> <option value="Yunus Turan">Yunus Turan</option>
+                            <option value="Yaşar Aslan">Yaşar Aslan</option>
+                            <option value="Yunus Turan">Yunus Turan</option>
                         </select>
                     </div>
                     <div class="md:col-span-2 lg:col-span-2">
@@ -247,7 +248,7 @@
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- GLOBAL STATE ---
-        let allShoots = []; // Veritabanından gelen tüm kayıtların ana kopyası
+        let allShoots = []; 
         let groupedShoots = {};
         let sortedWeeks = [];
         let currentPage = 0;
@@ -272,6 +273,21 @@
         const recordCount = document.getElementById('record-count');
 
         // --- HELPER FUNCTIONS (YARDIMCI FONKSİYONLAR) ---
+        
+        // YENİ EKLENDİ: Satır rengini güne göre belirleyen fonksiyon
+        function getRowColorClass(day) {
+            switch (day) {
+                case 'Pazartesi': return 'bg-green-50';
+                case 'Salı': return 'bg-red-50';
+                case 'Çarşamba': return 'bg-yellow-50';
+                case 'Perşembe': return 'bg-purple-50';
+                case 'Cuma': return 'bg-blue-50';
+                case 'Cumartesi': return 'bg-orange-50';
+                case 'Pazar': return 'bg-stone-100';
+                default: return 'bg-white';
+            }
+        }
+
         function getWeekIdentifier(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -380,8 +396,11 @@
             const startStr = dateRange.start.toLocaleDateString('tr-TR', options);
             const endStr = dateRange.end.toLocaleDateString('tr-TR', options);
             
-            const rowsHtml = shoots.map((shoot, index) => `
-                <tr class="hover:bg-blue-50 transition-colors duration-200">
+            // GÜNCELLENDİ: Satır rengi ve hover efekti
+            const rowsHtml = shoots.map((shoot, index) => {
+                const dayColorClass = getRowColorClass(shoot.day);
+                return `
+                <tr class="${dayColorClass} hover:brightness-95 transition-all duration-200">
                     <td>${shoot.date ? new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : ''}</td>
                     <td>${shoot.day || ''}</td>
                     <td>${shoot.time || ''}</td>
@@ -396,7 +415,8 @@
                         </div>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
 
             return `
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden styled-table">
