@@ -113,7 +113,8 @@
                             <option value="Görkem Şahin">Görkem Şahin</option>
                             <option value="Gülhan Şen">Gülhan Şen</option>
                             <option value="Hale Karataş">Hale Karataş</option>
-                            <option value="İbrahim Taş">İbrahim Taş</option> <option value="İbrahim Ulaş Baldemir">İbrahim Ulaş Baldemir</option>
+                            <option value="İbrahim Taş">İbrahim Taş</option>
+                            <option value="İbrahim Ulaş Baldemir">İbrahim Ulaş Baldemir</option>
                             <option value="İlayda Gültekin">İlayda Gültekin</option>
                             <option value="İlhan Aslan">İlhan Aslan</option>
                             <option value="İlyas Güneş">İlyas Güneş</option>
@@ -223,11 +224,11 @@
         <div class="space-y-8">
             <div id="navigation-controls" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
                 <button id="prev-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    &larr; Önceki Haftalar
+                    &larr; Önceki Hafta
                 </button>
                 <div id="week-range-display" class="text-center text-base md:text-lg font-semibold text-gray-700"></div>
                 <button id="next-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                    Sonraki Haftalar &rarr;
+                    Sonraki Hafta &rarr;
                 </button>
             </div>
             <div id="weekly-view-container" class="space-y-8"></div>
@@ -351,6 +352,7 @@
             renderCurrentPage();
         }
 
+        // GÜNCELLENDİ: Her sayfada sadece 1 hafta göster
         function renderCurrentPage() {
             loadingDiv.classList.add('hidden');
             weeklyContainer.innerHTML = '';
@@ -366,8 +368,7 @@
             noDataDiv.classList.add('hidden');
             navControls.classList.remove('hidden');
 
-            const startIndex = currentPage * 2;
-            const weeksToShow = sortedWeeks.slice(startIndex, startIndex + 2);
+            const weeksToShow = sortedWeeks.slice(currentPage, currentPage + 1);
 
             weeksToShow.forEach(weekKey => {
                 const [year, weekNo] = weekKey.split('-').map(Number);
@@ -443,29 +444,18 @@
             `;
         }
 
+        // GÜNCELLENDİ: Tek haftalık gösterim için basitleştirildi
         function updateNavControls() {
             nextBtn.disabled = currentPage === 0;
-            const maxPage = Math.ceil(sortedWeeks.length / 2) - 1;
+            const maxPage = sortedWeeks.length - 1;
             prevBtn.disabled = currentPage >= maxPage;
 
-            const startIndex = currentPage * 2;
-            const week1Key = sortedWeeks[startIndex];
-            const week2Key = sortedWeeks[startIndex + 1];
-
-            let displayStr = 'Gösterilen Haftalar: ';
-            if (week1Key) {
-                const [y1, w1] = week1Key.split('-').map(Number);
-                const r1 = getWeekDateRange(y1, w1);
-                displayStr += `${r1.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`;
-            }
-            if (week2Key) {
-                 const [y2, w2] = week2Key.split('-').map(Number);
-                 const r2 = getWeekDateRange(y2, w2);
-                 displayStr += ` & ${r2.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`;
-            } else if (week1Key) {
-                 const [y1, w1] = week1Key.split('-').map(Number);
-                 const r1 = getWeekDateRange(y1, w1);
-                 displayStr = `Gösterilen Hafta: ${r1.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})} - ${r1.end.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`
+            const currentWeekKey = sortedWeeks[currentPage];
+            let displayStr = 'Gösterilecek Hafta Bulunamadı';
+            if (currentWeekKey) {
+                const [year, weekNo] = currentWeekKey.split('-').map(Number);
+                const range = getWeekDateRange(year, weekNo);
+                displayStr = `Gösterilen Hafta: ${range.start.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long'})} - ${range.end.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'})}`;
             }
             weekRangeDisplay.textContent = displayStr;
         }
@@ -506,7 +496,7 @@
         filterStudio.addEventListener('change', processAndRenderData);
 
         prevBtn.addEventListener('click', () => {
-            const maxPage = Math.ceil(sortedWeeks.length / 2) - 1;
+            const maxPage = sortedWeeks.length - 1;
             if (currentPage < maxPage) {
                 currentPage++;
                 renderCurrentPage();
