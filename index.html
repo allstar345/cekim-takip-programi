@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çekim Takip Programı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .table-auto th, .table-auto td {
+            text-align: left;
+            padding: 12px 16px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <img src="https://www.puanlar.net/wp-content/uploads/2023/10/uc-dort-bes-yayinlari-logo.png" alt="ÜçDörtBeş All Star Logosu" class="h-16 w-auto mr-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Çekim Takip Programı</h1>
+            </div>
+
+            <form id="shoot-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700 mb-2">Tarih</label>
+                    <input type="date" id="date" name="date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                </div>
+                <div>
+                    <label for="day" class="block text-sm font-medium text-gray-700 mb-2">Gün</label>
+                    <select id="day" name="day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="" selected disabled>Seçiniz</option>
+                        <option value="Pazartesi">Pazartesi</option>
+                        <option value="Salı">Salı</option>
+                        <option value="Çarşamba">Çarşamba</option>
+                        <option value="Perşembe">Perşembe</option>
+                        <option value="Cuma">Cuma</option>
+                        <option value="Cumartesi">Cumartesi</option>
+                        <option value="Pazar">Pazar</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="studio" class="block text-sm font-medium text-gray-700 mb-2">Stüdyo Seçimi</label>
+                    <select id="studio" name="studio" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                         <option value="" selected disabled>Seçiniz</option>
+                         <option value="Stüdyo 1">Stüdyo 1</option>
+                         <option value="Stüdyo 2">Stüdyo 2</option>
+                         <option value="Stüdyo 3">Stüdyo 3</option>
+                         <option value="Stüdyo 4">Stüdyo 4</option>
+                         <option value="Stüdyo 5">Stüdyo 5</option>
+                         <option value="Stüdyo 6">Stüdyo 6</option>
+                         <option value="Stüdyo 7">Stüdyo 7</option>
+                         <option value="Stüdyo 8">Stüdyo 8</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen Adı</label>
+                    <select id="teacher" name="teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="" selected disabled>Seçiniz</option>
+                        <option value="Ali Saçan">Ali Saçan</option>
+                        <option value="Altuğ Güneş">Altuğ Güneş</option>
+                        <option value="Anıl Gül">Anıl Gül</option>
+                        <option value="Bayram Meral">Bayram Meral</option>
+                        <option value="Betül Büyükkalaycı">Betül Büyükkalaycı</option>
+                        <option value="Büşra Altınok">Büşra Altınok</option>
+                        <option value="Cebrail Karaoğlan">Cebrail Karaoğlan</option>
+                        <option value="Celal Gündüz">Celal Gündüz</option>
+                        <option value="Deniz Bozkurt">Deniz Bozkurt</option>
+                        <option value="Didar Baskın">Didar Baskın</option>
+                        <option value="Emrah Karcı">Emrah Karcı</option>
+                        <option value="Enes Avcı">Enes Avcı</option>
+                        <option value="Erdal Aydemir">Erdal Aydemir</option>
+                        <option value="Erkan Ayrancı">Erkan Ayrancı</option>
+                        <option value="Erkan Tunçer">Erkan Tunçer</option>
+                        <option value="Ersen Örenler">Ersen Örenler</option>
+                        <option value="Eyüp Boncuk">Eyüp Boncuk</option>
+                        <option value="Fatih Demirkaya">Fatih Demirkaya</option>
+                        <option value="Fatih Sefi">Fatih Sefi</option>
+                        <option value="Görkem Şahin">Görkem Şahin</option>
+                        <option value="Gülhan Şen">Gülhan Şen</option>
+                        <option value="Hale Karataş">Hale Karataş</option>
+                        <option value="İbrahim Ulaş Baldemir">İbrahim Ulaş Baldemir</option>
+                        <option value="İlayda Gültekin">İlayda Gültekin</option>
+                        <option value="İlhan Aslan">İlhan Aslan</option>
+                        <option value="İlyas Güneş">İlyas Güneş</option>
+                        <option value="İsmail Kocabaş">İsmail Kocabaş</option>
+                        <option value="Kader Altınel">Kader Altınel</option>
+                        <option value="Kadir Gümüş">Kadir Gümüş</option>
+                        <option value="Kadir Sefi">Kadir Sefi</option>
+                        <option value="Kemal Coşkun">Kemal Coşkun</option>
+                        <option value="Kenan Kara">Kenan Kara</option>
+                        <option value="Mahsum Öztürk">Mahsum Öztürk</option>
+                        <option value="Mehmet Celal Özyıldız">Mehmet Celal Özyıldız</option>
+                        <option value="Mehmet Dural">Mehmet Dural</option>
+                        <option value="Mehmet Durmuş">Mehmet Durmuş</option>
+                        <option value="Mehmet Özalp">Mehmet Özalp</option>
+                        <option value="Mesut Uğurdoğan">Mesut Uğurdoğan</option>
+                        <option value="Murat Namlı">Murat Namlı</option>
+                        <option value="Mustafa Öztürk">Mustafa Öztürk</option>
+                        <option value="Mustafa Yağcı">Mustafa Yağcı</option>
+                        <option value="Nagihan Damargüç">Nagihan Damargüç</option>
+                        <option value="Nurtaç Kozak">Nurtaç Kozak</option>
+                        <option value="Nurten Aydın">Nurten Aydın</option>
+                        <option value="Onur Soğuk">Onur Soğuk</option>
+                        <option value="Önay Çepe">Önay Çepe</option>
+                        <option value="Özer Akgümüş">Özer Akgümüş</option>
+                        <option value="Özcan Aykın">Özcan Aykın</option>
+                        <option value="Öznur Saat Yıldırım">Öznur Saat Yıldırım</option>
+                        <option value="Recep Üstünel">Recep Üstünel</option>
+                        <option value="Rıdvan Çelebi">Rıdvan Çelebi</option>
+                        <option value="Rümeysa Enise Özdemir">Rümeysa Enise Özdemir</option>
+                        <option value="Rüştü Bayındır">Rüştü Bayındır</option>
+                        <option value="Salih Yıldırır">Salih Yıldırır</option>
+                        <option value="Selim Yüksel">Selim Yüksel</option>
+                        <option value="Semih Akpınar">Semih Akpınar</option>
+                        <option value="Sercan Dural">Sercan Dural</option>
+                        <option value="Serkan Yeşilkan">Serkan Yeşilkan</option>
+                        <option value="Sinan Aydın">Sinan Aydın</option>
+                        <option value="Şenol Aydın">Şenol Aydın</option>
+                        <option value="Şükrü Akkoyun">Şükrü Akkoyun</option>
+                        <option value="Umut Öncül">Umut Öncül</option>
+                        <option value="Uzay Arslantürk">Uzay Arslantürk</option>
+                        <option value="Veysel Boynueğri">Veysel Boynueğri</option>
+                        <option value="Yavuz Tuna">Yavuz Tuna</option>
+                        <option value="Yunus Turan">Yunus Turan</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 lg:col-span-2">
+                    <label for="time" class="block text-sm font-medium text-gray-700 mb-2">Çekim Saatleri</label>
+                    <input type="text" id="time" name="time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: 10:00 - 12:00">
+                </div>
+                <div class="md:col-span-2 lg:col-span-2">
+                    <label for="director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmen</label>
+                    <input type="text" id="director" name="director" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: Zeynep Kaya">
+                </div>
+                 <div class="col-span-full">
+                    <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Çekim İçeriği</label>
+                    <input type="text" id="content" name="content" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: Konu Anlatımı, Soru Çözümü">
+                </div>
+                <div class="col-span-full flex space-x-2">
+                     <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out">
+                         Çekim Ekle
+                     </button>
+                     <button type="button" id="cancel-edit-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-300 ease-in-out hidden">
+                         İptal
+                     </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="space-y-8">
+            <div id="navigation-controls" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
+                <button id="prev-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    &larr; Önceki Haftalar
+                </button>
+                <div id="week-range-display" class="text-center text-base md:text-lg font-semibold text-gray-700"></div>
+                <button id="next-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Sonraki Haftalar &rarr;
+                </button>
+            </div>
+        
+            <div id="weekly-view-container" class="space-y-8">
+                </div>
+
+             <div id="loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
+                 <p class="text-gray-500">Veriler yükleniyor...</p>
+             </div>
+             <div id="no-data" class="text-center p-8 bg-white rounded-2xl shadow-lg hidden">
+                 <p class="text-gray-500">Gösterilecek çekim planı bulunmamaktadır.</p>
+             </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- SUPABASE AYARLARI ---
+        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- GLOBAL STATE ---
+        let allShoots = [];
+        let groupedShoots = {};
+        let sortedWeeks = [];
+        let currentPage = 0;
+        let currentEditId = null;
+
+        // --- DOM ELEMENTS ---
+        const form = document.getElementById('shoot-form');
+        const weeklyContainer = document.getElementById('weekly-view-container');
+        const loadingDiv = document.getElementById('loading');
+        const noDataDiv = document.getElementById('no-data');
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+        const weekRangeDisplay = document.getElementById('week-range-display');
+        const navControls = document.getElementById('navigation-controls');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+
+        // --- HELPER FUNCTIONS (YARDIMCI FONKSİYONLAR) ---
+        function getWeekIdentifier(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`;
+        }
+        
+        function getMondayOfIsoWeek(year, week) {
+            const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+            const dayOfWeek = simple.getUTCDay();
+            const isoWeekStart = simple;
+            if (dayOfWeek <= 4) {
+                isoWeekStart.setUTCDate(simple.getUTCDate() - simple.getUTCDay() + 1);
+            } else {
+                isoWeekStart.setUTCDate(simple.getUTCDate() + 8 - simple.getUTCDay());
+            }
+            return isoWeekStart;
+        }
+
+        function getWeekDateRange(year, weekNo) {
+            const monday = getMondayOfIsoWeek(year, weekNo);
+            const sunday = new Date(monday);
+            sunday.setUTCDate(monday.getUTCDate() + 6);
+            return { start: monday, end: sunday };
+        }
+
+        // --- ANA MANTIK ---
+        function processAndRenderData() {
+            groupedShoots = {};
+            allShoots.forEach(shoot => {
+                if (shoot.date) {
+                    const shootDate = new Date(shoot.date + 'T00:00:00');
+                    if (!isNaN(shootDate.getTime())) {
+                        const weekKey = getWeekIdentifier(shootDate);
+                        if (!groupedShoots[weekKey]) {
+                            groupedShoots[weekKey] = [];
+                        }
+                        groupedShoots[weekKey].push(shoot);
+                    }
+                }
+            });
+            sortedWeeks = Object.keys(groupedShoots).sort().reverse();
+            renderCurrentPage();
+        }
+
+        function renderCurrentPage() {
+            loadingDiv.classList.add('hidden');
+            weeklyContainer.innerHTML = '';
+
+            if (sortedWeeks.length === 0) {
+                noDataDiv.classList.remove('hidden');
+                navControls.classList.add('hidden');
+                return;
+            }
+            
+            noDataDiv.classList.add('hidden');
+            navControls.classList.remove('hidden');
+
+            const startIndex = currentPage * 2;
+            const weeksToShow = sortedWeeks.slice(startIndex, startIndex + 2);
+
+            weeksToShow.forEach(weekKey => {
+                const [year, weekNo] = weekKey.split('-').map(Number);
+                const dateRange = getWeekDateRange(year, weekNo);
+                const shootsForWeek = groupedShoots[weekKey].sort((a, b) => {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    if (dateA - dateB !== 0) return dateA - dateB;
+                    const studioA = a.studio || '';
+                    const studioB = b.studio || '';
+                    const studioCompare = studioA.localeCompare(studioB, 'tr', { numeric: true });
+                    if (studioCompare !== 0) return studioCompare;
+                    const timeA = (a.time || '').split('-')[0].trim();
+                    const timeB = (b.time || '').split('-')[0].trim();
+                    return timeA.localeCompare(timeB);
+                });
+                const weekHtml = createWeekTableHtml(dateRange, shootsForWeek);
+                weeklyContainer.insertAdjacentHTML('beforeend', weekHtml);
+            });
+            
+            updateNavControls();
+        }
+
+        function createWeekTableHtml(dateRange, shoots) {
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            const startStr = dateRange.start.toLocaleDateString('tr-TR', options);
+            const endStr = dateRange.end.toLocaleDateString('tr-TR', options);
+            
+            const rowsHtml = shoots.map((shoot, index) => `
+                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors duration-200">
+                    <td class="whitespace-nowrap p-4"><div class="font-medium text-gray-900">${shoot.studio || ''}</div></td>
+                    <td class="whitespace-nowrap p-4"><div class="text-gray-700">${shoot.teacher || ''}</div></td>
+                    <td class="whitespace-nowrap p-4"><div class="text-gray-700">${shoot.date ? new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : ''}</div></td>
+                    <td class="whitespace-nowrap p-4"><div class="text-gray-700">${shoot.day || ''}</div></td>
+                    <td class="whitespace-nowrap p-4"><div class="text-gray-700">${shoot.time || ''}</div></td>
+                    <td class="whitespace-nowrap p-4"><div class="text-gray-700">${shoot.director || ''}</div></td>
+                    <td class="p-4"><div class="text-gray-700">${shoot.content || ''}</div></td>
+                    <td class="whitespace-nowrap p-4 text-sm font-medium">
+                        <div class="flex items-center space-x-2">
+                             <button data-id="${shoot.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 px-3 py-1 rounded-md bg-indigo-100 hover:bg-indigo-200 transition-all duration-200">Düzenle</button>
+                             <button data-id="${shoot.id}" class="delete-btn text-red-600 hover:text-red-900 px-3 py-1 rounded-md bg-red-100 hover:bg-red-200 transition-all duration-200">Sil</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="p-6 md:p-8 bg-gray-50 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">Çekim Planı: ${startStr} - ${endStr}</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Stüdyo</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Öğretmen</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Tarih</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Gün</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Çekim Saati</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Yönetmen</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">Çekim İçeriği</th>
+                                    <th class="p-4 text-sm font-bold text-gray-700 uppercase tracking-wider text-left">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">${rowsHtml}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateNavControls() {
+            nextBtn.disabled = currentPage === 0;
+            const maxPage = Math.ceil(sortedWeeks.length / 2) - 1;
+            prevBtn.disabled = currentPage >= maxPage;
+
+            const startIndex = currentPage * 2;
+            const week1Key = sortedWeeks[startIndex];
+            const week2Key = sortedWeeks[startIndex + 1];
+
+            let displayStr = 'Gösterilen Haftalar: ';
+            if (week1Key) {
+                const [y1, w1] = week1Key.split('-').map(Number);
+                const r1 = getWeekDateRange(y1, w1);
+                displayStr += `${r1.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`;
+            }
+            if (week2Key) {
+                 const [y2, w2] = week2Key.split('-').map(Number);
+                 const r2 = getWeekDateRange(y2, w2);
+                 displayStr += ` & ${r2.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`;
+            } else if (week1Key) {
+                 const [y1, w1] = week1Key.split('-').map(Number);
+                 const r1 = getWeekDateRange(y1, w1);
+                 displayStr = `Gösterilen Hafta: ${r1.start.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})} - ${r1.end.toLocaleDateString('tr-TR', {day:'numeric', month:'short'})}`
+            }
+            weekRangeDisplay.textContent = displayStr;
+        }
+
+        function populateFormForEdit(shoot) {
+            form.date.value = shoot.date || '';
+            form.day.value = shoot.day || '';
+            form.studio.value = shoot.studio || '';
+            form.teacher.value = shoot.teacher || '';
+            form.time.value = shoot.time || '';
+            form.director.value = shoot.director || '';
+            form.content.value = shoot.content || '';
+
+            currentEditId = shoot.id;
+            submitBtn.textContent = 'Kaydı Güncelle';
+            cancelBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetFormState() {
+            form.reset();
+            currentEditId = null;
+            submitBtn.textContent = 'Çekim Ekle';
+            cancelBtn.classList.add('hidden');
+        }
+        
+        // --- EVENT LISTENERS (OLAY DİNLEYİCİLERİ) ---
+        prevBtn.addEventListener('click', () => {
+            const maxPage = Math.ceil(sortedWeeks.length / 2) - 1;
+            if (currentPage < maxPage) {
+                currentPage++;
+                renderCurrentPage();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                renderCurrentPage();
+            }
+        });
+
+        weeklyContainer.addEventListener('click', async (e) => {
+            const target = e.target;
+            if (target.classList.contains('delete-btn')) {
+                const id = target.getAttribute('data-id');
+                const { error } = await db.from('shoots').delete().eq('id', id);
+                if(error) console.error("Veri silme hatası:", error);
+            }
+            if (target.classList.contains('edit-btn')) {
+                const id = target.getAttribute('data-id');
+                const shootToEdit = allShoots.find(shoot => shoot.id == id);
+                if (shootToEdit) {
+                    populateFormForEdit(shootToEdit);
+                }
+            }
+        });
+        
+        cancelBtn.addEventListener('click', resetFormState);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const shootData = {
+                studio: formData.get('studio'),
+                teacher: formData.get('teacher'),
+                date: formData.get('date'),
+                day: formData.get('day'),
+                time: formData.get('time'),
+                director: formData.get('director'),
+                content: formData.get('content'),
+            };
+
+            let error;
+            if (currentEditId) {
+                ({ error } = await db.from('shoots').update(shootData).eq('id', currentEditId));
+            } else {
+                ({ error } = await db.from('shoots').insert([shootData]));
+            }
+
+            if (error) {
+                console.error("Veri kaydetme/güncelleme hatası: ", error);
+            } else {
+                resetFormState();
+            }
+        });
+
+        // --- BAŞLATMA ---
+        async function fetchInitialData() {
+            const { data, error } = await db.from('shoots').select('*');
+            if (error) {
+                console.error("Veri alınamadı:", error);
+                loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
+            } else {
+                allShoots = data;
+                processAndRenderData();
+            }
+        }
+        
+        const shootsSubscription = db.channel('public:shoots')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'shoots' },
+                (payload) => {
+                    console.log('Değişiklik algılandı!', payload);
+                    fetchInitialData();
+                }
+            )
+            .subscribe();
+
+        fetchInitialData();
+
+    </script>
+</body>
+</html>
