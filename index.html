@@ -95,7 +95,8 @@
                             <option value="Anıl Gül">Anıl Gül</option>
                             <option value="Bayram Meral">Bayram Meral</option>
                             <option value="Betül Büyükkalaycı">Betül Büyükkalaycı</option>
-                            <option value="Buğra Arslan">Buğra Arslan</option> <option value="Büşra Altınok">Büşra Altınok</option>
+                            <option value="Buğra Arslan">Buğra Arslan</option>
+                            <option value="Büşra Altınok">Büşra Altınok</option>
                             <option value="Cebrail Karaoğlan">Cebrail Karaoğlan</option>
                             <option value="Celal Gündüz">Celal Gündüz</option>
                             <option value="Deniz Bozkurt">Deniz Bozkurt</option>
@@ -181,6 +182,41 @@
                 </form>
             </div>
         </div>
+        
+        <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre Filtrele</label>
+                    <select id="filter-day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="">Tümü</option>
+                        <option value="Pazartesi">Pazartesi</option>
+                        <option value="Salı">Salı</option>
+                        <option value="Çarşamba">Çarşamba</option>
+                        <option value="Perşembe">Perşembe</option>
+                        <option value="Cuma">Cuma</option>
+                        <option value="Cumartesi">Cumartesi</option>
+                        <option value="Pazar">Pazar</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="filter-studio" class="block text-sm font-medium text-gray-700 mb-2">Stüdyoya Göre Filtrele</label>
+                    <select id="filter-studio" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                         <option value="">Tümü</option>
+                         <option value="Stüdyo 1">Stüdyo 1</option>
+                         <option value="Stüdyo 2">Stüdyo 2</option>
+                         <option value="Stüdyo 3">Stüdyo 3</option>
+                         <option value="Stüdyo 4">Stüdyo 4</option>
+                         <option value="Stüdyo 5">Stüdyo 5</option>
+                         <option value="Stüdyo 6">Stüdyo 6</option>
+                         <option value="Stüdyo 7">Stüdyo 7</option>
+                         <option value="Stüdyo 8">Stüdyo 8</option>
+                    </select>
+                </div>
+                <div id="record-count" class="text-right text-sm font-medium text-gray-600 pb-2.5">
+                    Toplam 0 kayıt bulundu.
+                </div>
+            </div>
+        </div>
 
         <div class="space-y-8">
             <div id="navigation-controls" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
@@ -211,7 +247,7 @@
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- GLOBAL STATE ---
-        let allShoots = [];
+        let allShoots = []; // Veritabanından gelen tüm kayıtların ana kopyası
         let groupedShoots = {};
         let sortedWeeks = [];
         let currentPage = 0;
@@ -231,6 +267,10 @@
         const formHeader = document.getElementById('form-header');
         const formWrapper = document.getElementById('form-wrapper');
         const toggleIcon = document.getElementById('toggle-icon');
+        // YENİ EKLENDİ: Filtre ve sayaç elementleri
+        const filterDay = document.getElementById('filter-day');
+        const filterStudio = document.getElementById('filter-studio');
+        const recordCount = document.getElementById('record-count');
 
         // --- HELPER FUNCTIONS (YARDIMCI FONKSİYONLAR) ---
         function getWeekIdentifier(d) {
@@ -262,9 +302,27 @@
         }
 
         // --- ANA MANTIK ---
+        // GÜNCELLENDİ: Filtreleme mantığı eklendi
         function processAndRenderData() {
+            // 1. Filtreleri uygula
+            const selectedDay = filterDay.value;
+            const selectedStudio = filterStudio.value;
+            
+            let filteredShoots = allShoots;
+
+            if (selectedDay) {
+                filteredShoots = filteredShoots.filter(shoot => shoot.day === selectedDay);
+            }
+            if (selectedStudio) {
+                filteredShoots = filteredShoots.filter(shoot => shoot.studio === selectedStudio);
+            }
+
+            // 2. Kayıt sayacını güncelle
+            recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
+
+            // 3. Filtrelenmiş veriyi grupla
             groupedShoots = {};
-            allShoots.forEach(shoot => {
+            filteredShoots.forEach(shoot => {
                 if (shoot.date) {
                     const shootDate = new Date(shoot.date + 'T00:00:00');
                     if (!isNaN(shootDate.getTime())) {
@@ -276,7 +334,10 @@
                     }
                 }
             });
+
+            // 4. Haftaları sırala ve mevcut sayfayı render et
             sortedWeeks = Object.keys(groupedShoots).sort().reverse();
+            currentPage = 0; // Her filtrelemede ilk sayfaya dön
             renderCurrentPage();
         }
 
@@ -284,7 +345,9 @@
             loadingDiv.classList.add('hidden');
             weeklyContainer.innerHTML = '';
 
-            if (sortedWeeks.length === 0) {
+            const hasAnyData = Object.keys(groupedShoots).length > 0;
+
+            if (!hasAnyData) {
                 noDataDiv.classList.remove('hidden');
                 navControls.classList.add('hidden');
                 return;
@@ -426,6 +489,10 @@
             toggleIcon.classList.toggle('rotate-180');
         });
 
+        // YENİ EKLENDİ: Filtreler değiştiğinde veriyi yeniden işle
+        filterDay.addEventListener('change', processAndRenderData);
+        filterStudio.addEventListener('change', processAndRenderData);
+
         prevBtn.addEventListener('click', () => {
             const maxPage = Math.ceil(sortedWeeks.length / 2) - 1;
             if (currentPage < maxPage) {
@@ -499,7 +566,7 @@
                 loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
             } else {
                 allShoots = data;
-                processAndRenderData();
+                processAndRenderData(); // Filtrelemeyi de içerecek şekilde veriyi işle
             }
         }
         
@@ -509,7 +576,7 @@
                 { event: '*', schema: 'public', table: 'shoots' },
                 (payload) => {
                     console.log('Değişiklik algılandı!', payload);
-                    fetchInitialData();
+                    fetchInitialData(); // Veritabanı değiştiğinde ana listeyi güncelle ve yeniden filtrele/render et
                 }
             )
             .subscribe();
