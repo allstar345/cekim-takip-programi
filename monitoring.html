@@ -161,7 +161,7 @@
         let currentPage = 1;
         const ITEMS_PER_PAGE = 10;
 
-        const teacherListRaw = "Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney- Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız".split('-');
+        const teacherListRaw = "Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney-Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız".split('-');
 
         function formatName(name) {
             if (!name) return '';
@@ -206,12 +206,14 @@
             
             const start = (page - 1) * ITEMS_PER_PAGE;
             const end = start + ITEMS_PER_PAGE;
-            const paginatedLogs = allLogs.slice(start, end);
-
-            if (paginatedLogs.length === 0 && allLogs.length > 0) {
-                 renderTablePage(page - 1);
-                 return;
+            
+            if (start >= allLogs.length && allLogs.length > 0) {
+                currentPage = Math.ceil(allLogs.length / ITEMS_PER_PAGE);
+                renderTablePage(currentPage);
+                return;
             }
+            
+            const paginatedLogs = allLogs.slice(start, end);
 
             const table = document.createElement('table');
             table.className = 'min-w-full';
@@ -263,8 +265,50 @@
             
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'flex items-center';
+            
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => renderTablePage(currentPage - 1));
+            buttonsDiv.appendChild(prevButton);
 
-            // ... (sayfalama butonları oluşturulacak)
+            // Sayfa numaralarını oluşturma mantığı...
+            let pages = [];
+            if (totalPages <= 5) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                if (currentPage > 3) pages.push('...');
+                if (currentPage > 2) pages.push(currentPage - 1);
+                if (currentPage > 1 && currentPage < totalPages) pages.push(currentPage);
+                if (currentPage < totalPages - 1) pages.push(currentPage + 1);
+                if (currentPage < totalPages - 2) pages.push('...');
+                pages.push(totalPages);
+            }
+            
+            pages = [...new Set(pages)]; // Tekrarlananları kaldır
+
+            pages.forEach(p => {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = p;
+                if (p === '...') {
+                    pageButton.className = 'pagination-btn';
+                    pageButton.disabled = true;
+                } else {
+                    pageButton.className = `pagination-btn ${p === currentPage ? 'active' : ''}`;
+                    pageButton.addEventListener('click', () => renderTablePage(p));
+                }
+                buttonsDiv.appendChild(pageButton);
+            });
+
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => renderTablePage(currentPage + 1));
+            buttonsDiv.appendChild(nextButton);
             
             paginationContainer.appendChild(summary);
             paginationContainer.appendChild(buttonsDiv);
@@ -285,7 +329,7 @@
                 if (allLogs.length === 0) {
                     logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`;
                 } else {
-                    renderTablePage(1);
+                    renderTablePage(currentPage);
                 }
             }
             loadingDiv.style.display = 'none';
