@@ -97,10 +97,7 @@
                              <option value="" selected disabled>Seçiniz</option>
                              <option value="Stüdyo 1">Stüdyo 1</option>
                              <option value="Stüdyo 2">Stüdyo 2</option>
-                             <option value="Stüdyo 3">Stüdyo 3</option>
                              <option value="Stüdyo 4">Stüdyo 4</option>
-                             <option value="Stüdyo 5">Stüdyo 5</option>
-                             <option value="Stüdyo 6">Stüdyo 6</option>
                              <option value="Stüdyo 7">Stüdyo 7</option>
                              <option value="Stüdyo 8">Stüdyo 8</option>
                         </select>
@@ -226,10 +223,7 @@
                          <option value="">Tümü</option>
                          <option value="Stüdyo 1">Stüdyo 1</option>
                          <option value="Stüdyo 2">Stüdyo 2</option>
-                         <option value="Stüdyo 3">Stüdyo 3</option>
                          <option value="Stüdyo 4">Stüdyo 4</option>
-                         <option value="Stüdyo 5">Stüdyo 5</option>
-                         <option value="Stüdyo 6">Stüdyo 6</option>
                          <option value="Stüdyo 7">Stüdyo 7</option>
                          <option value="Stüdyo 8">Stüdyo 8</option>
                     </select>
@@ -295,7 +289,6 @@
         
         // --- SABİT LİSTELER ---
         const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-        // GÜNCELLENDİ: İstenmeyen stüdyolar listeden çıkarıldı.
         const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 
         // --- HELPER FUNCTIONS ---
@@ -428,7 +421,7 @@
                             <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                             <p class="text-gray-600">${shoot.time || ''}</p>
                             <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
-                            <div class="flex items-center justify-end space-x-1 mt-2">
+                            <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p> <div class="flex items-center justify-end space-x-1 mt-2">
                                  <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
                                  <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                             </div>
