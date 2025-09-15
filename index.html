@@ -22,7 +22,7 @@
             padding-top: 0 !important;
             padding-bottom: 0 !important;
         }
-        /* YENİ: Zaman Çizelgesi Tablosu için özel CSS */
+        /* Zaman Çizelgesi Tablosu için özel CSS */
         .timetable {
             border-collapse: collapse;
             width: 100%;
@@ -295,7 +295,8 @@
         
         // --- SABİT LİSTELER ---
         const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-        const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 3", "Stüdyo 4", "Stüdyo 5", "Stüdyo 6", "Stüdyo 7", "Stüdyo 8"];
+        // GÜNCELLENDİ: İstenmeyen stüdyolar listeden çıkarıldı.
+        const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 
         // --- HELPER FUNCTIONS ---
         function getWeekIdentifier(d) {
@@ -393,9 +394,7 @@
             updateNavControls();
         }
 
-        // DEĞİŞTİRİLDİ: Yeni zaman çizelgesi görünümünü oluşturan fonksiyon
         function createTimetableHtml(dateRange, shoots) {
-            // Veriyi gün ve stüdyoya göre organize et
             const gridData = {};
             DAYS_OF_WEEK.forEach(day => {
                 gridData[day] = {};
@@ -405,12 +404,11 @@
             });
 
             shoots.forEach(shoot => {
-                if (shoot.day && shoot.studio && gridData[shoot.day][shoot.studio]) {
+                if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][shoot.studio]) {
                     gridData[shoot.day][shoot.studio].push(shoot);
                 }
             });
 
-            // Tablo başlığını oluştur (Stüdyolar)
             const headerHtml = `
                 <thead>
                     <tr>
@@ -420,11 +418,9 @@
                 </thead>
             `;
 
-            // Tablo satırlarını oluştur (Günler ve içindeki çekimler)
             const bodyHtml = DAYS_OF_WEEK.map(day => {
                 const cellsHtml = STUDIOS.map(studio => {
                     const shootsInCell = gridData[day][studio];
-                    // Çekimleri saate göre sırala
                     shootsInCell.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
 
                     const cellContent = shootsInCell.map(shoot => `
@@ -527,7 +523,7 @@
         });
 
         weeklyContainer.addEventListener('click', async (e) => {
-            const target = e.target.closest('button'); // Butonun kendisine veya içindeki SVG'ye tıklanabilir
+            const target = e.target.closest('button');
             if (!target) return;
 
             if (target.classList.contains('delete-btn')) {
