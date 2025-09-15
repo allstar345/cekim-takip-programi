@@ -124,7 +124,7 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-6">Giriş-Çıkış Kayıtları</h2>
             <div id="logs-table-container" class="overflow-x-auto">
             </div>
-            <div id="pagination-container" class="mt-6 flex justify-between items-center">
+            <div id="pagination-container" class="mt-6 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             </div>
             <div id="logs-loading" class="text-center p-8">
                 <p class="text-gray-500">Kayıtlar yükleniyor...</p>
@@ -161,14 +161,14 @@
         let currentPage = 1;
         const ITEMS_PER_PAGE = 10;
 
-        const teacherListRaw = "Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney-Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız".split('-');
+        const teacherListRaw = "Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney- Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız".split('-');
 
         function formatName(name) {
             if (!name) return '';
-            return name.trim().toLocaleLowerCase('tr-TR').replace(/\b(\w)/g, char => char.toLocaleUpperCase('tr-TR'));
+            return name.trim().toLocaleLowerCase('tr-TR').replace(/\b\w/g, char => char.toLocaleUpperCase('tr-TR'));
         }
 
-        const formattedTeachers = teacherListRaw.map(formatName).sort((a, b) => a.localeCompare(b, 'tr'));
+        const formattedTeachers = teacherListRaw.map(formatName).sort((a, b) => a.localeCompare(b, 'tr-TR'));
         teacherSelect.innerHTML += formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
 
         function calculateDurationAndBreaks() {
@@ -200,7 +200,7 @@
         
         [startTimeInput, endTimeInput, lunchSelect, dinnerSelect].forEach(el => el.addEventListener('input', calculateDurationAndBreaks));
 
-        function renderTablePage(page) {
+        function renderTablePage(page = 1) {
             currentPage = page;
             logsTableContainer.innerHTML = '';
             
@@ -208,32 +208,38 @@
             const end = start + ITEMS_PER_PAGE;
             const paginatedLogs = allLogs.slice(start, end);
 
+            if (paginatedLogs.length === 0 && allLogs.length > 0) {
+                 renderTablePage(page - 1);
+                 return;
+            }
+
             const table = document.createElement('table');
             table.className = 'min-w-full';
+            table.style.borderCollapse = 'collapse';
             table.innerHTML = `
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Öğretmen</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Giriş</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Çıkış</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Öğle Yemeği</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Akşam Yemeği</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Toplam Süre</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">İşlemler</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Tarih</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Öğretmen</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Giriş</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Çıkış</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Öğle Yemeği</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Akşam Yemeği</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Toplam Süre</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">İşlemler</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white">
                     ${paginatedLogs.map(log => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${new Date(log.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">${log.teacher_name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${log.start_time}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${log.end_time}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${log.lunch_status}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${log.dinner_status}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-center">${log.total_duration}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                        <tr class="divide-x divide-gray-300">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${new Date(log.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center" style="border: 1px solid #d1d5db;">${log.teacher_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.start_time}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.end_time}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.lunch_status}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.dinner_status}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-center" style="border: 1px solid #d1d5db;">${log.total_duration}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center" style="border: 1px solid #d1d5db;">
                                 <button data-id="${log.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 mr-4">Düzenle</button>
                                 <button data-id="${log.id}" class="delete-btn text-red-600 hover:text-red-900">Sil</button>
                             </td>
@@ -241,26 +247,27 @@
                     `).join('')}
                 </tbody>
             `;
-            table.querySelectorAll('td, th').forEach(cell => {
-                cell.style.border = '1px solid #d1d5db';
-            });
             logsTableContainer.appendChild(table);
             renderPagination();
         }
 
         function renderPagination() {
-            const totalPages = Math.ceil(allLogs.length / ITEMS_PER_PAGE);
-            paginationContainer.innerHTML = `
-                <div class="text-sm text-gray-700">
-                    Toplam ${allLogs.length} kayıttan ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, allLogs.length)} - ${Math.min(currentPage * ITEMS_PER_PAGE, allLogs.length)} arası gösteriliyor.
-                </div>
-                <div class="flex">
-                    </div>
-            `;
+            const totalItems = allLogs.length;
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            paginationContainer.innerHTML = '';
             if (totalPages <= 1) return;
 
-            const paginationButtons = paginationContainer.querySelector('.flex');
-            // ... (sayfalama butonlarını oluşturma mantığı)
+            const summary = document.createElement('div');
+            summary.className = 'text-sm text-gray-700';
+            summary.textContent = `Toplam ${totalItems} kayıttan ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalItems)} - ${Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} arası gösteriliyor.`;
+            
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'flex items-center';
+
+            // ... (sayfalama butonları oluşturulacak)
+            
+            paginationContainer.appendChild(summary);
+            paginationContainer.appendChild(buttonsDiv);
         }
 
         async function fetchAndRenderLogs() {
@@ -290,12 +297,18 @@
             const logData = Object.fromEntries(formData.entries());
             logData.total_duration = calculateDurationAndBreaks();
 
+            let error;
             if (currentEditId) {
-                await db.from('monitoring_logs').update(logData).eq('id', currentEditId);
+                ({ error } = await db.from('monitoring_logs').update(logData).eq('id', currentEditId));
             } else {
-                await db.from('monitoring_logs').insert([logData]);
+                ({ error } = await db.from('monitoring_logs').insert([logData]));
             }
-            resetForm();
+
+            if (error) {
+                console.error("Veri kaydetme hatası:", error);
+            } else {
+                resetForm();
+            }
         });
 
         function resetForm() {
@@ -308,7 +321,32 @@
         cancelBtn.addEventListener('click', resetForm);
 
         logsTableContainer.addEventListener('click', async (e) => {
-            // ... (edit/delete mantığı)
+            const target = e.target;
+            const id = target.dataset.id;
+            if (!id) return;
+
+            if (target.classList.contains('delete-btn')) {
+                if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+                    await db.from('monitoring_logs').delete().eq('id', id);
+                }
+            } else if (target.classList.contains('edit-btn')) {
+                const { data } = await db.from('monitoring_logs').select('*').eq('id', id).single();
+                if (data) {
+                    form.date.value = data.date;
+                    form.teacher_name.value = data.teacher_name;
+                    form.start_time.value = data.start_time;
+                    form.end_time.value = data.end_time;
+                    form.lunch_status.value = data.lunch_status;
+                    form.dinner_status.value = data.dinner_status;
+                    
+                    calculateDurationAndBreaks();
+                    
+                    currentEditId = id;
+                    submitBtn.textContent = 'Kaydı Güncelle';
+                    cancelBtn.classList.remove('hidden');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
         });
 
         logoutBtn.addEventListener('click', async () => {
@@ -317,6 +355,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', fetchAndRenderLogs);
+        
         db.channel('public:monitoring_logs')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_logs' }, fetchAndRenderLogs)
             .subscribe();
