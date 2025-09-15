@@ -31,6 +31,14 @@
                 <label for="password" class="block text-sm font-medium text-gray-700">Şifre</label>
                 <input type="password" id="password" name="password" required class="mt-1 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Şifrenizi girin">
             </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-900">Beni Hatırla</label>
+                </div>
+            </div>
+
             <div id="error-message" class="text-red-500 text-sm text-center hidden"></div>
             <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
                 Giriş Yap
@@ -42,19 +50,32 @@
         const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const { createClient } = supabase;
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const loginForm = document.getElementById('login-form');
         const errorMessage = document.getElementById('error-message');
+        const rememberMeCheckbox = document.getElementById('remember-me');
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const username = loginForm.username.value;
             const password = loginForm.password.value;
-            const email = `${username}@sistem.local`; // Kullanıcı adını e-posta formatına çevir
+            const email = `${username}@sistem.local`;
 
-            errorMessage.classList.add('hidden'); // Önceki hata mesajını gizle
+            errorMessage.classList.add('hidden');
+
+            const storage = rememberMeCheckbox.checked ? localStorage : sessionStorage;
+            const customStorageAdapter = {
+                getItem: (key) => storage.getItem(key),
+                setItem: (key, value) => storage.setItem(key, value),
+                removeItem: (key) => storage.removeItem(key),
+            };
+
+            const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    storage: customStorageAdapter,
+                },
+            });
 
             const { data, error } = await db.auth.signInWithPassword({
                 email: email,
@@ -66,7 +87,6 @@
                 errorMessage.classList.remove('hidden');
                 console.error('Giriş hatası:', error);
             } else {
-                // Giriş başarılı, ana sayfaya yönlendir.
                 window.location.href = 'index.html';
             }
         });
