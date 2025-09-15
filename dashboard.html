@@ -86,7 +86,15 @@
     <script>
         const logoutBtn = document.getElementById('logout-btn');
         logoutBtn.addEventListener('click', async () => {
-            await supabaseAuth.auth.signOut();
+            const mainStorageAdapter = {
+                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+                setItem: (key, value) => { localStorage.setItem(key, value); },
+                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+            };
+            const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+                auth: { storage: mainStorageAdapter }
+            });
+            await db.auth.signOut();
             window.location.href = 'login.html';
         });
     </script>
