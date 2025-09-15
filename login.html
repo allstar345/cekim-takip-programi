@@ -3,91 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giriş - Çekim Takip Programı</title>
+    <title>Giriş Yap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6">
-        <div class="flex flex-col items-center">
-            <img src="logo.png" alt="Logo" class="h-32 w-auto mb-4">
-            <h1 class="text-2xl font-bold text-gray-900">Çekim Takip Programı</h1>
-            <p class="text-gray-600">Lütfen giriş yapınız</p>
-        </div>
+    <script>
+        const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 
-        <form id="login-form" class="space-y-6">
+        const authStorageAdapter = {
+            getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+            setItem: (key, value) => {
+                // Eğer "Beni Hatırla" işaretliyse localStorage'a, değilse sessionStorage'a kaydet
+                const rememberMe = document.getElementById('remember-me').checked;
+                if (rememberMe) {
+                    localStorage.setItem(key, value);
+                } else {
+                    sessionStorage.setItem(key, value);
+                }
+            },
+            removeItem: (key) => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            },
+        };
+
+        const supabase = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+            auth: { storage: authStorageAdapter },
+        });
+
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'index.html';
+            }
+        }
+        checkAuth();
+    </script>
+
+    <div class="bg-white p-8 md:p-10 rounded-2xl shadow-xl w-full max-w-sm text-center">
+        <img src="logo.png" alt="Logo" class="mx-auto mb-6 h-48 w-auto"> <form id="login-form" class="space-y-6">
             <div>
-                <label for="username" class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
-                <input type="text" id="username" name="username" required class="mt-1 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Kullanıcı adınızı girin">
+                <label for="email" class="sr-only">E-posta</label>
+                <input type="email" id="email" name="email" required placeholder="E-posta Adresi"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm">
             </div>
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700">Şifre</label>
-                <input type="password" id="password" name="password" required class="mt-1 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Şifrenizi girin">
+                <label for="password" class="sr-only">Şifre</label>
+                <input type="password" id="password" name="password" required placeholder="Şifre"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 text-sm">
             </div>
-            
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <input id="remember-me" name="remember-me" type="checkbox"
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                     <label for="remember-me" class="ml-2 block text-sm text-gray-900">Beni Hatırla</label>
                 </div>
+                <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-500 hover:underline">Şifremi Unuttum?</a>
             </div>
-
-            <div id="error-message" class="text-red-500 text-sm text-center hidden"></div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
-                Giriş Yap
-            </button>
+            <div>
+                <button type="submit"
+                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out">
+                    Giriş Yap
+                </button>
+            </div>
+            <div id="error-message" class="text-red-600 text-sm hidden"></div>
         </form>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-        const { createClient } = supabase;
-
         const loginForm = document.getElementById('login-form');
-        const errorMessage = document.getElementById('error-message');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
         const rememberMeCheckbox = document.getElementById('remember-me');
+        const errorMessageDiv = document.getElementById('error-message');
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const username = loginForm.username.value;
-            const password = loginForm.password.value;
-            const email = `${username}@sistem.local`;
+            errorMessageDiv.classList.add('hidden'); // Önceki hataları gizle
 
-            errorMessage.classList.add('hidden');
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            const rememberMe = rememberMeCheckbox.checked;
 
-            const storage = rememberMeCheckbox.checked ? localStorage : sessionStorage;
-            const customStorageAdapter = {
-                getItem: (key) => storage.getItem(key),
-                setItem: (key, value) => storage.setItem(key, value),
-                removeItem: (key) => storage.removeItem(key),
-            };
+            try {
+                // Giriş yapma isteği
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
 
-            const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: {
-                    storage: customStorageAdapter,
-                },
-            });
+                if (error) {
+                    throw error;
+                }
 
-            const { data, error } = await db.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+                if (data.session) {
+                    // Oturum başlatıldıysa index.html'e yönlendir
+                    window.location.href = 'index.html';
+                }
 
-            if (error) {
-                errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';
-                errorMessage.classList.remove('hidden');
-                console.error('Giriş hatası:', error);
-            } else {
-                window.location.href = 'index.html';
+            } catch (error) {
+                errorMessageDiv.textContent = 'Giriş başarısız: ' + error.message;
+                errorMessageDiv.classList.remove('hidden');
+                console.error('Giriş Hatası:', error.message);
             }
         });
     </script>
