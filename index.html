@@ -10,50 +10,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        #form-wrapper {
-            max-height: 1000px;
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
-        }
-        #form-wrapper.collapsed {
-            max-height: 0;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-        }
-        .timetable {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        .timetable th, .timetable td {
-            border: 1px solid #d1d5db;
-            padding: 0;
-            vertical-align: top;
-        }
-        .timetable th {
-            padding: 12px 8px;
-            background-color: #f9fafb;
-            text-align: center;
-        }
-        .timetable .day-header {
-            padding: 12px 8px;
-            font-weight: 600;
-            text-align: center;
-            min-width: 120px;
-        }
-        .timetable .timetable-cell {
-            min-height: 120px;
-        }
-        .timetable .shoot-entry {
-            padding: 8px;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-         .timetable .shoot-entry:last-child {
-            border-bottom: none;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        #form-wrapper { max-height: 1000px; overflow: hidden; transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; }
+        #form-wrapper.collapsed { max-height: 0; padding-top: 0 !important; padding-bottom: 0 !important; }
+        .timetable { border-collapse: collapse; width: 100%; }
+        .timetable th, .timetable td { border: 1px solid #d1d5db; padding: 0; vertical-align: top; }
+        .timetable th { padding: 12px 8px; background-color: #f9fafb; text-align: center; }
+        .timetable .day-header { padding: 12px 8px; font-weight: 600; text-align: center; min-width: 120px; }
+        .timetable .timetable-cell { min-height: 120px; }
+        .timetable .shoot-entry { padding: 8px; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; }
+        .timetable .shoot-entry:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -61,7 +27,16 @@
     <script>
         const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
         const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-        const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH);
+        
+        const authStorageAdapter = {
+            getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+            setItem: (key, value) => {},
+            removeItem: (key) => {},
+        };
+
+        const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+            auth: { storage: authStorageAdapter },
+        });
 
         async function checkAuth() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -77,7 +52,7 @@
         <div class="bg-white rounded-2xl shadow-lg mb-8">
             <div id="form-header" class="flex justify-between items-start p-6 md:p-8 cursor-pointer relative">
                 <div class="flex items-center">
-                    <img src="logo.png" alt="ÜçDörtBeş All Star Logosu" class="h-32 w-auto mr-4">
+                    <img src="logo.png" alt="Logo" class="h-32 w-auto mr-4">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Çekim Takip Programı</h1>
                 </div>
                 <div class="absolute top-6 right-6 md:top-8 md:right-8 text-right space-y-2">
@@ -222,7 +197,7 @@
         </div>
         
         <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre Filtrele</label>
                     <select id="filter-day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
@@ -323,11 +298,11 @@
                         <option value="Yunus Turan">Yunus Turan</option>
                     </select>
                 </div>
-            </div>
-            <div class="flex justify-between items-center mt-4">
-                <div id="record-count" class="text-sm font-medium text-gray-600">
+                <div id="record-count" class="text-sm font-medium text-gray-600 self-end pb-2.5">
                     Toplam 0 kayıt bulundu.
                 </div>
+            </div>
+            <div class="flex justify-end mt-4">
                 <button id="download-pdf-btn" class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
                     <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                     PDF Olarak İndir
@@ -356,9 +331,22 @@
     </div>
     
     <script>
-        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const mainStorageAdapter = {
+            getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+            setItem: (key, value) => {
+                localStorage.setItem(key, value); 
+            },
+            removeItem: (key) => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            },
+        };
+
+        const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+            auth: { storage: mainStorageAdapter }
+        });
+
+        // --- Geri kalan tüm JavaScript kodu buradadır ---
         
         let allShoots = []; 
         let groupedShoots = {};
@@ -715,7 +703,7 @@
                 downloadPdfBtn.innerHTML = originalBtnText;
             });
         });
-        
+
         logoutBtn.addEventListener('click', async () => {
             await db.auth.signOut();
             window.location.href = 'login.html';
