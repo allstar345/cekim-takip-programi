@@ -30,7 +30,6 @@
             width: 100%;
         }
         .timetable th, .timetable td {
-            /* GÜNCELLENDİ: Kenarlık rengi daha belirgin yapıldı */
             border: 1px solid #d1d5db; /* tailwind's gray-300 */
             padding: 0; 
             vertical-align: top;
@@ -206,7 +205,7 @@
         </div>
         
         <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre Filtrele</label>
                     <select id="filter-day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
@@ -231,15 +230,91 @@
                          <option value="Stüdyo 8">Stüdyo 8</option>
                     </select>
                 </div>
-                <div id="record-count" class="text-right text-sm font-medium text-gray-600 pb-2.5">
+                <div>
+                    <label for="filter-teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmene Göre Filtrele</label>
+                    <select id="filter-teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="">Tümü</option>
+                        <option value="Ali Saçan">Ali Saçan</option>
+                        <option value="Altuğ Güneş">Altuğ Güneş</option>
+                        <option value="Anıl Gül">Anıl Gül</option>
+                        <option value="Bayram Meral">Bayram Meral</option>
+                        <option value="Betül Büyükkalaycı">Betül Büyükkalaycı</option>
+                        <option value="Buğra Arslan">Buğra Arslan</option>
+                        <option value="Büşra Altınok">Büşra Altınok</option>
+                        <option value="Cebrail Karaoğlan">Cebrail Karaoğlan</option>
+                        <option value="Celal Gündüz">Celal Gündüz</option>
+                        <option value="Deniz Bozkurt">Deniz Bozkurt</option>
+                        <option value="Didar Baskın">Didar Baskın</option>
+                        <option value="Emrah Karcı">Emrah Karcı</option>
+                        <option value="Enes Avcı">Enes Avcı</option>
+                        <option value="Erdal Aydemir">Erdal Aydemir</option>
+                        <option value="Erkan Ayrancı">Erkan Ayrancı</option>
+                        <option value="Erkan Tunçer">Erkan Tunçer</option>
+                        <option value="Ersen Örenler">Ersen Örenler</option>
+                        <option value="Eyüp Boncuk">Eyüp Boncuk</option>
+                        <option value="Fatih Demirkaya">Fatih Demirkaya</option>
+                        <option value="Fatih Sefi">Fatih Sefi</option>
+                        <option value="Görkem Şahin">Görkem Şahin</option>
+                        <option value="Gülhan Şen">Gülhan Şen</option>
+                        <option value="Hale Karataş">Hale Karataş</option>
+                        <option value="İbrahim Taş">İbrahim Taş</option>
+                        <option value="İbrahim Ulaş Baldemir">İbrahim Ulaş Baldemir</option>
+                        <option value="İlayda Gültekin">İlayda Gültekin</option>
+                        <option value="İlhan Aslan">İlhan Aslan</option>
+                        <option value="İlyas Güneş">İlyas Güneş</option>
+                        <option value="İsmail Kocabaş">İsmail Kocabaş</option>
+                        <option value="Kader Altınel">Kader Altınel</option>
+                        <option value="Kadir Gümüş">Kadir Gümüş</option>
+                        <option value="Kadir Sefi">Kadir Sefi</option>
+                        <option value="Kemal Coşkun">Kemal Coşkun</option>
+                        <option value="Kenan Kara">Kenan Kara</option>
+                        <option value="Mahsum Öztürk">Mahsum Öztürk</option>
+                        <option value="Mehmet Celal Özyıldız">Mehmet Celal Özyıldız</option>
+                        <option value="Mehmet Dural">Mehmet Dural</option>
+                        <option value="Mehmet Durmuş">Mehmet Durmuş</option>
+                        <option value="Mehmet Özalp">Mehmet Özalp</option>
+                        <option value="Melih Akgündüz">Melih Akgündüz</option>
+                        <option value="Mesut Uğurdoğan">Mesut Uğurdoğan</option>
+                        <option value="Murat Namlı">Murat Namlı</option>
+                        <option value="Mustafa Öztürk">Mustafa Öztürk</option>
+                        <option value="Mustafa Yağcı">Mustafa Yağcı</option>
+                        <option value="Nagihan Damargüç">Nagihan Damargüç</option>
+                        <option value="Nurtaç Kozak">Nurtaç Kozak</option>
+                        <option value="Nurten Aydın">Nurten Aydın</option>
+                        <option value="Onur Soğuk">Onur Soğuk</option>
+                        <option value="Önay Çepe">Önay Çepe</option>
+                        <option value="Özer Akgümüş">Özer Akgümüş</option>
+                        <option value="Özcan Aykın">Özcan Aykın</option>
+                        <option value="Öznur Saat Yıldırım">Öznur Saat Yıldırım</option>
+                        <option value="Recep Üstünel">Recep Üstünel</option>
+                        <option value="Rıdvan Çelebi">Rıdvan Çelebi</option>
+                        <option value="Rümeysa Enise Özdemir">Rümeysa Enise Özdemir</option>
+                        <option value="Rüştü Bayındır">Rüştü Bayındır</option>
+                        <option value="Salih Yıldırır">Salih Yıldırır</option>
+                        <option value="Selim Yüksel">Selim Yüksel</option>
+                        <option value="Semih Akpınar">Semih Akpınar</option>
+                        <option value="Sercan Dural">Sercan Dural</option>
+                        <option value="Serkan Yeşilkan">Serkan Yeşilkan</option>
+                        <option value="Sinan Aydın">Sinan Aydın</option>
+                        <option value="Şenol Aydın">Şenol Aydın</option>
+                        <option value="Şükrü Akkoyun">Şükrü Akkoyun</option>
+                        <option value="Umut Öncül">Umut Öncül</option>
+                        <option value="Uzay Arslantürk">Uzay Arslantürk</option>
+                        <option value="Veysel Boynueğri">Veysel Boynueğri</option>
+                        <option value="Yavuz Tuna">Yavuz Tuna</option>
+                        <option value="Yaşar Aslan">Yaşar Aslan</option>
+                        <option value="Yunus Turan">Yunus Turan</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <div id="record-count" class="text-sm font-medium text-gray-600">
                     Toplam 0 kayıt bulundu.
                 </div>
-                <div>
-                     <button id="download-pdf-btn" class="w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
-                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                        PDF Olarak İndir
-                     </button>
-                </div>
+                <button id="download-pdf-btn" class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    PDF Olarak İndir
+                </button>
             </div>
         </div>
 
@@ -294,6 +369,7 @@
         const toggleIcon = document.getElementById('toggle-icon');
         const filterDay = document.getElementById('filter-day');
         const filterStudio = document.getElementById('filter-studio');
+        const filterTeacher = document.getElementById('filter-teacher'); // YENİ
         const recordCount = document.getElementById('record-count');
         const downloadPdfBtn = document.getElementById('download-pdf-btn');
         
@@ -344,9 +420,11 @@
         }
 
         // --- ANA MANTIK ---
+        // GÜNCELLENDİ: Öğretmen filtresi eklendi
         function processAndRenderData() {
             const selectedDay = filterDay.value;
             const selectedStudio = filterStudio.value;
+            const selectedTeacher = filterTeacher.value; // YENİ
             
             let filteredShoots = allShoots;
 
@@ -355,6 +433,9 @@
             }
             if (selectedStudio) {
                 filteredShoots = filteredShoots.filter(shoot => shoot.studio === selectedStudio);
+            }
+            if (selectedTeacher) { // YENİ
+                filteredShoots = filteredShoots.filter(shoot => shoot.teacher === selectedTeacher);
             }
 
             recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
@@ -524,6 +605,7 @@
 
         filterDay.addEventListener('change', processAndRenderData);
         filterStudio.addEventListener('change', processAndRenderData);
+        filterTeacher.addEventListener('change', processAndRenderData); // YENİ
 
         prevBtn.addEventListener('click', () => {
             const maxPage = sortedWeeks.length - 1;
@@ -588,7 +670,6 @@
             }
         });
         
-        // YENİ EKLENDİ: PDF İndirme Butonu
         downloadPdfBtn.addEventListener('click', () => {
             const timetableElement = document.querySelector('#weekly-view-container .bg-white');
             if (!timetableElement) {
@@ -604,10 +685,9 @@
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
                 
-                // Canvas'ın en-boy oranına göre PDF oluştur
                 const pdfWidth = canvas.width;
                 const pdfHeight = canvas.height;
-                const orientation = pdfWidth > pdfHeight ? 'l' : 'p'; // l: landscape, p: portrait
+                const orientation = pdfWidth > pdfHeight ? 'l' : 'p';
 
                 const pdf = new jsPDF({
                     orientation: orientation,
