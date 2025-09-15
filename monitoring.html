@@ -47,8 +47,8 @@
     <main class="container mx-auto p-4 md:p-8">
         <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">Yeni Kayıt Ekle / Düzenle</h2>
-            <form id="monitoring-form" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 items-end">
-                <div class="lg:col-span-1">
+            <form id="monitoring-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 items-end">
+                <div>
                     <label for="date" class="block text-sm font-medium text-gray-700 mb-2">Tarih</label>
                     <input type="date" id="date" name="date" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
                 </div>
@@ -56,29 +56,39 @@
                     <label for="teacher_name" class="block text-sm font-medium text-gray-700 mb-2">İzleme Yapan Öğretmen</label>
                     <select id="teacher_name" name="teacher_name" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
                         <option value="" selected disabled>Seçiniz...</option>
-                        </select>
+                    </select>
                 </div>
-                 <div class="lg:col-span-1">
+                 <div>
                     <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">Başlangıç Saati</label>
                     <input type="time" id="start_time" name="start_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
                 </div>
-                 <div class="lg:col-span-1">
+                 <div>
                     <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">Bitiş Saati</label>
                     <input type="time" id="end_time" name="end_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
                 </div>
-                <div class="lg:col-span-1">
-                    <label for="lunch_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Öğle)</label>
-                    <select id="lunch_status" name="lunch_status" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
-                        <option value="Çıkmadı">Çıkmadı</option>
-                        <option value="Çıktı">Çıktı</option>
-                    </select>
+                <div class="lg:col-span-2">
+                     <div class="grid grid-cols-2 gap-4">
+                         <div>
+                            <label for="lunch_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Öğle)</label>
+                            <select id="lunch_status" name="lunch_status" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                                <option value="" selected disabled>Seçiniz</option>
+                                <option value="Çıkmadı">Çıkmadı</option>
+                                <option value="Çıktı">Çıktı</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="dinner_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Akşam)</label>
+                            <select id="dinner_status" name="dinner_status" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                                <option value="" selected disabled>Seçiniz</option>
+                                <option value="Çıkmadı">Çıkmadı</option>
+                                <option value="Çıktı">Çıktı</option>
+                            </select>
+                        </div>
+                     </div>
                 </div>
-                <div class="lg:col-span-1">
-                    <label for="dinner_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Akşam)</label>
-                    <select id="dinner_status" name="dinner_status" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
-                        <option value="Çıkmadı">Çıkmadı</option>
-                        <option value="Çıktı">Çıktı</option>
-                    </select>
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hesaplanan Toplam Süre</label>
+                    <div id="total-duration" class="w-full bg-gray-100 text-gray-700 font-bold text-lg rounded-lg p-2.5">0 Saat 0 Dakika</div>
                 </div>
                 <div class="col-span-full flex space-x-2 mt-4">
                      <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg">
@@ -119,18 +129,62 @@
         const logsTableContainer = document.getElementById('logs-table-container');
         const loadingDiv = document.getElementById('logs-loading');
         const logoutBtn = document.getElementById('logout-btn');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const lunchSelect = document.getElementById('lunch_status');
+        const dinnerSelect = document.getElementById('dinner_status');
+        const durationDisplay = document.getElementById('total-duration');
         let currentEditId = null;
 
         // Öğretmen listesi ve formatlama
-        const teacherListRaw = `AHMET ÖLMEZ,BARIŞ ÖZCAN,CEM OĞUZ BÜKE,CİHAT ÇİÇEK,DİDEM ÖZBAY SARIAYDIN,EDA GÜNEY,EDİP İÇLİ,ERKAN ÖZASLAN,ESRA DİNDAR,ESRA ŞAHİN,FATMA BAYTOK,ESRA YURTTAŞ,FUNDA AKBAŞ,FATMA MUTLU,FİRDEVS BOZKURT,FUAT SES,HÜLYA GÜÇKAN TAŞKIN,İBRAHİM ATAKURU,İBRAHİM HALİL KESİCİ,MEHMET CERAN,İSMAİL ERCAN BUZCU,MUHARREM AKBAŞ,ONUR KOÇ,KORAY DİNDAR,MEHMET BADEMLİ,MEHMET KIRBIYIK,ORHAN HANCI,SELİN ERDOĞAN,ÖZCAN KULAKSIZ,RAZİYE İNAL,SABRİ BİNGÖL,SEMİH SUNUCUOĞLU,SERKAN YILDIZ,SUAT EMRE,TUNCAY ATEŞ,YASİN BAŞ,YAVUZ SELİM YILDIZ,SERPİL TUNÇ İÇLİ,TUĞBA BOSTANCI,ELİF BOZKURT`.split(',');
+        const teacherListRaw = `AHMET ÖLMEZ,BARIŞ ÖZCANC,EM OĞUZ BÜKE,CİHAT ÇİÇEK,DİDEM ÖZBAY SARIAYDIN,EDA GÜNEY,EDİP İÇLİ,ERKAN ÖZASLAN,ESRA DİNDAR,ESRA ŞAHİN,FATMA BAYTOK,ESRA YURTTAŞ,FUNDA AKBAŞ,FATMA MUTLU,FİRDEVS BOZKURT,FUAT SES,HÜLYA GÜÇKAN TAŞKIN,İBRAHİM ATAKURU,İBRAHİM HALİL KESİCİ,MEHMET CERAN,İSMAİL ERCAN BUZCU,MUHARREM AKBAŞ,ONUR KOÇ,KORAY DİNDAR,MEHMET BADEMLİ,MEHMET KIRBIYIK,ORHAN HANCI,SELİN ERDOĞAN,ÖZCAN KULAKSIZ,RAZİYE İNAL,SABRİ BİNGÖL,SEMİH SUNUCUOĞLU,SERKAN YILDIZ,SUAT EMRE,TUNCAY ATEŞ,YASİN BAŞ,YAVUZ SELİM YILDIZ,SERPİL TUNÇ İÇLİ,TUĞBA BOSTANCI,ELİF BOZKURT`.split(',');
 
         function formatName(name) {
             if (!name) return '';
-            return name.trim().toLowerCase().replace(/\b(\w)/g, s => s.toUpperCase());
+            // Türkçe karakterlere özel büyük/küçük harf dönüşümü
+            return name.trim().toLocaleLowerCase('tr-TR').replace(/\b(\w)/g, char => char.toLocaleUpperCase('tr-TR'));
         }
 
         const formattedTeachers = teacherListRaw.map(formatName).sort((a, b) => a.localeCompare(b, 'tr'));
         teacherSelect.innerHTML += formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
+
+        // Süre Hesaplama Fonksiyonu
+        function calculateDurationAndBreaks() {
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            const lunchTaken = lunchSelect.value === 'Çıktı';
+            const dinnerTaken = dinnerSelect.value === 'Çıktı';
+
+            if (!startTime || !endTime) {
+                durationDisplay.textContent = '0 Saat 0 Dakika';
+                return;
+            }
+
+            const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+            const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+
+            let totalMinutes = endMinutes - startMinutes;
+
+            if (totalMinutes < 0) { // Gece yarısını geçen durumlar için
+                totalMinutes += 24 * 60;
+            }
+
+            if (lunchTaken) {
+                totalMinutes -= 60; // 1 saat
+            }
+            if (dinnerTaken) {
+                totalMinutes -= 30; // 30 dakika
+            }
+
+            if (totalMinutes < 0) totalMinutes = 0;
+
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            durationDisplay.textContent = `${hours} Saat ${minutes} Dakika`;
+        }
+        
+        [startTimeInput, endTimeInput, lunchSelect, dinnerSelect].forEach(el => el.addEventListener('change', calculateDurationAndBreaks));
 
         // Veri Çekme ve Tablo Oluşturma
         async function fetchAndRenderLogs() {
@@ -188,11 +242,9 @@
             const logData = Object.fromEntries(formData.entries());
 
             if (currentEditId) {
-                // Güncelleme
                 const { error } = await db.from('monitoring_logs').update(logData).eq('id', currentEditId);
                 if (error) console.error("Güncelleme hatası:", error);
             } else {
-                // Yeni Kayıt
                 const { error } = await db.from('monitoring_logs').insert([logData]);
                 if (error) console.error("Ekleme hatası:", error);
             }
@@ -205,6 +257,7 @@
             currentEditId = null;
             submitBtn.textContent = 'Kaydı Ekle';
             cancelBtn.classList.add('hidden');
+            durationDisplay.textContent = '0 Saat 0 Dakika';
         }
         cancelBtn.addEventListener('click', resetForm);
 
@@ -227,6 +280,8 @@
                     form.end_time.value = data.end_time;
                     form.lunch_status.value = data.lunch_status;
                     form.dinner_status.value = data.dinner_status;
+                    
+                    calculateDurationAndBreaks(); // Süreyi de doldur
                     
                     currentEditId = id;
                     submitBtn.textContent = 'Kaydı Güncelle';
