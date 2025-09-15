@@ -39,6 +39,7 @@
                     <div>
                         <h1 class="text-xl md:text-3xl font-bold text-gray-900">İstatistikler ve Raporlar</h1>
                         <p id="stats-subtitle" class="text-sm text-gray-500 mt-1">Veriler filtrelenmektedir...</p>
+                        <p class="text-xs text-gray-400 mt-1">(* İstatistikler 15.09.2025 tarihinden itibaren hesaplanmaktadır.)</p>
                     </div>
                 </div>
                 <div class="w-full md:w-auto text-center md:text-right mt-4 md:mt-0 space-y-2">
@@ -55,7 +56,7 @@
                     </div>
                 </div>
             </div>
-             <div class="border-t border-gray-200 mt-6 pt-4">
+            <div class="border-t border-gray-200 mt-6 pt-4">
                 <div class="flex items-center space-x-2">
                     <span class="text-sm font-medium text-gray-700">Zaman Aralığı:</span>
                     <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Bu Hafta</button>
@@ -112,20 +113,18 @@
         const logoutBtn = document.getElementById('logout-btn');
         const subtitle = document.getElementById('stats-subtitle');
         
-        // Filtre butonları
         const filterButtons = {
             week: document.getElementById('filter-week'),
             month: document.getElementById('filter-month'),
             all: document.getElementById('filter-all'),
         };
 
-        let allShootsData = []; // Tüm veriyi bir kez çekip burada saklayalım
-        let currentFilter = 'month'; // Varsayılan filtre
+        let allShootsData = [];
+        let currentFilter = 'month';
 
-        // --- Tarih Hesaplama Fonksiyonları ---
         function getThisWeekRange() {
             const today = new Date();
-            const firstDayOfWeek = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1); // Haftanın ilk günü Pazartesi
+            const firstDayOfWeek = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
             const start = new Date(today.setDate(firstDayOfWeek));
             start.setHours(0, 0, 0, 0);
             const end = new Date(start);
@@ -142,16 +141,13 @@
             return { start, end };
         }
 
-        // --- Ana Fonksiyon ---
         async function calculateAndRenderStats() {
             loadingDiv.classList.remove('hidden');
             contentDiv.classList.add('hidden');
             teacherStatsBody.innerHTML = '';
             directorStatsBody.innerHTML = '';
 
-            // 1. Veriyi filtrele
             let filteredShoots = allShootsData;
-            const now = new Date();
             
             if (currentFilter === 'week') {
                 const { start, end } = getThisWeekRange();
@@ -170,7 +166,6 @@
                 return;
             }
 
-            // 2. Verileri grupla ve say
             const teacherCounts = filteredShoots.reduce((acc, shoot) => {
                 if (shoot.teacher) { acc[shoot.teacher] = (acc[shoot.teacher] || 0) + 1; }
                 return acc;
@@ -181,11 +176,9 @@
                 return acc;
             }, {});
 
-            // 3. Sonuçları sırala
             const sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
             const sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
             
-            // 4. Ekrana yazdır
             teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
@@ -204,7 +197,6 @@
             contentDiv.classList.remove('hidden');
         }
 
-        // Aktif buton stilini ayarlar
         function setActiveButton(filter) {
              Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
              filterButtons[filter].classList.add('active');
@@ -212,7 +204,6 @@
              calculateAndRenderStats();
         }
         
-        // Event Listeners
         Object.keys(filterButtons).forEach(key => {
             filterButtons[key].addEventListener('click', () => setActiveButton(key));
         });
@@ -222,14 +213,18 @@
             window.location.href = 'login.html';
         });
 
-        // Sayfa ilk yüklendiğinde tüm veriyi çek
         document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await db.from('shoots').select('*');
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                allShootsData = data;
-                setActiveButton('month'); // Varsayılan olarak 'Bu Ay' filtresini uygula
+                // YENİ EKLENDİ: Gelecek tarihli verileri filtrele
+                const today = new Date();
+                today.setHours(23, 59, 59, 999); // Bugünün son anı
+
+                allShootsData = data.filter(shoot => new Date(shoot.date) <= today);
+                
+                setActiveButton('month');
             }
         });
     </script>
