@@ -49,7 +49,7 @@
         .timetable .shoot-entry {
             padding: 8px;
             font-size: 0.875rem;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid #e5e7eb; /* Renkli arkaplan üzerinde daha iyi görünmesi için gri */
         }
          .timetable .shoot-entry:last-child {
             border-bottom: none;
@@ -292,6 +292,20 @@
         const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 
         // --- HELPER FUNCTIONS ---
+        // YENİDEN EKLENDİ: Satır rengini güne göre belirleyen fonksiyon
+        function getRowColorClass(day) {
+            switch (day) {
+                case 'Pazartesi': return 'bg-green-50';
+                case 'Salı': return 'bg-red-50';
+                case 'Çarşamba': return 'bg-yellow-50';
+                case 'Perşembe': return 'bg-purple-50';
+                case 'Cuma': return 'bg-blue-50';
+                case 'Cumartesi': return 'bg-orange-50';
+                case 'Pazar': return 'bg-stone-100';
+                default: return 'bg-white';
+            }
+        }
+
         function getWeekIdentifier(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -412,6 +426,7 @@
             `;
 
             const bodyHtml = DAYS_OF_WEEK.map(day => {
+                const dayColorClass = getRowColorClass(day); // Satır rengini al
                 const cellsHtml = STUDIOS.map(studio => {
                     const shootsInCell = gridData[day][studio];
                     shootsInCell.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
@@ -421,7 +436,8 @@
                             <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                             <p class="text-gray-600">${shoot.time || ''}</p>
                             <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
-                            <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p> <div class="flex items-center justify-end space-x-1 mt-2">
+                            <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
+                            <div class="flex items-center justify-end space-x-1 mt-2">
                                  <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
                                  <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                             </div>
@@ -430,8 +446,9 @@
                     
                     return `<td class="timetable-cell">${cellContent}</td>`;
                 }).join('');
-
-                return `<tr><td class="day-header">${day}</td>${cellsHtml}</tr>`;
+                
+                // GÜNCELLENDİ: Satırın arkaplan rengi güne göre ayarlandı
+                return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}</td>${cellsHtml}</tr>`;
             }).join('');
 
             return `
