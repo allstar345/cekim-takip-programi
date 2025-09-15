@@ -51,7 +51,6 @@
         const errorMessage = document.getElementById('error-message');
         const rememberMeCheckbox = document.getElementById('remember-me');
 
-        // Sayfa yüklenirken, eğer kullanıcı zaten giriş yapmışsa direkt yönlendir
         (async () => {
             const authStorageAdapter = {
                 getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
@@ -60,7 +59,7 @@
             const tempSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
             const { data: { session } } = await tempSupabase.auth.getSession();
             if (session) {
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
             }
         })();
 
@@ -95,7 +94,7 @@
                 errorMessage.classList.remove('hidden');
                 console.error('Giriş hatası:', error);
             } else {
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
             }
         });
     </script>
