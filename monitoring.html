@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akademik İzleme - Çekim Takip Programı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <script>
+        const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+        const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+        async function checkAuth() {
+            const { data: { session } } = await supabaseAuth.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; }
+        }
+        checkAuth();
+    </script>
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto p-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="logo.png" alt="Logo" class="h-12 w-auto">
+                <h1 class="text-xl font-bold text-gray-800">Akademik İzleme Takip</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <p class="text-sm text-gray-500 hidden sm:block">Fatih Gülbudak tarafından oluşturulmuştur.</p>
+                <a href="dashboard.html" class="flex items-center justify-center text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg transition-colors duration-300">
+                    Anasayfa'ya Dön
+                </a>
+                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors duration-300 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
+                    Çıkış Yap
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Yeni Kayıt Ekle / Düzenle</h2>
+            <form id="monitoring-form" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 items-end">
+                <div class="lg:col-span-1">
+                    <label for="date" class="block text-sm font-medium text-gray-700 mb-2">Tarih</label>
+                    <input type="date" id="date" name="date" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                </div>
+                <div class="lg:col-span-2">
+                    <label for="teacher_name" class="block text-sm font-medium text-gray-700 mb-2">İzleme Yapan Öğretmen</label>
+                    <select id="teacher_name" name="teacher_name" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                        <option value="" selected disabled>Seçiniz...</option>
+                        </select>
+                </div>
+                 <div class="lg:col-span-1">
+                    <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">Başlangıç Saati</label>
+                    <input type="time" id="start_time" name="start_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                </div>
+                 <div class="lg:col-span-1">
+                    <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">Bitiş Saati</label>
+                    <input type="time" id="end_time" name="end_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                </div>
+                <div class="lg:col-span-1">
+                    <label for="lunch_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Öğle)</label>
+                    <select id="lunch_status" name="lunch_status" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                        <option value="Çıkmadı">Çıkmadı</option>
+                        <option value="Çıktı">Çıktı</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-1">
+                    <label for="dinner_status" class="block text-sm font-medium text-gray-700 mb-2">Yemek (Akşam)</label>
+                    <select id="dinner_status" name="dinner_status" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                        <option value="Çıkmadı">Çıkmadı</option>
+                        <option value="Çıktı">Çıktı</option>
+                    </select>
+                </div>
+                <div class="col-span-full flex space-x-2 mt-4">
+                     <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg">
+                         Kaydı Ekle
+                     </button>
+                     <button type="button" id="cancel-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-lg hidden">
+                         İptal
+                     </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Giriş-Çıkış Kayıtları</h2>
+            <div id="logs-table-container" class="overflow-x-auto">
+                </div>
+            <div id="logs-loading" class="text-center p-8">
+                <p class="text-gray-500">Kayıtlar yükleniyor...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const mainStorageAdapter = {
+            getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+            setItem: (key, value) => { localStorage.setItem(key, value); },
+            removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+        };
+        const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+            auth: { storage: mainStorageAdapter }
+        });
+
+        // Form elementleri
+        const form = document.getElementById('monitoring-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const teacherSelect = document.getElementById('teacher_name');
+        const logsTableContainer = document.getElementById('logs-table-container');
+        const loadingDiv = document.getElementById('logs-loading');
+        const logoutBtn = document.getElementById('logout-btn');
+        let currentEditId = null;
+
+        // Öğretmen listesi ve formatlama
+        const teacherListRaw = `AHMET ÖLMEZ,BARIŞ ÖZCAN,CEM OĞUZ BÜKE,CİHAT ÇİÇEK,DİDEM ÖZBAY SARIAYDIN,EDA GÜNEY,EDİP İÇLİ,ERKAN ÖZASLAN,ESRA DİNDAR,ESRA ŞAHİN,FATMA BAYTOK,ESRA YURTTAŞ,FUNDA AKBAŞ,FATMA MUTLU,FİRDEVS BOZKURT,FUAT SES,HÜLYA GÜÇKAN TAŞKIN,İBRAHİM ATAKURU,İBRAHİM HALİL KESİCİ,MEHMET CERAN,İSMAİL ERCAN BUZCU,MUHARREM AKBAŞ,ONUR KOÇ,KORAY DİNDAR,MEHMET BADEMLİ,MEHMET KIRBIYIK,ORHAN HANCI,SELİN ERDOĞAN,ÖZCAN KULAKSIZ,RAZİYE İNAL,SABRİ BİNGÖL,SEMİH SUNUCUOĞLU,SERKAN YILDIZ,SUAT EMRE,TUNCAY ATEŞ,YASİN BAŞ,YAVUZ SELİM YILDIZ,SERPİL TUNÇ İÇLİ,TUĞBA BOSTANCI,ELİF BOZKURT`.split(',');
+
+        function formatName(name) {
+            if (!name) return '';
+            return name.trim().toLowerCase().replace(/\b(\w)/g, s => s.toUpperCase());
+        }
+
+        const formattedTeachers = teacherListRaw.map(formatName).sort((a, b) => a.localeCompare(b, 'tr'));
+        teacherSelect.innerHTML += formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
+
+        // Veri Çekme ve Tablo Oluşturma
+        async function fetchAndRenderLogs() {
+            loadingDiv.style.display = 'block';
+            logsTableContainer.innerHTML = '';
+
+            const { data, error } = await db.from('monitoring_logs').select('*').order('date', { ascending: false }).order('start_time', { ascending: false });
+
+            if (error) {
+                logsTableContainer.innerHTML = `<p class="text-red-500">Veriler yüklenirken bir hata oluştu.</p>`;
+                console.error(error);
+            } else if (data.length === 0) {
+                 logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`;
+            } else {
+                const table = document.createElement('table');
+                table.className = 'min-w-full divide-y divide-gray-200';
+                table.innerHTML = `
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Öğretmen</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giriş Saati</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Çıkış Saati</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Öğle Yemeği</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Akşam Yemeği</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map(log => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(log.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${log.teacher_name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">${log.start_time}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">${log.end_time}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">${log.lunch_status}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">${log.dinner_status}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button data-id="${log.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 mr-4">Düzenle</button>
+                                    <button data-id="${log.id}" class="delete-btn text-red-600 hover:text-red-900">Sil</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                logsTableContainer.appendChild(table);
+            }
+            loadingDiv.style.display = 'none';
+        }
+
+        // Form Gönderme
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const logData = Object.fromEntries(formData.entries());
+
+            if (currentEditId) {
+                // Güncelleme
+                const { error } = await db.from('monitoring_logs').update(logData).eq('id', currentEditId);
+                if (error) console.error("Güncelleme hatası:", error);
+            } else {
+                // Yeni Kayıt
+                const { error } = await db.from('monitoring_logs').insert([logData]);
+                if (error) console.error("Ekleme hatası:", error);
+            }
+            resetForm();
+        });
+
+        // Form Resetleme
+        function resetForm() {
+            form.reset();
+            currentEditId = null;
+            submitBtn.textContent = 'Kaydı Ekle';
+            cancelBtn.classList.add('hidden');
+        }
+        cancelBtn.addEventListener('click', resetForm);
+
+        // Edit ve Delete İşlemleri
+        logsTableContainer.addEventListener('click', async (e) => {
+            const target = e.target;
+            const id = target.dataset.id;
+            if (!id) return;
+
+            if (target.classList.contains('delete-btn')) {
+                if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+                    await db.from('monitoring_logs').delete().eq('id', id);
+                }
+            } else if (target.classList.contains('edit-btn')) {
+                const { data } = await db.from('monitoring_logs').select('*').eq('id', id).single();
+                if (data) {
+                    form.date.value = data.date;
+                    form.teacher_name.value = data.teacher_name;
+                    form.start_time.value = data.start_time;
+                    form.end_time.value = data.end_time;
+                    form.lunch_status.value = data.lunch_status;
+                    form.dinner_status.value = data.dinner_status;
+                    
+                    currentEditId = id;
+                    submitBtn.textContent = 'Kaydı Güncelle';
+                    cancelBtn.classList.remove('hidden');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        });
+
+        // Çıkış Butonu
+        logoutBtn.addEventListener('click', async () => {
+            await supabaseAuth.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        // Realtime Dinleme ve İlk Yükleme
+        document.addEventListener('DOMContentLoaded', fetchAndRenderLogs);
+        db.channel('public:monitoring_logs')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_logs' }, fetchAndRenderLogs)
+            .subscribe();
+
+    </script>
+</body>
+</html>
