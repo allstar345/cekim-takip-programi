@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -28,8 +30,9 @@
             width: 100%;
         }
         .timetable th, .timetable td {
-            border: 1px solid #e5e7eb;
-            padding: 0; /* Hücre içindeki div'ler padding alacak */
+            /* GÜNCELLENDİ: Kenarlık rengi daha belirgin yapıldı */
+            border: 1px solid #d1d5db; /* tailwind's gray-300 */
+            padding: 0; 
             vertical-align: top;
         }
         .timetable th {
@@ -44,12 +47,12 @@
             min-width: 120px;
         }
         .timetable .timetable-cell {
-            min-height: 120px; /* Hücrelerin minimum yüksekliği */
+            min-height: 120px;
         }
         .timetable .shoot-entry {
             padding: 8px;
             font-size: 0.875rem;
-            border-bottom: 1px solid #e5e7eb; /* Renkli arkaplan üzerinde daha iyi görünmesi için gri */
+            border-bottom: 1px solid #e5e7eb;
         }
          .timetable .shoot-entry:last-child {
             border-bottom: none;
@@ -203,7 +206,7 @@
         </div>
         
         <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
                     <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre Filtrele</label>
                     <select id="filter-day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
@@ -230,6 +233,12 @@
                 </div>
                 <div id="record-count" class="text-right text-sm font-medium text-gray-600 pb-2.5">
                     Toplam 0 kayıt bulundu.
+                </div>
+                <div>
+                     <button id="download-pdf-btn" class="w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
+                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                        PDF Olarak İndir
+                     </button>
                 </div>
             </div>
         </div>
@@ -286,13 +295,13 @@
         const filterDay = document.getElementById('filter-day');
         const filterStudio = document.getElementById('filter-studio');
         const recordCount = document.getElementById('record-count');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
         
         // --- SABİT LİSTELER ---
         const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
         const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 
         // --- HELPER FUNCTIONS ---
-        // YENİDEN EKLENDİ: Satır rengini güne göre belirleyen fonksiyon
         function getRowColorClass(day) {
             switch (day) {
                 case 'Pazartesi': return 'bg-green-50';
@@ -426,7 +435,7 @@
             `;
 
             const bodyHtml = DAYS_OF_WEEK.map(day => {
-                const dayColorClass = getRowColorClass(day); // Satır rengini al
+                const dayColorClass = getRowColorClass(day);
                 const cellsHtml = STUDIOS.map(studio => {
                     const shootsInCell = gridData[day][studio];
                     shootsInCell.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
@@ -447,7 +456,6 @@
                     return `<td class="timetable-cell">${cellContent}</td>`;
                 }).join('');
                 
-                // GÜNCELLENDİ: Satırın arkaplan rengi güne göre ayarlandı
                 return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}</td>${cellsHtml}</tr>`;
             }).join('');
 
@@ -508,7 +516,7 @@
             cancelBtn.classList.add('hidden');
         }
         
-        // --- EVENT LISTENERS (OLAY DİNLEYİCİLERİ) ---
+        // --- EVENT LISTENERS ---
         formHeader.addEventListener('click', () => {
             formWrapper.classList.toggle('collapsed');
             toggleIcon.classList.toggle('rotate-180');
@@ -578,6 +586,46 @@
                 resetFormState();
                 fetchInitialData();
             }
+        });
+        
+        // YENİ EKLENDİ: PDF İndirme Butonu
+        downloadPdfBtn.addEventListener('click', () => {
+            const timetableElement = document.querySelector('#weekly-view-container .bg-white');
+            if (!timetableElement) {
+                alert("İndirilecek bir tablo bulunamadı.");
+                return;
+            }
+
+            const originalBtnText = downloadPdfBtn.innerHTML;
+            downloadPdfBtn.disabled = true;
+            downloadPdfBtn.innerHTML = 'İndiriliyor...';
+
+            html2canvas(timetableElement, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                
+                // Canvas'ın en-boy oranına göre PDF oluştur
+                const pdfWidth = canvas.width;
+                const pdfHeight = canvas.height;
+                const orientation = pdfWidth > pdfHeight ? 'l' : 'p'; // l: landscape, p: portrait
+
+                const pdf = new jsPDF({
+                    orientation: orientation,
+                    unit: 'px',
+                    format: [pdfWidth, pdfHeight]
+                });
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+                const weekText = weekRangeDisplay.textContent.replace('Gösterilen Hafta: ', '');
+                pdf.save(`cekim_plani_${weekText}.pdf`);
+            }).catch(err => {
+                console.error("PDF oluşturma hatası:", err);
+                alert("PDF oluşturulurken bir hata oluştu. Lütfen konsolu kontrol edin.");
+            }).finally(() => {
+                downloadPdfBtn.disabled = false;
+                downloadPdfBtn.innerHTML = originalBtnText;
+            });
         });
 
         // --- BAŞLATMA ---
