@@ -49,11 +49,11 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <div class="bg-white rounded-2xl shadow-lg mb-8">
-            <div id="form-header" class="flex justify-between items-start p-6 md:p-8 relative">
+            <div id="form-header-clickable" class="flex justify-between items-start p-6 md:p-8 relative cursor-pointer">
                 <div class="flex items-center">
                     <img src="logo.png" alt="Logo" class="h-32 w-auto mr-4">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Çekim Takip Programı</h1>
-                    <button id="toggle-form-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 self-center ml-4 cursor-pointer">
+                    <button id="toggle-form-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 self-center ml-4">
                         <svg id="toggle-icon" class="w-6 h-6 text-gray-600 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
@@ -230,7 +230,7 @@
                     <label for="filter-teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmene Göre Filtrele</label>
                     <select id="filter-teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="">Tümü</option>
-                        </select>
+                    </select>
                 </div>
                 <div id="record-count" class="text-sm font-medium text-gray-600 self-end pb-2.5">
                     Toplam 0 kayıt bulundu.
@@ -291,7 +291,7 @@
         const navControls = document.getElementById('navigation-controls');
         const submitBtn = document.getElementById('submit-btn');
         const cancelBtn = document.getElementById('cancel-edit-btn');
-        const formHeader = document.getElementById('form-header');
+        const formHeaderClickable = document.getElementById('form-header-clickable');
         const formWrapper = document.getElementById('form-wrapper');
         const toggleIcon = document.getElementById('toggle-icon');
         const filterDay = document.getElementById('filter-day');
@@ -307,7 +307,7 @@
         const teacherSelectForm = document.getElementById('teacher');
         const teacherSelectFilter = document.getElementById('filter-teacher');
         const teacherOptionsHtml = Array.from(teacherSelectForm.options).map(option => {
-            if (option.value) { // Boş "Seçiniz"i atla
+            if (option.value) { 
                 return `<option value="${option.value}">${option.text}</option>`;
             }
             return '';
@@ -531,13 +531,9 @@
             cancelBtn.classList.add('hidden');
         }
         
-        formHeader.addEventListener('click', (e) => {
-            // Sadece başlığa veya logoya tıklanınca formun açılıp kapanmasını sağla
-            // İkonun kendisine tıklanınca da çalışması için toggle-form-btn'i de hedef olarak ekledik
-            if (e.target.closest('#toggle-form-btn') || e.target.closest('h1') || e.target.closest('img')) {
-                formWrapper.classList.toggle('collapsed');
-                toggleIcon.classList.toggle('rotate-180');
-            }
+        formHeaderClickable.addEventListener('click', () => {
+            formWrapper.classList.toggle('collapsed');
+            toggleIcon.classList.toggle('rotate-180');
         });
 
         filterDay.addEventListener('change', processAndRenderData);
