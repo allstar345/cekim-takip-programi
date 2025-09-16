@@ -84,28 +84,33 @@
         const HOURLY_RATE = 500;
         let currentDate = new Date();
 
+        // DÜZELTME: Saat dilimi sorununu önlemek için yeni bir fonksiyon
+        function toYYYYMMDD(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function getPaymentPeriod(date) {
             let year = date.getFullYear();
             let month = date.getMonth(); // 0-11
             
-            let end, start;
+            let endBoundary, start;
 
             if (date.getDate() >= 10) {
-                end = new Date(year, month + 1, 10); // Ayın 10'u 00:00
+                endBoundary = new Date(year, month + 1, 10);
             } else {
-                end = new Date(year, month, 10); // Ayın 10'u 00:00
+                endBoundary = new Date(year, month, 10);
             }
-            start = new Date(end.getFullYear(), end.getMonth() - 1, 10);
+            start = new Date(endBoundary.getFullYear(), endBoundary.getMonth() - 1, 10);
             
-            // Bitiş tarihini bir gün geri alarak ayın 9'u 23:59 yapmak
-            let finalEnd = new Date(end);
-            finalEnd.setDate(finalEnd.getDate() - 1);
-            finalEnd.setHours(23, 59, 59, 999);
-
+            let inclusiveEnd = new Date(endBoundary);
+            inclusiveEnd.setDate(inclusiveEnd.getDate() - 1);
 
             return {
-                start: start.toISOString().split('T')[0],
-                end: finalEnd.toISOString().split('T')[0]
+                start: toYYYYMMDD(start),
+                end: toYYYYMMDD(inclusiveEnd)
             };
         }
         
@@ -185,7 +190,6 @@
                 const data = teacherData[name];
                 const dueMinutes = data.currentTotalMinutes - data.paidTotalMinutes;
 
-                // Ödenmiş kayıtlar için satır
                 if (data.paidTotalMinutes > 0) {
                     const paidDurationHHMM = minutesToHHMM(data.paidTotalMinutes);
                     const paidAmount = (data.paidTotalMinutes / 60) * HOURLY_RATE;
@@ -201,7 +205,6 @@
                     `;
                 }
                 
-                // Ödenecek veya ek ödeme kayıtları için satır
                 if (dueMinutes > 0) {
                     const dueDurationHHMM = minutesToHHMM(dueMinutes);
                     const dueAmount = (dueMinutes / 60) * HOURLY_RATE;
@@ -243,7 +246,7 @@
                  alert('Ödeme kaydedilirken bir hata oluştu!');
                  console.error(error);
              } else {
-                 fetchAndRenderData(); // Veriyi yenile
+                 fetchAndRenderData(); 
              }
         }
 
@@ -251,7 +254,7 @@
             if (e.target.classList.contains('payment-status-select') && e.target.value === 'paid') {
                 const select = e.target;
                 const { teacherName, dueMinutes, dueAmount } = select.dataset;
-                select.disabled = true; // Tekrar işlem yapılmasını engelle
+                select.disabled = true; 
                 handlePayment(teacherName, parseInt(dueMinutes), parseFloat(dueAmount));
             }
         });
