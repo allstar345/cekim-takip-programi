@@ -29,11 +29,24 @@
         const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
-        async function checkAuth() {
+        
+        async function checkAuthAndRole() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
-            if (!session) { window.location.href = 'login.html'; }
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const userRole = user?.user_metadata?.role;
+            const allowedRoles = ['admin', 'koordinator'];
+
+            if (!allowedRoles.includes(userRole)) {
+                alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
+                window.location.href = 'dashboard.html';
+            }
         }
-        checkAuth();
+        checkAuthAndRole();
     </script>
     
     <header class="bg-white shadow-sm sticky top-0 z-10">
