@@ -28,8 +28,9 @@
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
             const userRole = user?.user_metadata?.role;
+            const allowedRoles = ['admin', 'muhasebe'];
 
-            if (userRole !== 'admin') {
+            if (!allowedRoles.includes(userRole)) {
                 alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
                 window.location.href = 'dashboard.html';
             }
