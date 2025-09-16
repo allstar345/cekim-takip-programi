@@ -19,7 +19,7 @@
 
     <script>
         const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzIıNiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         async function checkAuth() {
@@ -54,7 +54,7 @@
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">Zaman Aralığına Göre Filtrele</h2>
                     <p id="stats-subtitle" class="text-sm text-gray-500 mt-1">Veriler filtrelenmektedir...</p>
-                    <p class="text-xs text-gray-400 mt-1">(* İstatistikler 15.09.2025 tarihinden itibaren hesaplanmaktadır.)</p>
+                    <p class="text-xs text-gray-400 mt-1">(* Yalnızca günü gelmiş veya geçmiş çekimler istatistiklere dahil edilir.)</p>
                 </div>
                 <div class="flex items-center space-x-2 mt-4 md:mt-0">
                     <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Bu Hafta</button>
@@ -153,7 +153,7 @@
                 const { start, end } = getThisWeekRange();
                 filteredShoots = allShootsData.filter(s => {
                     if (!s.date) return false;
-                    const shootDate = new Date(s.date);
+                    const shootDate = new Date(s.date + 'T00:00:00');
                     return shootDate >= start && shootDate <= end;
                 });
                 subtitle.textContent = `Bu haftanın verileri gösterilmektedir.`;
@@ -161,7 +161,7 @@
                 const { start, end } = getThisMonthRange();
                 filteredShoots = allShootsData.filter(s => {
                     if (!s.date) return false;
-                    const shootDate = new Date(s.date);
+                    const shootDate = new Date(s.date + 'T00:00:00');
                     return shootDate >= start && shootDate <= end;
                 });
                 subtitle.textContent = `Bu ayın verileri gösterilmektedir.`;
@@ -171,6 +171,9 @@
 
             if (filteredShoots.length === 0) {
                 loadingDiv.textContent = "Seçilen zaman aralığında veri bulunamadı.";
+                teacherStatsBody.innerHTML = '<tr><td colspan="2" class="text-center p-4 text-gray-500">Veri yok.</td></tr>';
+                directorStatsBody.innerHTML = '<tr><td colspan="2" class="text-center p-4 text-gray-500">Veri yok.</td></tr>';
+                contentDiv.classList.remove('hidden');
                 return;
             }
 
@@ -236,12 +239,15 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                const today = new Date('2025-09-15T23:59:59');
-                // today.setHours(23, 59, 59, 999); 
+                const today = new Date();
+                today.setHours(23, 59, 59, 999); 
+                
                 allShootsData = data.filter(shoot => {
                     if (!shoot.date) return false;
-                    return new Date(shoot.date) <= today;
+                    const shootDate = new Date(shoot.date + 'T00:00:00');
+                    return shootDate <= today;
                 });
+
                 setActiveButton('month');
             }
         });
