@@ -19,6 +19,15 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
+        const PERMISSIONS_MAP = {
+            'fatih@sistem.local': ['admin'],
+            'enesyardim@sistem.local': ['admin'],
+            'reji@sistem.local': ['view_cekim'],
+            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
+            'akademikizleme@sistem.local': ['view_izleme'],
+            'koordinator@sistem.local': ['view_cekim', 'view_stats']
+        };
+
         async function checkAuthAndApplyPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (!session) {
@@ -27,7 +36,8 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            const permissions = user?.user_metadata?.permissions || [];
+            const userEmail = user?.email;
+            const permissions = PERMISSIONS_MAP[userEmail] || [];
 
             const cekimTakipLink = document.getElementById('cekim-takip-link');
             const monitoringLink = document.getElementById('monitoring-link');
@@ -39,12 +49,11 @@
                     link.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             }
-
+            
             if (permissions.includes('admin')) {
-                return; // Admin ise hiçbir linki pasif yapma.
+                return; 
             }
 
-            // Admin değilse, yetkisi olmayan tüm linkleri pasif yap.
             if (!permissions.includes('view_cekim')) {
                 deactivateLink(cekimTakipLink);
             }
