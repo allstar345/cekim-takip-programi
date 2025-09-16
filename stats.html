@@ -22,11 +22,23 @@
         const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
-        async function checkAuth() {
+        
+        async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
-            if (!session) { window.location.href = 'login.html'; }
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const permissions = user?.user_metadata?.permissions || [];
+
+            if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
+                alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
+                window.location.href = 'dashboard.html';
+            }
         }
-        checkAuth();
+        checkAuthAndPermissions();
     </script>
 
     <header class="bg-white shadow-sm">
@@ -150,7 +162,7 @@
             return { start, end };
         }
 
-        async function calculateAndRenderStats() {
+        function calculateAndRenderStats() {
             loadingDiv.classList.remove('hidden');
             contentDiv.classList.add('hidden');
             teacherStatsBody.innerHTML = '';
@@ -177,7 +189,7 @@
             } else {
                  subtitle.textContent = `Tüm zamanlara ait veriler gösterilmektedir.`;
             }
-
+            
             const teacherCounts = filteredShoots.reduce((acc, shoot) => {
                 const teacherName = shoot.teacher ? shoot.teacher.trim() : null;
                 if (teacherName) { acc[teacherName] = (acc[teacherName] || 0) + 1; }
@@ -240,14 +252,8 @@
         directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
         logoutBtn.addEventListener('click', async () => {
-            const mainStorageAdapter = {
-                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-                setItem: (key, value) => { localStorage.setItem(key, value); },
-                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-            };
-            const db_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
-                auth: { storage: mainStorageAdapter }
-            });
+            const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
+            const db_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
             await db_logout.auth.signOut();
             window.location.href = 'login.html';
         });
@@ -257,10 +263,8 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                // ** DÜZELTME BURADA YAPILDI **
-                // Veri filtresi, tekrar "günü gelmemiş verileri göstermeme" mantığına döndürüldü.
                 const today = new Date();
-                today.setHours(23, 59, 59, 999);
+                today.setHours(23, 59, 59, 999); 
                 
                 allShootsData = data.filter(shoot => {
                     if (!shoot.date) return false;
