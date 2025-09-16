@@ -39,12 +39,12 @@
                     link.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             }
-            
+
             if (permissions.includes('admin')) {
-                return; // Admin her şeyi görür, hiçbir şey yapma
+                return; // Admin ise hiçbir linki pasif yapma.
             }
 
-            // Yetkileri tek tek kontrol et
+            // Admin değilse, yetkisi olmayan tüm linkleri pasif yap.
             if (!permissions.includes('view_cekim')) {
                 deactivateLink(cekimTakipLink);
             }
