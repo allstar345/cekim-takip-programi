@@ -572,10 +572,8 @@
 
             if (target.classList.contains('delete-btn')) {
                 const id = target.getAttribute('data-id');
-                if (confirm('Bu çekimi silmek istediğinizden emin misiniz?')) {
-                    const { error } = await db.from('shoots').delete().eq('id', id);
-                    if(error) console.error("Veri silme hatası:", error);
-                }
+                const { error } = await db.from('shoots').delete().eq('id', id);
+                if(error) console.error("Veri silme hatası:", error);
             }
             if (target.classList.contains('edit-btn')) {
                 const id = target.getAttribute('data-id');
@@ -654,7 +652,7 @@
         });
 
         logoutBtn.addEventListener('click', async () => {
-            await db.auth.signOut();
+            await supabaseAuth.auth.signOut();
             window.location.href = 'login.html';
         });
 
@@ -691,7 +689,9 @@
                 if (statsLink) {
                     statsLink.href = '#';
                     statsLink.classList.add('opacity-50', 'cursor-not-allowed');
-                    statsLink.addEventListener('click', e => e.preventDefault());
+                    statsLink.addEventListener('click', e => {
+                        e.preventDefault();
+                    });
                 }
             }
         });
