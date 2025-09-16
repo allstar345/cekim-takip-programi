@@ -652,7 +652,8 @@
         });
 
         logoutBtn.addEventListener('click', async () => {
-            await supabaseAuth.auth.signOut();
+            const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
+            await supabase_logout.auth.signOut();
             window.location.href = 'login.html';
         });
 
@@ -687,7 +688,7 @@
             if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
                 const statsLink = document.getElementById('stats-link');
                 if (statsLink) {
-                    statsLink.href = '#';
+                    statsLink.removeAttribute('href');
                     statsLink.classList.add('opacity-50', 'cursor-not-allowed');
                     statsLink.addEventListener('click', e => {
                         e.preventDefault();
