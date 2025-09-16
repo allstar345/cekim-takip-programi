@@ -149,12 +149,6 @@
     </main>
 
     <script>
-        // --- Tam ve Eksiksiz JavaScript Kodu ---
-    </script>
-</body>
-</html>
-
-    <script>
         const mainStorageAdapter = {
             getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
             setItem: (key, value) => { localStorage.setItem(key, value); },
@@ -164,22 +158,31 @@
             auth: { storage: mainStorageAdapter }
         });
 
+        // Form Elements
         const form = document.getElementById('monitoring-form');
         const submitBtn = document.getElementById('submit-btn');
         const cancelBtn = document.getElementById('cancel-btn');
         const teacherSelect = document.getElementById('teacher_name');
-        const logsTableContainer = document.getElementById('logs-table-container');
-        const loadingDiv = document.getElementById('logs-loading');
-        const logoutBtn = document.getElementById('logout-btn');
         const startTimeInput = document.getElementById('start_time');
         const endTimeInput = document.getElementById('end_time');
         const lunchSelect = document.getElementById('lunch_status');
         const dinnerSelect = document.getElementById('dinner_status');
         const durationDisplay = document.getElementById('total-duration');
-        const paginationContainer = document.getElementById('pagination-container');
         
+        // Table & Data Elements
+        const logsTableContainer = document.getElementById('logs-table-container');
+        const loadingDiv = document.getElementById('logs-loading');
+        const paginationContainer = document.getElementById('pagination-container');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Filter Elements
+        const filterTeacherSelect = document.getElementById('filter-teacher');
+        const filterDateInput = document.getElementById('filter-date');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+
         let currentEditId = null;
-        let allLogs = [];
+        let originalLogs = []; // Stores all data from DB
+        let filteredLogs = []; // Stores filtered data for display
         let currentPage = 1;
         const ITEMS_PER_PAGE = 10;
 
@@ -193,9 +196,13 @@
                 return `${firstChar}${rest}`;
             }).join(' ');
         }
-
+        
+        // Populate both teacher select dropdowns
         const formattedTeachers = teacherListRaw.split('-').map(formatName).sort((a, b) => a.localeCompare(b, 'tr-TR'));
-        teacherSelect.innerHTML += formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
+        const teacherOptionsHTML = formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
+        teacherSelect.innerHTML += teacherOptionsHTML;
+        filterTeacherSelect.innerHTML += teacherOptionsHTML;
+
 
         function calculateDurationAndBreaks() {
             const startTime = startTimeInput.value;
@@ -226,6 +233,29 @@
         
         [startTimeInput, endTimeInput, lunchSelect, dinnerSelect].forEach(el => el.addEventListener('input', calculateDurationAndBreaks));
 
+        function applyFilters() {
+            const selectedTeacher = filterTeacherSelect.value;
+            const selectedDate = filterDateInput.value;
+
+            filteredLogs = originalLogs.filter(log => {
+                const teacherMatch = !selectedTeacher || log.teacher_name === selectedTeacher;
+                const dateMatch = !selectedDate || log.date === selectedDate;
+                return teacherMatch && dateMatch;
+            });
+            
+            renderTablePage(1); // Reset to page 1 after filtering
+        }
+
+        function clearFilters() {
+            filterTeacherSelect.value = '';
+            filterDateInput.value = '';
+            applyFilters();
+        }
+
+        filterTeacherSelect.addEventListener('change', applyFilters);
+        filterDateInput.addEventListener('change', applyFilters);
+        clearFiltersBtn.addEventListener('click', clearFilters);
+
         function renderTablePage(page = 1) {
             currentPage = page;
             logsTableContainer.innerHTML = '';
@@ -233,13 +263,14 @@
             const start = (page - 1) * ITEMS_PER_PAGE;
             const end = start + ITEMS_PER_PAGE;
             
-            if (start >= allLogs.length && allLogs.length > 0) {
-                currentPage = Math.max(1, Math.ceil(allLogs.length / ITEMS_PER_PAGE));
+            // Check if current page is out of bounds after filtering/deletion
+            if (start >= filteredLogs.length && filteredLogs.length > 0) {
+                currentPage = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
                 renderTablePage(currentPage);
                 return;
             }
             
-            const paginatedLogs = allLogs.slice(start, end);
+            const paginatedLogs = filteredLogs.slice(start, end);
 
             const table = document.createElement('table');
             table.className = 'min-w-full';
@@ -280,14 +311,16 @@
         }
 
         function renderPagination() {
-            const totalItems = allLogs.length;
+            const totalItems = filteredLogs.length;
             const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
             paginationContainer.innerHTML = '';
-            if (totalPages <= 1) return;
-
+            
             const summary = document.createElement('div');
             summary.className = 'text-sm text-gray-700';
-            summary.textContent = `Toplam ${totalItems} kayıttan ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalItems)} - ${Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} arası gösteriliyor.`;
+            summary.textContent = `Toplam ${totalItems} kayıt bulundu.`;
+            paginationContainer.appendChild(summary);
+
+            if (totalPages <= 1) return;
             
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'flex items-center';
@@ -304,11 +337,11 @@
                 for (let i = 1; i <= totalPages; i++) pages.push(i);
             } else {
                 pages.push(1);
-                if (currentPage > 3) pages.push('...');
+                if (currentPage > 4) pages.push('...');
                 let startPage = Math.max(2, currentPage - 2);
                 let endPage = Math.min(totalPages - 1, currentPage + 2);
-                for(let i=startPage; i<=endPage; i++) pages.push(i);
-                if (currentPage < totalPages - 2) pages.push('...');
+                for(let i = startPage; i <= endPage; i++) pages.push(i);
+                if (currentPage < totalPages - 3) pages.push('...');
                 pages.push(totalPages);
             }
             
@@ -334,29 +367,28 @@
             nextButton.addEventListener('click', () => renderTablePage(currentPage + 1));
             buttonsDiv.appendChild(nextButton);
             
-            paginationContainer.appendChild(summary);
             paginationContainer.appendChild(buttonsDiv);
         }
 
         async function fetchAndRenderLogs() {
             loadingDiv.style.display = 'block';
+            logsTableContainer.innerHTML = '';
+            paginationContainer.innerHTML = '';
             
             const { data, error } = await db.from('monitoring_logs').select('*').order('created_at', { ascending: false });
 
             if (error) {
                 logsTableContainer.innerHTML = `<p class="text-red-500">Veriler yüklenirken bir hata oluştu.</p>`;
                 console.error(error);
-                loadingDiv.style.display = 'none';
             } else {
-                allLogs = data;
-                loadingDiv.style.display = 'none';
-                if (allLogs.length === 0) {
+                originalLogs = data;
+                if (originalLogs.length === 0) {
                     logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`;
-                    paginationContainer.innerHTML = '';
                 } else {
-                    renderTablePage(currentPage);
+                    applyFilters(); // Apply initial filters (if any) and render the table
                 }
             }
+            loadingDiv.style.display = 'none';
         }
 
         form.addEventListener('submit', async (e) => {
@@ -374,6 +406,7 @@
 
             if (error) {
                 console.error("Veri kaydetme hatası:", error);
+                alert('Kayıt eklenirken/güncellenirken bir hata oluştu!');
             } else {
                 resetForm();
             }
@@ -398,14 +431,14 @@
                     await db.from('monitoring_logs').delete().eq('id', id);
                 }
             } else if (target.classList.contains('edit-btn')) {
-                const { data } = await db.from('monitoring_logs').select('*').eq('id', id).single();
-                if (data) {
-                    form.date.value = data.date;
-                    form.teacher_name.value = data.teacher_name;
-                    form.start_time.value = data.start_time;
-                    form.end_time.value = data.end_time;
-                    form.lunch_status.value = data.lunch_status;
-                    form.dinner_status.value = data.dinner_status;
+                const logToEdit = originalLogs.find(log => log.id == id);
+                if (logToEdit) {
+                    form.date.value = logToEdit.date;
+                    form.teacher_name.value = logToEdit.teacher_name;
+                    form.start_time.value = logToEdit.start_time;
+                    form.end_time.value = logToEdit.end_time;
+                    form.lunch_status.value = logToEdit.lunch_status;
+                    form.dinner_status.value = logToEdit.dinner_status;
                     
                     calculateDurationAndBreaks();
                     
