@@ -193,7 +193,6 @@
             let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
             let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
             
-            // Değişiklik 2.3: Arama kutusu değerlerine göre filtreleme
             const teacherFilterText = teacherFilterInput.value.toLowerCase().trim();
             if(teacherFilterText) {
                 sortedTeachers = sortedTeachers.filter(([name, count]) => 
@@ -241,7 +240,16 @@
         directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
         logoutBtn.addEventListener('click', async () => {
-            // ... (logout code remains the same)
+            const mainStorageAdapter = {
+                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+                setItem: (key, value) => { localStorage.setItem(key, value); },
+                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+            };
+            const db_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+                auth: { storage: mainStorageAdapter }
+            });
+            await db_logout.auth.signOut();
+            window.location.href = 'login.html';
         });
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -249,7 +257,17 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                allShootsData = data.filter(shoot => new Date(shoot.date) >= new Date('2025-09-15'));
+                // ** DÜZELTME BURADA YAPILDI **
+                // Veri filtresi, tekrar "günü gelmemiş verileri göstermeme" mantığına döndürüldü.
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                
+                allShootsData = data.filter(shoot => {
+                    if (!shoot.date) return false;
+                    const shootDate = new Date(shoot.date + 'T00:00:00');
+                    return shootDate <= today;
+                });
+
                 setActiveButton('month');
             }
         });
