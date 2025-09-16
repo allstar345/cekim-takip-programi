@@ -34,11 +34,15 @@
             const paymentLink = document.getElementById('payment-link');
 
             function deactivateLink(link) {
-                link.href = '#';
-                link.classList.add('opacity-50', 'cursor-not-allowed');
-                link.addEventListener('click', (e) => e.preventDefault());
+                if (link) {
+                    link.href = '#';
+                    link.classList.add('opacity-50', 'cursor-not-allowed');
+                    // Tıklama olayını engellemek için içeriğin olaylarını da iptal edelim
+                    link.addEventListener('click', (e) => e.preventDefault(), true);
+                }
             }
-
+            
+            // Eğer admin değilse, izinleri tek tek kontrol et
             if (!permissions.includes('admin')) {
                 if (!permissions.includes('view_cekim')) {
                     deactivateLink(cekimTakipLink);
@@ -97,8 +101,7 @@
     <script>
         const logoutBtn = document.getElementById('logout-btn');
         logoutBtn.addEventListener('click', async () => {
-            const client = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
-            await client.auth.signOut();
+            await supabaseAuth.auth.signOut();
             window.location.href = 'login.html';
         });
     </script>
