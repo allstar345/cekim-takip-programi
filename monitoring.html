@@ -39,6 +39,15 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
+        const PERMISSIONS_MAP = {
+            'fatih@sistem.local': ['admin'],
+            'enesyardim@sistem.local': ['admin'],
+            'reji@sistem.local': ['view_cekim'],
+            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
+            'akademikizleme@sistem.local': ['view_izleme'],
+            'koordinator@sistem.local': ['view_cekim', 'view_stats']
+        };
+
         async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (!session) {
@@ -47,7 +56,8 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            const permissions = user?.user_metadata?.permissions || [];
+            const userEmail = user?.email;
+            const permissions = PERMISSIONS_MAP[userEmail] || [];
 
             if (!permissions.includes('admin') && !permissions.includes('view_izleme')) {
                 alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
@@ -204,7 +214,13 @@
         function resetForm() { form.reset(); currentEditId = null; submitBtn.textContent = 'Kaydı Ekle'; cancelBtn.classList.add('hidden'); durationDisplay.textContent = '0 Saat 0 Dakika'; }
         cancelBtn.addEventListener('click', resetForm);
         logsTableContainer.addEventListener('click', async (e) => { const target = e.target; const id = target.dataset.id; if (!id) return; if (target.classList.contains('delete-btn')) { if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) { await db.from('monitoring_logs').delete().eq('id', id); } } else if (target.classList.contains('edit-btn')) { const logToEdit = originalLogs.find(log => log.id == id); if (logToEdit) { form.date.value = logToEdit.date; form.teacher_name.value = logToEdit.teacher_name; form.start_time.value = logToEdit.start_time; form.end_time.value = logToEdit.end_time; form.lunch_status.value = logToEdit.lunch_status; form.dinner_status.value = logToEdit.dinner_status; calculateDurationAndBreaks(); currentEditId = id; submitBtn.textContent = 'Kaydı Güncelle'; cancelBtn.classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); } } });
-        logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; });
+        logoutBtn.addEventListener('click', async () => {
+            const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
+            await supabase_logout.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        });
         document.addEventListener('DOMContentLoaded', fetchAndRenderLogs);
         db.channel('public:monitoring_logs').on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_logs' }, (payload) => { console.log('Değişiklik algılandı!', payload); fetchAndRenderLogs(); }).subscribe();
     </script>
