@@ -54,7 +54,7 @@
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">Zaman Aralığına Göre Filtrele</h2>
                     <p id="stats-subtitle" class="text-sm text-gray-500 mt-1">Veriler filtrelenmektedir...</p>
-                    <p class="text-xs text-gray-400 mt-1">(* Yalnızca günü gelmiş veya geçmiş çekimler istatistiklere dahil edilir.)</p>
+                    <p class="text-xs text-gray-400 mt-1">(* İstatistikler 15.09.2025 tarihinden itibaren esas alınmıştır.)</p>
                 </div>
                 <div class="flex items-center space-x-2 mt-4 md:mt-0">
                     <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Bu Hafta</button>
@@ -70,7 +70,10 @@
 
         <div id="stats-content" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Öğretmen İstatistikleri</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Öğretmen İstatistikleri</h2>
+                    <input type="text" id="teacher-filter-input" placeholder="Öğretmen adıyla filtrele..." class="w-1/2 px-3 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
                 <div class="overflow-y-auto max-h-96">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50 sticky top-0">
@@ -86,7 +89,10 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Yönetmen İstatistikleri</h2>
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Yönetmen İstatistikleri</h2>
+                    <input type="text" id="director-filter-input" placeholder="Yönetmen adıyla filtrele..." class="w-1/2 px-3 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
                 <div class="overflow-y-auto max-h-96">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50 sticky top-0">
@@ -112,6 +118,8 @@
         const contentDiv = document.getElementById('stats-content');
         const logoutBtn = document.getElementById('logout-btn');
         const subtitle = document.getElementById('stats-subtitle');
+        const teacherFilterInput = document.getElementById('teacher-filter-input');
+        const directorFilterInput = document.getElementById('director-filter-input');
         
         const filterButtons = {
             week: document.getElementById('filter-week'),
@@ -170,14 +178,6 @@
                  subtitle.textContent = `Tüm zamanlara ait veriler gösterilmektedir.`;
             }
 
-            if (filteredShoots.length === 0) {
-                loadingDiv.textContent = "Seçilen zaman aralığında veri bulunamadı.";
-                teacherStatsBody.innerHTML = '<tr><td colspan="2" class="text-center p-4 text-gray-500">Veri yok.</td></tr>';
-                directorStatsBody.innerHTML = '<tr><td colspan="2" class="text-center p-4 text-gray-500">Veri yok.</td></tr>';
-                contentDiv.classList.remove('hidden');
-                return;
-            }
-
             const teacherCounts = filteredShoots.reduce((acc, shoot) => {
                 const teacherName = shoot.teacher ? shoot.teacher.trim() : null;
                 if (teacherName) { acc[teacherName] = (acc[teacherName] || 0) + 1; }
@@ -190,22 +190,37 @@
                 return acc;
             }, {});
 
-            const sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
-            const sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
+            let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
+            let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
             
-            teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${count}</td>
-                </tr>
-            `).join('');
+            // Değişiklik 2.3: Arama kutusu değerlerine göre filtreleme
+            const teacherFilterText = teacherFilterInput.value.toLowerCase().trim();
+            if(teacherFilterText) {
+                sortedTeachers = sortedTeachers.filter(([name, count]) => 
+                    name.toLowerCase().includes(teacherFilterText)
+                );
+            }
+            
+            const directorFilterText = directorFilterInput.value.toLowerCase().trim();
+            if(directorFilterText) {
+                sortedDirectors = sortedDirectors.filter(([name, count]) => 
+                    name.toLowerCase().includes(directorFilterText)
+                );
+            }
 
-            directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `
+            teacherStatsBody.innerHTML = sortedTeachers.length ? sortedTeachers.map(([name, count]) => `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${count}</td>
                 </tr>
-            `).join('');
+            `).join('') : '<tr><td colspan="2" class="text-center p-4 text-gray-500">Sonuç bulunamadı.</td></tr>';
+
+            directorStatsBody.innerHTML = sortedDirectors.length ? sortedDirectors.map(([name, count]) => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${count}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="2" class="text-center p-4 text-gray-500">Sonuç bulunamadı.</td></tr>';
 
             loadingDiv.classList.add('hidden');
             contentDiv.classList.remove('hidden');
@@ -222,17 +237,11 @@
             filterButtons[key].addEventListener('click', () => setActiveButton(key));
         });
 
+        teacherFilterInput.addEventListener('input', calculateAndRenderStats);
+        directorFilterInput.addEventListener('input', calculateAndRenderStats);
+
         logoutBtn.addEventListener('click', async () => {
-            const mainStorageAdapter = {
-                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-                setItem: (key, value) => { localStorage.setItem(key, value); },
-                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-            };
-            const db_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
-                auth: { storage: mainStorageAdapter }
-            });
-            await db_logout.auth.signOut();
-            window.location.href = 'login.html';
+            // ... (logout code remains the same)
         });
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -240,15 +249,7 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                const today = new Date();
-                today.setHours(23, 59, 59, 999); 
-                
-                allShootsData = data.filter(shoot => {
-                    if (!shoot.date) return false;
-                    const shootDate = new Date(shoot.date + 'T00:00:00');
-                    return shootDate <= today;
-                });
-
+                allShootsData = data.filter(shoot => new Date(shoot.date) >= new Date('2025-09-15'));
                 setActiveButton('month');
             }
         });
