@@ -161,14 +161,18 @@
         let currentPage = 1;
         const ITEMS_PER_PAGE = 10;
 
-        const teacherListRaw = "Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney-Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız".split('-');
-
+        const teacherListRaw = `Ahmet Ölmez-Barış Özcan-Cihat Çiçek-Didem Özbay Sarıaydın-Eda Güney-Edip İçli-Elif Bozkurt-Cem Oğuz Büke-Erkan Özarslan-Esra Dindar-Esra Şahin-Esra Yurttaş-Fatma Baytor-Fatma Mutlu-Firdevs Bozkurt-Fuat Ses-Funda Akbaş-Hülya Güçkan Taşkın-İbrahim Atakuru-İbrahim Halil Kesici-İsmail Ercan Buzcu-Koray Dindar-Mehmet Bademli-Mehmet Ceran-Mehmet Kırbıyık-Muharrem Akbaş-Onur Koç-Orhan Hancı-Özcan Kulaksız-Raziye İnal-Sabri Bingöl-Selin Erdoğan-Semih Sunucuoğlu-Serkan Yıldız-Serpil Tunç İçli-Suat Emre-Tuğba Bostancı-Tuncay Ateş-Yasin Baş-Yavuz Selim Yıldız`;
+        
         function formatName(name) {
             if (!name) return '';
-            return name.trim().toLocaleLowerCase('tr-TR').replace(/\b\w/g, char => char.toLocaleUpperCase('tr-TR'));
+            return name.trim().split(' ').map(word => {
+                const firstChar = word.charAt(0).toLocaleUpperCase('tr-TR');
+                const rest = word.slice(1).toLocaleLowerCase('tr-TR');
+                return `${firstChar}${rest}`;
+            }).join(' ');
         }
 
-        const formattedTeachers = teacherListRaw.map(formatName).sort((a, b) => a.localeCompare(b, 'tr-TR'));
+        const formattedTeachers = teacherListRaw.split('-').map(formatName).sort((a, b) => a.localeCompare(b, 'tr-TR'));
         teacherSelect.innerHTML += formattedTeachers.map(name => `<option value="${name}">${name}</option>`).join('');
 
         function calculateDurationAndBreaks() {
@@ -208,7 +212,7 @@
             const end = start + ITEMS_PER_PAGE;
             
             if (start >= allLogs.length && allLogs.length > 0) {
-                currentPage = Math.ceil(allLogs.length / ITEMS_PER_PAGE);
+                currentPage = Math.max(1, Math.ceil(allLogs.length / ITEMS_PER_PAGE));
                 renderTablePage(currentPage);
                 return;
             }
@@ -273,21 +277,20 @@
             prevButton.addEventListener('click', () => renderTablePage(currentPage - 1));
             buttonsDiv.appendChild(prevButton);
 
-            // Sayfa numaralarını oluşturma mantığı...
             let pages = [];
-            if (totalPages <= 5) {
+            if (totalPages <= 7) {
                 for (let i = 1; i <= totalPages; i++) pages.push(i);
             } else {
                 pages.push(1);
                 if (currentPage > 3) pages.push('...');
-                if (currentPage > 2) pages.push(currentPage - 1);
-                if (currentPage > 1 && currentPage < totalPages) pages.push(currentPage);
-                if (currentPage < totalPages - 1) pages.push(currentPage + 1);
+                let startPage = Math.max(2, currentPage - 1);
+                let endPage = Math.min(totalPages - 1, currentPage + 1);
+                for(let i=startPage; i<=endPage; i++) pages.push(i);
                 if (currentPage < totalPages - 2) pages.push('...');
                 pages.push(totalPages);
             }
             
-            pages = [...new Set(pages)]; // Tekrarlananları kaldır
+            pages = [...new Set(pages)];
 
             pages.forEach(p => {
                 const pageButton = document.createElement('button');
@@ -316,23 +319,23 @@
 
         async function fetchAndRenderLogs() {
             loadingDiv.style.display = 'block';
-            logsTableContainer.innerHTML = '';
-            paginationContainer.innerHTML = '';
-
+            
             const { data, error } = await db.from('monitoring_logs').select('*').order('created_at', { ascending: false });
 
             if (error) {
                 logsTableContainer.innerHTML = `<p class="text-red-500">Veriler yüklenirken bir hata oluştu.</p>`;
                 console.error(error);
+                loadingDiv.style.display = 'none';
             } else {
                 allLogs = data;
+                loadingDiv.style.display = 'none';
                 if (allLogs.length === 0) {
                     logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`;
+                    paginationContainer.innerHTML = '';
                 } else {
                     renderTablePage(currentPage);
                 }
             }
-            loadingDiv.style.display = 'none';
         }
 
         form.addEventListener('submit', async (e) => {
@@ -401,7 +404,10 @@
         document.addEventListener('DOMContentLoaded', fetchAndRenderLogs);
         
         db.channel('public:monitoring_logs')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_logs' }, fetchAndRenderLogs)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_logs' }, (payload) => {
+                console.log('Değişiklik algılandı!', payload);
+                fetchAndRenderLogs();
+            })
             .subscribe();
 
     </script>
