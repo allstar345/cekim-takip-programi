@@ -84,7 +84,6 @@
         const HOURLY_RATE = 500;
         let currentDate = new Date();
 
-        // DÜZELTME: Saat dilimi sorununu önlemek için yeni bir fonksiyon
         function toYYYYMMDD(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -94,8 +93,7 @@
 
         function getPaymentPeriod(date) {
             let year = date.getFullYear();
-            let month = date.getMonth(); // 0-11
-            
+            let month = date.getMonth(); 
             let endBoundary, start;
 
             if (date.getDate() >= 10) {
@@ -139,8 +137,9 @@
                 .gte('date', period.start)
                 .lte('date', period.end);
 
+            // Düzeltme: id'yi de çekiyoruz
             const { data: payments, error: paymentsError } = await db.from('payment_records')
-                .select('*')
+                .select('id, teacher_name, paid_duration_minutes, paid_amount')
                 .eq('payment_period_start', period.start)
                 .eq('payment_period_end', period.end);
             
@@ -154,33 +153,28 @@
             const teacherData = {};
 
             logs.forEach(log => {
-                if (!teacherData[log.teacher_name]) {
-                    teacherData[log.teacher_name] = { currentTotalMinutes: 0, paidTotalMinutes: 0 };
+                const name = log.teacher_name;
+                if (!teacherData[name]) {
+                    teacherData[name] = { currentTotalMinutes: 0, paidRecords: [] };
                 }
-                teacherData[log.teacher_name].currentTotalMinutes += HHMMToMinutes(log.total_duration);
+                teacherData[name].currentTotalMinutes += HHMMToMinutes(log.total_duration);
             });
             
             payments.forEach(payment => {
-                 if (!teacherData[payment.teacher_name]) {
-                    teacherData[payment.teacher_name] = { currentTotalMinutes: 0, paidTotalMinutes: 0 };
+                 const name = payment.teacher_name;
+                 if (!teacherData[name]) {
+                    teacherData[name] = { currentTotalMinutes: 0, paidRecords: [] };
                 }
-                teacherData[payment.teacher_name].paidTotalMinutes += payment.paid_duration_minutes;
+                teacherData[name].paidRecords.push({
+                    id: payment.id,
+                    minutes: payment.paid_duration_minutes,
+                    amount: payment.paid_amount
+                });
             });
             
             const sortedTeachers = Object.keys(teacherData).sort((a, b) => a.localeCompare(b, 'tr'));
-
-            let tableHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Öğretmen</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Süre</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ödenecek Tutar</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-            `;
+            
+            let tableHTML = `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Öğretmen</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Süre</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ödenecek Tutar</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
             
             if (sortedTeachers.length === 0) {
                  tableHTML += `<tr><td colspan="4" class="text-center p-4 text-gray-500">Bu dönem için kayıt bulunamadı.</td></tr>`;
@@ -188,42 +182,19 @@
 
             sortedTeachers.forEach(name => {
                 const data = teacherData[name];
-                const dueMinutes = data.currentTotalMinutes - data.paidTotalMinutes;
+                const paidTotalMinutes = data.paidRecords.reduce((sum, record) => sum + record.minutes, 0);
+                const dueMinutes = data.currentTotalMinutes - paidTotalMinutes;
 
-                if (data.paidTotalMinutes > 0) {
-                    const paidDurationHHMM = minutesToHHMM(data.paidTotalMinutes);
-                    const paidAmount = (data.paidTotalMinutes / 60) * HOURLY_RATE;
-                    tableHTML += `
-                        <tr class="bg-green-50">
-                            <td class="px-6 py-4 font-medium">${name}</td>
-                            <td class="px-6 py-4">${paidDurationHHMM}</td>
-                            <td class="px-6 py-4">${paidAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-3 py-1 text-sm font-semibold text-green-800 bg-green-200 rounded-full">Ödendi</span>
-                            </td>
-                        </tr>
-                    `;
-                }
+                // Düzeltme: Ödenmiş kayıtları listele
+                data.paidRecords.forEach(record => {
+                    const paidDurationHHMM = minutesToHHMM(record.minutes);
+                    tableHTML += `<tr class="bg-green-50"><td class="px-6 py-4 font-medium">${name}</td><td class="px-6 py-4">${paidDurationHHMM}</td><td class="px-6 py-4">${record.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td><td class="px-6 py-4"><div class="flex items-center space-x-2"><span class="px-3 py-1 text-sm font-semibold text-green-800 bg-green-200 rounded-full">Ödendi</span><button class="cancel-payment-btn text-red-600 hover:text-red-900 text-xs font-bold" data-payment-id="${record.id}">İptal Et</button></div></td></tr>`;
+                });
                 
                 if (dueMinutes > 0) {
                     const dueDurationHHMM = minutesToHHMM(dueMinutes);
                     const dueAmount = (dueMinutes / 60) * HOURLY_RATE;
-                    tableHTML += `
-                        <tr class="bg-red-50">
-                            <td class="px-6 py-4 font-medium">${name} ${data.paidTotalMinutes > 0 ? '<span class="text-xs text-blue-600 font-bold">(Ek Ödeme)</span>' : ''}</td>
-                            <td class="px-6 py-4">${dueDurationHHMM}</td>
-                            <td class="px-6 py-4">${dueAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td>
-                            <td class="px-6 py-4">
-                                <select class="payment-status-select bg-red-200 text-red-800 rounded-lg p-2 border-red-300" 
-                                        data-teacher-name="${name}" 
-                                        data-due-minutes="${dueMinutes}" 
-                                        data-due-amount="${dueAmount}">
-                                    <option value="unpaid" selected>Ödenmedi</option>
-                                    <option value="paid">Ödendi</option>
-                                </select>
-                            </td>
-                        </tr>
-                    `;
+                    tableHTML += `<tr class="bg-red-50"><td class="px-6 py-4 font-medium">${name} ${paidTotalMinutes > 0 ? '<span class="text-xs text-blue-600 font-bold">(Ek Ödeme)</span>' : ''}</td><td class="px-6 py-4">${dueDurationHHMM}</td><td class="px-6 py-4">${dueAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td><td class="px-6 py-4"><select class="payment-status-select bg-red-200 text-red-800 rounded-lg p-2 border-red-300" data-teacher-name="${name}" data-due-minutes="${dueMinutes}" data-due-amount="${dueAmount}"><option value="unpaid" selected>Ödenmedi</option><option value="paid">Ödendi</option></select></td></tr>`;
                 }
             });
 
@@ -234,21 +205,26 @@
         
         async function handlePayment(teacherName, dueMinutes, dueAmount) {
              const period = getPaymentPeriod(currentDate);
-             const { error } = await db.from('payment_records').insert([{
-                 teacher_name: teacherName,
-                 payment_period_start: period.start,
-                 payment_period_end: period.end,
-                 paid_duration_minutes: dueMinutes,
-                 paid_amount: dueAmount
-             }]);
-
-             if (error) {
-                 alert('Ödeme kaydedilirken bir hata oluştu!');
-                 console.error(error);
-             } else {
-                 fetchAndRenderData(); 
-             }
+             const { error } = await db.from('payment_records').insert([{ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: dueMinutes, paid_amount: dueAmount }]);
+             if (error) { alert('Ödeme kaydedilirken bir hata oluştu!'); console.error(error); } 
+             else { fetchAndRenderData(); }
         }
+        
+        // Düzeltme: Ödeme iptali için yeni fonksiyon
+        async function handleCancelPayment(paymentId) {
+            if (!confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
+            const { error } = await db.from('payment_records').delete().eq('id', paymentId);
+            if (error) { alert('Ödeme iptal edilirken bir hata oluştu!'); console.error(error); } 
+            else { fetchAndRenderData(); }
+        }
+        
+        // Düzeltme: Olay dinleyicisi click ve change için ayrıldı
+        tableContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('cancel-payment-btn')) {
+                const paymentId = e.target.dataset.paymentId;
+                handleCancelPayment(paymentId);
+            }
+        });
 
         tableContainer.addEventListener('change', (e) => {
             if (e.target.classList.contains('payment-status-select') && e.target.value === 'paid') {
@@ -266,43 +242,18 @@
 
              selects.forEach(select => {
                  const { teacherName, dueMinutes, dueAmount } = select.dataset;
-                 paymentsToInsert.push({
-                     teacher_name: teacherName,
-                     payment_period_start: period.start,
-                     payment_period_end: period.end,
-                     paid_duration_minutes: parseInt(dueMinutes),
-                     paid_amount: parseFloat(dueAmount)
-                 });
+                 paymentsToInsert.push({ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: parseInt(dueMinutes), paid_amount: parseFloat(dueAmount) });
              });
              
-             if(paymentsToInsert.length === 0) {
-                 alert('Ödenecek kayıt bulunmamaktadır.');
-                 return;
-             }
-
+             if(paymentsToInsert.length === 0) { alert('Ödenecek kayıt bulunmamaktadır.'); return; }
              const { error } = await db.from('payment_records').insert(paymentsToInsert);
-             if (error) {
-                 alert('Toplu ödeme kaydedilirken bir hata oluştu!');
-                 console.error(error);
-             } else {
-                 fetchAndRenderData();
-             }
+             if (error) { alert('Toplu ödeme kaydedilirken bir hata oluştu!'); console.error(error); } 
+             else { fetchAndRenderData(); }
         });
         
-        prevMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            fetchAndRenderData();
-        });
-
-        nextMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            fetchAndRenderData();
-        });
-        
-        logoutBtn.addEventListener('click', async () => {
-            await supabaseAuth.auth.signOut();
-            window.location.href = 'login.html';
-        });
+        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); fetchAndRenderData(); });
+        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); fetchAndRenderData(); });
+        logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; });
 
         document.addEventListener('DOMContentLoaded', fetchAndRenderData);
     </script>
