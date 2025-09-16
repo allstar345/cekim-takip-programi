@@ -19,7 +19,7 @@
 
     <script>
         const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzIıNiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         async function checkAuth() {
@@ -136,6 +136,7 @@
         function getThisMonthRange() {
             const today = new Date();
             const start = new Date(today.getFullYear(), today.getMonth(), 1);
+            start.setHours(0,0,0,0);
             const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
             end.setHours(23, 59, 59, 999);
             return { start, end };
@@ -239,12 +240,16 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                const today = new Date();
-                today.setHours(23, 59, 59, 999); 
+                // BUGÜNÜN TARİHİNİ AL VE SAATİ GÜN SONUNA AYARLA
+                const today = new Date(); // Örn: 16 Eylül 2025, 11:18
+                today.setHours(23, 59, 59, 999); // Tarihi aynı bırak, saati 23:59:59 yap
                 
+                // SADECE GÜNÜ GELMİŞ VEYA GEÇMİŞ ÇEKİMLERİ FİLTRELE
                 allShootsData = data.filter(shoot => {
                     if (!shoot.date) return false;
+                    // Veritabanındaki '2025-09-16' gibi bir tarihi, o günün başlangıcı (00:00) olarak kabul et
                     const shootDate = new Date(shoot.date + 'T00:00:00');
+                    // Çekim tarihi, bugünün sonundan önce veya eşitse veriyi dahil et
                     return shootDate <= today;
                 });
 
