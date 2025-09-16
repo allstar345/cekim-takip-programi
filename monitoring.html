@@ -39,7 +39,7 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
-        async function checkAuthAndRole() {
+        async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (!session) {
                 window.location.href = 'login.html';
@@ -47,15 +47,14 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            const userRole = user?.user_metadata?.role;
-            const allowedRoles = ['admin', 'izleme', 'muhasebe'];
+            const permissions = user?.user_metadata?.permissions || [];
 
-            if (!allowedRoles.includes(userRole)) {
+            if (!permissions.includes('admin') && !permissions.includes('view_izleme')) {
                 alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
                 window.location.href = 'dashboard.html';
             }
         }
-        checkAuthAndRole();
+        checkAuthAndPermissions();
     </script>
 
     <header class="bg-white shadow-sm sticky top-0 z-10">
