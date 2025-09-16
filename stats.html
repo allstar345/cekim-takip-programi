@@ -10,7 +10,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .filter-btn.active {
-            background-color: #2563eb;
+            background-color: #2563eb; /* blue-600 */
             color: white;
         }
     </style>
@@ -151,11 +151,19 @@
             
             if (currentFilter === 'week') {
                 const { start, end } = getThisWeekRange();
-                filteredShoots = allShootsData.filter(s => new Date(s.date) >= start && new Date(s.date) <= end);
+                filteredShoots = allShootsData.filter(s => {
+                    if (!s.date) return false;
+                    const shootDate = new Date(s.date);
+                    return shootDate >= start && shootDate <= end;
+                });
                 subtitle.textContent = `Bu haftanın verileri gösterilmektedir.`;
             } else if (currentFilter === 'month') {
                 const { start, end } = getThisMonthRange();
-                filteredShoots = allShootsData.filter(s => new Date(s.date) >= start && new Date(s.date) <= end);
+                filteredShoots = allShootsData.filter(s => {
+                    if (!s.date) return false;
+                    const shootDate = new Date(s.date);
+                    return shootDate >= start && shootDate <= end;
+                });
                 subtitle.textContent = `Bu ayın verileri gösterilmektedir.`;
             } else {
                  subtitle.textContent = `Tüm zamanlara ait veriler gösterilmektedir.`;
@@ -211,7 +219,15 @@
         });
 
         logoutBtn.addEventListener('click', async () => {
-            await supabaseAuth.auth.signOut();
+            const mainStorageAdapter = {
+                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+                setItem: (key, value) => { localStorage.setItem(key, value); },
+                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+            };
+            const db_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+                auth: { storage: mainStorageAdapter }
+            });
+            await db_logout.auth.signOut();
             window.location.href = 'login.html';
         });
 
@@ -220,9 +236,12 @@
             if (error) {
                 loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
             } else {
-                const today = new Date();
-                today.setHours(23, 59, 59, 999); 
-                allShootsData = data.filter(shoot => new Date(shoot.date) <= today);
+                const today = new Date('2025-09-15T23:59:59');
+                // today.setHours(23, 59, 59, 999); 
+                allShootsData = data.filter(shoot => {
+                    if (!shoot.date) return false;
+                    return new Date(shoot.date) <= today;
+                });
                 setActiveButton('month');
             }
         });
