@@ -35,24 +35,24 @@
 
             function deactivateLink(link) {
                 if (link) {
-                    link.href = '#';
+                    link.removeAttribute('href');
                     link.classList.add('opacity-50', 'cursor-not-allowed');
-                    // Tıklama olayını engellemek için içeriğin olaylarını da iptal edelim
-                    link.addEventListener('click', (e) => e.preventDefault(), true);
                 }
             }
             
-            // Eğer admin değilse, izinleri tek tek kontrol et
-            if (!permissions.includes('admin')) {
-                if (!permissions.includes('view_cekim')) {
-                    deactivateLink(cekimTakipLink);
-                }
-                if (!permissions.includes('view_izleme')) {
-                    deactivateLink(monitoringLink);
-                }
-                if (!permissions.includes('view_odeme')) {
-                    deactivateLink(paymentLink);
-                }
+            if (permissions.includes('admin')) {
+                return; // Admin her şeyi görür, hiçbir şey yapma
+            }
+
+            // Yetkileri tek tek kontrol et
+            if (!permissions.includes('view_cekim')) {
+                deactivateLink(cekimTakipLink);
+            }
+            if (!permissions.includes('view_izleme')) {
+                deactivateLink(monitoringLink);
+            }
+            if (!permissions.includes('view_odeme')) {
+                deactivateLink(paymentLink);
             }
         }
         
@@ -101,7 +101,17 @@
     <script>
         const logoutBtn = document.getElementById('logout-btn');
         logoutBtn.addEventListener('click', async () => {
-            await supabaseAuth.auth.signOut();
+            const mainStorageAdapter = {
+                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+                setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
+                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+            };
+            const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+                auth: { storage: mainStorageAdapter }
+            });
+            await supabase_logout.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = 'login.html';
         });
     </script>
