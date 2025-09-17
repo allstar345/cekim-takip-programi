@@ -19,18 +19,11 @@
 
     <script>
         const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzIıNiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
-        const PERMISSIONS_MAP = {
-            'fatih@sistem.local': ['admin'],
-            'enesyardim@sistem.local': ['admin'],
-            'reji@sistem.local': ['view_cekim'],
-            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
-            'akademikizleme@sistem.local': ['view_izleme'],
-            'koordinator@sistem.local': ['view_cekim', 'view_stats']
-        };
+        // PERMISSIONS_MAP objesi buradan silindi. Yetkiler artık Supabase'den okunacak.
 
         async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -40,8 +33,8 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            const userEmail = user?.email;
-            const permissions = PERMISSIONS_MAP[userEmail] || [];
+            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
+            const permissions = user?.user_metadata?.permissions || [];
 
             if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
                 alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
