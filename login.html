@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -44,49 +45,25 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-        const { createClient } = supabase;
-
-        const loginForm = document.getElementById('login-form');
-        const errorMessage = document.getElementById('error-message');
-        const rememberMeCheckbox = document.getElementById('remember-me');
-
         // Sayfa yüklendiğinde mevcut bir oturum var mı diye kontrol et
         (async () => {
-            const authStorageAdapter = {
-                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-                setItem: () => {}, removeItem: () => {}
-            };
-            const tempSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
-            const { data: { session } } = await tempSupabase.auth.getSession();
+            const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 window.location.href = 'dashboard.html';
             }
         })();
 
-
-        loginForm.addEventListener('submit', async (e) => {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const username = loginForm.username.value;
-            const password = loginForm.password.value;
+            const form = e.target;
+            const username = form.username.value;
+            const password = form.password.value;
             const email = `${username}@sistem.local`;
-
+            const errorMessage = document.getElementById('error-message');
+            
             errorMessage.classList.add('hidden');
 
-            const storage = rememberMeCheckbox.checked ? localStorage : sessionStorage;
-            const customStorageAdapter = {
-                getItem: (key) => storage.getItem(key),
-                setItem: (key, value) => storage.setItem(key, value),
-                removeItem: (key) => storage.removeItem(key),
-            };
-
-            const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: { storage: customStorageAdapter, },
-            });
-
-            const { data, error } = await db.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -94,7 +71,7 @@
             if (error) {
                 errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';
                 errorMessage.classList.remove('hidden');
-                console.error('Giriş hatası:', error);
+                console.error('Giriş hatası:', error.message);
             } else {
                 window.location.href = 'dashboard.html';
             }
