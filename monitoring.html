@@ -39,14 +39,7 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
-        const PERMISSIONS_MAP = {
-            'fatih@sistem.local': ['admin'],
-            'enesyardim@sistem.local': ['admin'],
-            'reji@sistem.local': ['view_cekim'],
-            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
-            'akademikizleme@sistem.local': ['view_izleme'],
-            'koordinator@sistem.local': ['view_cekim', 'view_stats']
-        };
+        // PERMISSIONS_MAP objesi buradan silindi. Yetkiler artık Supabase'den okunacak.
 
         async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -56,8 +49,8 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            const userEmail = user?.email;
-            const permissions = PERMISSIONS_MAP[userEmail] || [];
+            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
+            const permissions = user?.user_metadata?.permissions || [];
 
             if (!permissions.includes('admin') && !permissions.includes('view_izleme')) {
                 alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
