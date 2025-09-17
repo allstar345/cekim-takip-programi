@@ -9,8 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="supabase-client.js"></script>
-    <script src="auth.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         #form-wrapper { max-height: 1000px; overflow: hidden; transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; }
@@ -27,10 +25,36 @@
 <body class="bg-gray-100">
 
     <script>
-        // Sayfa yüklendiğinde, bu sayfanın yetki kontrolünü yap
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuthAndPermissions('view_cekim');
-        });
+        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const PERMISSIONS_MAP = {
+            'fatih@sistem.local': ['admin'],
+            'enesyardim@sistem.local': ['admin'],
+            'reji@sistem.local': ['view_cekim'],
+            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
+            'akademikizleme@sistem.local': ['view_izleme'],
+            'koordinator@sistem.local': ['view_cekim', 'view_stats']
+        };
+        
+        async function checkAuthAndPermissions() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: { user } } = await supabase.auth.getUser();
+            const userEmail = user?.email;
+            const permissions = PERMISSIONS_MAP[userEmail] || [];
+
+            if (!permissions.includes('admin') && !permissions.includes('view_cekim')) {
+                alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
+                window.location.href = 'dashboard.html';
+            }
+        }
+        checkAuthAndPermissions();
     </script>
     
     <header class="bg-white shadow-sm sticky top-0 z-10">
@@ -290,7 +314,9 @@
         const teacherSelectForm = document.getElementById('teacher');
         const teacherSelectFilter = document.getElementById('filter-teacher');
         const teacherOptionsHtml = Array.from(teacherSelectForm.options).map(option => {
-            if (option.value) { return `<option value="${option.value}">${option.text}</option>`; }
+            if (option.value) { 
+                return `<option value="${option.value}">${option.text}</option>`;
+            }
             return '';
         }).join('');
         teacherSelectFilter.innerHTML = `<option value="">Tümü</option>${teacherOptionsHtml}`;
@@ -436,13 +462,13 @@
             else { allShoots = data; processAndRenderData(); }
         }
         
-        const shootsSubscription = db.channel('public:shoots').on('postgres_changes', { event: '*', schema: 'public', table: 'shoots' }, (payload) => { console.log('Değişiklik algılandı!', payload); fetchInitialData(); }).subscribe();
-
         document.addEventListener('DOMContentLoaded', async () => {
             fetchInitialData();
-            const { data: { user } } = await supabaseAuth.auth.getUser();
+            
+            const { data: { user } } = await supabase.auth.getUser();
             const userEmail = user?.email;
             const permissions = PERMISSIONS_MAP[userEmail] || [];
+            
             if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
                 const statsLink = document.getElementById('stats-link');
                 if (statsLink) {
@@ -452,6 +478,8 @@
                 }
             }
         });
+
+        const shootsSubscription = db.channel('public:shoots').on('postgres_changes', { event: '*', schema: 'public', table: 'shoots' }, (payload) => { console.log('Değişiklik algılandı!', payload); fetchInitialData(); }).subscribe();
     </script>
 </body>
 </html>
