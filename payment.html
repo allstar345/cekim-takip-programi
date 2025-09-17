@@ -10,8 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="supabase-client.js"></script>
-    <script src="auth.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
@@ -19,10 +17,37 @@
 <body class="bg-gray-100">
 
     <script>
-        // Sayfa yüklendiğinde, bu sayfanın yetki kontrolünü yap
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuthAndPermissions('view_odeme');
-        });
+        const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+        const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+        const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+        
+        const PERMISSIONS_MAP = {
+            'fatih@sistem.local': ['admin'],
+            'enesyardim@sistem.local': ['admin'],
+            'reji@sistem.local': ['view_cekim'],
+            'gorseltasarim@sistem.local': ['view_cekim', 'view_stats'],
+            'akademikizleme@sistem.local': ['view_izleme'],
+            'koordinator@sistem.local': ['view_cekim', 'view_stats']
+        };
+
+        async function checkAuthAndPermissions() {
+            const { data: { session } } = await supabaseAuth.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const userEmail = user?.email;
+            const permissions = PERMISSIONS_MAP[userEmail] || [];
+
+            if (!permissions.includes('admin') && !permissions.includes('view_odeme')) {
+                alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
+                window.location.href = 'dashboard.html';
+            }
+        }
+        checkAuthAndPermissions();
     </script>
 
     <header class="bg-white shadow-sm sticky top-0 z-10">
@@ -62,6 +87,7 @@
     </main>
 
     <script>
+        const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH);
         const loadingDiv = document.getElementById('loading');
         const tableContainer = document.getElementById('payment-table-container');
         const prevMonthBtn = document.getElementById('prev-month-btn');
@@ -70,6 +96,7 @@
         const markAllPaidBtn = document.getElementById('mark-all-paid-btn');
         const markAllUnpaidBtn = document.getElementById('mark-all-unpaid-btn');
         const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const logoutBtn = document.getElementById('logout-btn');
 
         const HOURLY_RATE = 500;
         let currentDate = new Date();
@@ -211,6 +238,15 @@
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); fetchAndRenderData(); });
         downloadPdfBtn.addEventListener('click', downloadPaymentPDF);
         markAllUnpaidBtn.addEventListener('click', markAllAsUnpaid);
+
+        logoutBtn.addEventListener('click', async () => {
+            const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
+            const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
+            await supabase_logout.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        });
 
         document.addEventListener('DOMContentLoaded', fetchAndRenderData);
     </script>
