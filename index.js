@@ -196,6 +196,7 @@ function renderCurrentPage() {
     updateNavControls();
 }
 
+// DEĞİŞİKLİK: Tablo oluşturma fonksiyonu, yeni start_time ve end_time alanlarını gösterecek şekilde güncellendi
 function createTimetableHtml(dateRange, shoots) {
     const gridData = {};
     DAYS_OF_WEEK.forEach(day => {
@@ -224,12 +225,13 @@ function createTimetableHtml(dateRange, shoots) {
         const dayColorClass = getRowColorClass(day);
         const cellsHtml = STUDIOS.map(studio => {
             const shootsInCell = gridData[day][studio];
-            shootsInCell.sort((a,b) => (a.time || '').localeCompare(b.time || ''));
+            // Saat bilgisine göre sırala
+            shootsInCell.sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''));
 
             const cellContent = shootsInCell.map(shoot => `
                 <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
-                    <p class="text-gray-600">${shoot.time || ''}</p>
+                    <p class="text-gray-600">${shoot.start_time ? shoot.start_time.substring(0,5) : ''} - ${shoot.end_time ? shoot.end_time.substring(0,5) : ''}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
                     <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
                     <div class="flex items-center justify-end space-x-1 mt-2">
@@ -275,12 +277,14 @@ function updateNavControls() {
     weekRangeDisplay.textContent = displayStr;
 }
 
+// DEĞİŞİKLİK: Form doldurma fonksiyonu yeni saat alanlarını kullanacak şekilde güncellendi
 function populateFormForEdit(shoot) {
     form.date.value = shoot.date || '';
     form.day.value = shoot.day || '';
     form.studio.value = shoot.studio || '';
     form.teacher.value = shoot.teacher || '';
-    form.time.value = shoot.time || '';
+    form.start_time.value = shoot.start_time || '';
+    form.end_time.value = shoot.end_time || '';
     form.director.value = shoot.director || '';
     form.content.value = shoot.content || '';
 
@@ -301,26 +305,15 @@ function resetFormState() {
     cancelBtn.classList.add('hidden');
 }
 
-// --- YENİ EKLENEN KOD BAŞLANGICI ---
-// Tarih alanındaki her değişiklikte bu fonksiyon çalışacak
 dateInput.addEventListener('change', () => {
     const secilenTarih = dateInput.value;
-    if (!secilenTarih) return; // Eğer tarih boşaltılırsa bir şey yapma
-
-    // Tarayıcılar arası saat dilimi sorunlarını önlemek için tarihin ortasında bir saat belirliyoruz.
+    if (!secilenTarih) return;
     const tarihObjesi = new Date(secilenTarih + 'T12:00:00'); 
-    
-    // getDay() fonksiyonu Pazar için 0, Pazartesi için 1... döner.
     const gunIndex = tarihObjesi.getDay(); 
-    
-    // Bu indeksi bizim Türkçe gün listemizdeki bir güne eşleştiriyoruz.
     const gunler = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
     const gunAdi = gunler[gunIndex];
-
-    // Son olarak, Gün seçim kutusunun değerini bulduğumuz doğru güne ayarlıyoruz.
     daySelect.value = gunAdi;
 });
-// --- YENİ EKLENEN KOD SONU ---
 
 formHeaderClickable.addEventListener('click', () => {
     formWrapper.classList.toggle('collapsed');
@@ -378,6 +371,7 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
+// DEĞİŞİKLİK: Form gönderme fonksiyonu, çakışma kontrolü yapacak şekilde tamamen yenilendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -386,10 +380,52 @@ form.addEventListener('submit', async (e) => {
         teacher: formData.get('teacher'),
         date: formData.get('date'),
         day: formData.get('day'),
-        time: formData.get('time'),
+        start_time: formData.get('start_time'),
+        end_time: formData.get('end_time'),
         director: formData.get('director'),
         content: formData.get('content'),
     };
+
+    // Başlangıç ve bitiş saatlerinin geçerli olup olmadığını kontrol et
+    if (shootData.start_time >= shootData.end_time) {
+        Swal.fire('Hata!', 'Bitiş saati, başlangıç saatinden sonra olmalıdır.', 'error');
+        return;
+    }
+
+    // --- YENİ: ÇAKIŞMA KONTROLÜ ---
+    // Sadece yeni kayıt eklerken çakışma kontrolü yap (düzenlemede yapma)
+    if (currentEditId === null) {
+        const { data: existingShoots, error: fetchError } = await db.from('shoots')
+            .select('start_time, end_time, teacher')
+            .eq('date', shootData.date)
+            .eq('studio', shootData.studio);
+
+        if (fetchError) {
+            console.error('Çakışma kontrolü sırasında hata:', fetchError);
+            Swal.fire('Hata!', 'Veritabanı kontrolü sırasında bir hata oluştu.', 'error');
+            return;
+        }
+
+        let isConflict = false;
+        for (const existing of existingShoots) {
+            // (start1 < end2) && (end1 > start2)
+            if (shootData.start_time < existing.end_time && shootData.end_time > existing.start_time) {
+                isConflict = true;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Çakışma Var!',
+                    text: `Bu stüdyo seçtiğiniz tarih ve saat aralığında (${existing.start_time.substring(0,5)} - ${existing.end_time.substring(0,5)}) ${existing.teacher} tarafından zaten rezerve edilmiş.`,
+                });
+                break;
+            }
+        }
+
+        // Eğer çakışma varsa, fonksiyonu burada durdur.
+        if (isConflict) {
+            return;
+        }
+    }
+    // --- ÇAKIŞMA KONTROLÜ SONU ---
 
     let error;
     if (currentEditId) {
@@ -418,6 +454,7 @@ form.addEventListener('submit', async (e) => {
         resetFormState();
     }
 });
+
 
 downloadPdfBtn.addEventListener('click', () => {
     const timetableElement = document.querySelector('#weekly-view-container .bg-white');
