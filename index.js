@@ -196,7 +196,7 @@ function renderCurrentPage() {
     updateNavControls();
 }
 
-// DEĞİŞİKLİK: Tablo oluşturma fonksiyonu, yeni start_time ve end_time alanlarını gösterecek şekilde güncellendi
+// DÜZELTME: Bu fonksiyon artık hem eski hem yeni saat formatını gösterebiliyor.
 function createTimetableHtml(dateRange, shoots) {
     const gridData = {};
     DAYS_OF_WEEK.forEach(day => {
@@ -225,13 +225,21 @@ function createTimetableHtml(dateRange, shoots) {
         const dayColorClass = getRowColorClass(day);
         const cellsHtml = STUDIOS.map(studio => {
             const shootsInCell = gridData[day][studio];
-            // Saat bilgisine göre sırala
-            shootsInCell.sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''));
+            shootsInCell.sort((a,b) => (a.start_time || a.time || '').localeCompare(b.start_time || b.time || ''));
 
-            const cellContent = shootsInCell.map(shoot => `
+            const cellContent = shootsInCell.map(shoot => {
+                // Saat gösterimi için yeni mantık: Önce yeni formatı, yoksa eski formatı dene
+                let timeDisplay = '';
+                if (shoot.start_time && shoot.end_time) {
+                    timeDisplay = `${shoot.start_time.substring(0, 5)} - ${shoot.end_time.substring(0, 5)}`;
+                } else if (shoot.time) { // Eski veriler için fallback
+                    timeDisplay = shoot.time;
+                }
+
+                return `
                 <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
-                    <p class="text-gray-600">${shoot.start_time ? shoot.start_time.substring(0,5) : ''} - ${shoot.end_time ? shoot.end_time.substring(0,5) : ''}</p>
+                    <p class="text-gray-600">${timeDisplay}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
                     <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
                     <div class="flex items-center justify-end space-x-1 mt-2">
@@ -239,7 +247,7 @@ function createTimetableHtml(dateRange, shoots) {
                          <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
             
             return `<td class="timetable-cell">${cellContent}</td>`;
         }).join('');
@@ -277,7 +285,7 @@ function updateNavControls() {
     weekRangeDisplay.textContent = displayStr;
 }
 
-// DEĞİŞİKLİK: Form doldurma fonksiyonu yeni saat alanlarını kullanacak şekilde güncellendi
+// DÜZELTME: Bu fonksiyon artık yeni saat alanlarını da dolduruyor.
 function populateFormForEdit(shoot) {
     form.date.value = shoot.date || '';
     form.day.value = shoot.day || '';
@@ -371,7 +379,7 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
-// DEĞİŞİKLİK: Form gönderme fonksiyonu, çakışma kontrolü yapacak şekilde tamamen yenilendi
+// DÜZELTME: Çakışma kontrolü artık sadece yeni verileri kontrol ediyor ve doğru çalışıyor.
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -386,19 +394,18 @@ form.addEventListener('submit', async (e) => {
         content: formData.get('content'),
     };
 
-    // Başlangıç ve bitiş saatlerinin geçerli olup olmadığını kontrol et
     if (shootData.start_time >= shootData.end_time) {
         Swal.fire('Hata!', 'Bitiş saati, başlangıç saatinden sonra olmalıdır.', 'error');
         return;
     }
 
-    // --- YENİ: ÇAKIŞMA KONTROLÜ ---
-    // Sadece yeni kayıt eklerken çakışma kontrolü yap (düzenlemede yapma)
     if (currentEditId === null) {
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
             .select('start_time, end_time, teacher')
             .eq('date', shootData.date)
-            .eq('studio', shootData.studio);
+            .eq('studio', shootData.studio)
+            .not('start_time', 'is', null) // Sadece yeni formatla girilmiş kayıtları kontrol et
+            .not('end_time', 'is', null);
 
         if (fetchError) {
             console.error('Çakışma kontrolü sırasında hata:', fetchError);
@@ -408,7 +415,6 @@ form.addEventListener('submit', async (e) => {
 
         let isConflict = false;
         for (const existing of existingShoots) {
-            // (start1 < end2) && (end1 > start2)
             if (shootData.start_time < existing.end_time && shootData.end_time > existing.start_time) {
                 isConflict = true;
                 Swal.fire({
@@ -420,12 +426,10 @@ form.addEventListener('submit', async (e) => {
             }
         }
 
-        // Eğer çakışma varsa, fonksiyonu burada durdur.
         if (isConflict) {
             return;
         }
     }
-    // --- ÇAKIŞMA KONTROLÜ SONU ---
 
     let error;
     if (currentEditId) {
