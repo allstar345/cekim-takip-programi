@@ -18,7 +18,9 @@ async function checkAuthAndPermissions() {
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
 
-    if (!permissions.includes('admin') && !permissions.includes('view_odeme')) {
+    // DEĞİŞİKLİK: Kural artık çok daha net. Sadece "admin" yetkisi olanlar girebilir.
+    // Gereksiz olan "view_odeme" kontrolü kaldırıldı.
+    if (!permissions.includes('admin')) {
         alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
         window.location.href = 'dashboard.html';
     }
