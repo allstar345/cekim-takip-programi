@@ -62,6 +62,8 @@ const filterTeacher = document.getElementById('filter-teacher');
 const recordCount = document.getElementById('record-count');
 const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const dateInput = document.getElementById('date');
+const daySelect = document.getElementById('day');
 
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
@@ -299,6 +301,27 @@ function resetFormState() {
     cancelBtn.classList.add('hidden');
 }
 
+// --- YENİ EKLENEN KOD BAŞLANGICI ---
+// Tarih alanındaki her değişiklikte bu fonksiyon çalışacak
+dateInput.addEventListener('change', () => {
+    const secilenTarih = dateInput.value;
+    if (!secilenTarih) return; // Eğer tarih boşaltılırsa bir şey yapma
+
+    // Tarayıcılar arası saat dilimi sorunlarını önlemek için tarihin ortasında bir saat belirliyoruz.
+    const tarihObjesi = new Date(secilenTarih + 'T12:00:00'); 
+    
+    // getDay() fonksiyonu Pazar için 0, Pazartesi için 1... döner.
+    const gunIndex = tarihObjesi.getDay(); 
+    
+    // Bu indeksi bizim Türkçe gün listemizdeki bir güne eşleştiriyoruz.
+    const gunler = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+    const gunAdi = gunler[gunIndex];
+
+    // Son olarak, Gün seçim kutusunun değerini bulduğumuz doğru güne ayarlıyoruz.
+    daySelect.value = gunAdi;
+});
+// --- YENİ EKLENEN KOD SONU ---
+
 formHeaderClickable.addEventListener('click', () => {
     formWrapper.classList.toggle('collapsed');
     toggleIcon.classList.toggle('rotate-180');
@@ -323,7 +346,6 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// DEĞİŞİKLİK: Silme fonksiyonu, daha güzel bir onay kutusu kullanacak şekilde güncellendi
 weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
@@ -356,7 +378,6 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
-// DEĞİŞİKLİK: Form gönderme fonksiyonu güncellendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
