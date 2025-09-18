@@ -22,8 +22,6 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
-        // PERMISSIONS_MAP objesi buradan silindi. Yetkiler artık Supabase'den okunacak.
-
         async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (!session) {
@@ -32,7 +30,6 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
             const permissions = user?.user_metadata?.permissions || [];
 
             if (!permissions.includes('admin') && !permissions.includes('view_odeme')) {
@@ -95,45 +92,9 @@
         let currentDate = new Date();
         let teacherPaymentData = []; 
 
-        const IBAN_MAP = {
-            'Ahmet Ölmez': 'TR670011100000000110655738',
-            'Barış Özcan': 'TR550001002116512716385004',
-            'Cem Oğuz Büke': 'TR760001000846536900395006',
-            'Cihat Çiçek': 'TR370006200042200006647101',
-            'Didem Özbay Sarıaydın': 'TR130004600695888000157216',
-            'Eda Güney': 'TR500011100000000110152905',
-            'Edip İçli': 'TR340006200042200006874717',
-            'Elif Bozkurt': 'TR290011100000000090624079',
-            'Erkan Özaslan': 'TR9300111000000000904910',
-            'Esra Dindar': 'TR920011100000000043253577',
-            'Esra Şahin': 'TR1300012009855100001016058',
-            'Esra Yurttaş': 'TR790011100000000096153052',
-            'Fatma Baytor': 'TR500006200048400006625120',
-            'Fatma Mutlu': 'TR710006701000000045496864',
-            'Firdevs Bozkurt': 'TR910011100000000082318211',
-            'Fuat Ses': 'TR170004601202888000050799',
-            'Funda Akbaş': 'TR710006200040400006690035',
-            'Hülya Güçkan Taşkın': 'TR65000670100000002274847',
-            'İbrahim Atakuru': 'TR580011100000000086380389',
-            'İbrahim Halil Kesici': 'TR280006701000000036225838',
-            'İsmail Ercan Buzcu': 'TR180011100000000072372272',
-            'Koray Dindar': 'TR690011100000000050385140',
-            'Mehmet Bademli': 'TR700006701000000058525728',
-            'Mehmet Ceran': 'TR44002030000165378900001',
-            'Mehmet Kırbıyık': 'TR900011100000000074174012',
-            'Orhan Hancı': 'TR24000620007400006860600',
-            'Özcan Kulaksız': 'TR040001200975200001050956',
-            'Raziye İnal': 'TR950001200985100001015455',
-            'Sabri Bingöl': 'TR980006701000000045421203',
-            'Selin Erdoğan': 'TR68001110000000010333772',
-            'Semih Sunucuoğlu': 'TR390006200034700006635315',
-            'Serkan Yıldız': 'TR310006400000111011471801',
-            'Serpil Tunç İçli': 'TR390006701000000070105370',
-            'Suat Emre': 'TR150006200118100006686382',
-            'Tuğba Bostancı': 'TR850006400000112950199353',
-            'Yasin Baş': 'TR660001001673471567295003',
-            'Yavuz Selim Yıldız': 'TR430006400000111351140365'
-        };
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+        // Sabit IBAN listesi (IBAN_MAP) buradan silindi. IBAN bilgisi artık veritabanından çekilecek.
+        // --- DEĞİŞİKLİK BURADA BİTİYOR ---
         
         function toYYYYMMDD(date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
         function getPaymentPeriod(date) { let year = date.getFullYear(); let month = date.getMonth(); let endBoundary, start; if (date.getDate() >= 10) { endBoundary = new Date(year, month + 1, 10); } else { endBoundary = new Date(year, month, 10); } start = new Date(endBoundary.getFullYear(), endBoundary.getMonth() - 1, 10); let inclusiveEnd = new Date(endBoundary); inclusiveEnd.setDate(inclusiveEnd.getDate() - 1); return { start: toYYYYMMDD(start), end: toYYYYMMDD(inclusiveEnd) }; }
@@ -145,8 +106,23 @@
             tableContainer.innerHTML = '';
             const period = getPaymentPeriod(currentDate);
             periodDisplay.textContent = `${new Date(period.start+'T00:00:00').toLocaleDateString('tr-TR')} - ${new Date(period.end+'T00:00:00').toLocaleDateString('tr-TR')}`;
+
+            // --- YENİ KOD ---
+            // IBAN bilgilerini veritabanındaki "teachers" tablosundan çekiyoruz.
+            const { data: teacherIbanData, error: ibanError } = await db.from('teachers').select('name, iban');
+            if (ibanError) {
+                tableContainer.innerHTML = `<p class="text-red-500">IBAN verileri çekilirken hata oluştu.</p>`;
+                console.error(ibanError);
+                loadingDiv.style.display = 'none';
+                return;
+            }
+            // Gelen veriyi daha hızlı erişim için bir haritaya dönüştürüyoruz.
+            const ibanMap = Object.fromEntries(teacherIbanData.map(t => [t.name, t.iban]));
+            // --- YENİ KOD SONU ---
+
             const { data: logs, error: logsError } = await db.from('monitoring_logs').select('teacher_name, total_duration').gte('date', period.start).lte('date', period.end);
             const { data: payments, error: paymentsError } = await db.from('payment_records').select('id, teacher_name, paid_duration_minutes, paid_amount').eq('payment_period_start', period.start).eq('payment_period_end', period.end);
+            
             if(logsError || paymentsError) { tableContainer.innerHTML = `<p class="text-red-500">Veri çekerken hata oluştu.</p>`; console.error(logsError || paymentsError); loadingDiv.style.display = 'none'; return; }
 
             const teacherData = {};
@@ -169,7 +145,12 @@
                 const dueMinutes = data.currentTotalMinutes - paidTotalMinutes;
                 const totalDurationHHMM = minutesToHHMM(data.currentTotalMinutes);
                 const totalAmount = (data.currentTotalMinutes / 60) * HOURLY_RATE;
-                const iban = IBAN_MAP[name] || 'Tanımsız';
+                
+                // --- DEĞİŞİKLİK ---
+                // IBAN bilgisi artık sabit listeden değil, veritabanından gelen haritadan okunuyor.
+                const iban = ibanMap[name] || 'Tanımsız';
+                // --- DEĞİŞİKLİK SONU ---
+
                 teacherPaymentData.push({ name: name, iban: iban, amount: totalAmount });
                 let statusHTML = '<div class="flex flex-col space-y-2">';
                 data.paidRecords.forEach(record => { statusHTML += `<div class="flex items-center justify-between p-1 bg-green-100 rounded-md"><span class="text-sm font-semibold text-green-800">Ödendi (${minutesToHHMM(record.minutes)})</span><button class="cancel-payment-btn text-red-600 hover:text-red-900 text-xs font-bold ml-2 p-1" data-payment-id="${record.id}">İptal Et</button></div>`; });
