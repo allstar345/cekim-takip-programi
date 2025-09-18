@@ -94,11 +94,16 @@
                             <option value="" selected disabled>Seçiniz</option>
                         </select>
                     </div>
-                    <div class="md:col-span-2 lg:col-span-2">
-                        <label for="time" class="block text-sm font-medium text-gray-700 mb-2">Çekim Saatleri</label>
-                        <input type="text" id="time" name="time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: 10:00 - 12:00">
+                    
+                    <div>
+                        <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">Başlangıç Saati</label>
+                        <input type="time" id="start_time" name="start_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                     </div>
-                    <div class="md:col-span-2 lg:col-span-2">
+                    <div>
+                        <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">Bitiş Saati</label>
+                        <input type="time" id="end_time" name="end_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                    </div>
+                    <div class="lg:col-span-2">
                         <label for="director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmen</label>
                         <input type="text" id="director" name="director" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: Zeynep Kaya">
                     </div>
