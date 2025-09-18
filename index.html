@@ -30,8 +30,6 @@
         const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
         const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
         
-        // PERMISSIONS_MAP objesi buradan silindi. Yetkiler artık Supabase'den okunacak.
-
         async function checkAuthAndPermissions() {
             const { data: { session } } = await supabaseAuth.auth.getSession();
             if (!session) {
@@ -40,7 +38,6 @@
             }
 
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
             const permissions = user?.user_metadata?.permissions || [];
 
             if (!permissions.includes('admin') && !permissions.includes('view_cekim')) {
@@ -118,77 +115,7 @@
                         <label for="teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen Adı</label>
                         <select id="teacher" name="teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected disabled>Seçiniz</option>
-                            <option value="Ali Saçan">Ali Saçan</option>
-                            <option value="Altuğ Güneş">Altuğ Güneş</option>
-                            <option value="Anıl Gül">Anıl Gül</option>
-                            <option value="Bayram Meral">Bayram Meral</option>
-                            <option value="Betül Büyükkalaycı">Betül Büyükkalaycı</option>
-                            <option value="Buğra Arslan">Buğra Arslan</option>
-                            <option value="Büşra Altınok">Büşra Altınok</option>
-                            <option value="Cebrail Karaoğlan">Cebrail Karaoğlan</option>
-                            <option value="Celal Gündüz">Celal Gündüz</option>
-                            <option value="Deniz Bozkurt">Deniz Bozkurt</option>
-                            <option value="Didar Baskın">Didar Baskın</option>
-                            <option value="Emrah Karcı">Emrah Karcı</option>
-                            <option value="Enes Avcı">Enes Avcı</option>
-                            <option value="Erdal Aydemir">Erdal Aydemir</option>
-                            <option value="Erkan Ayrancı">Erkan Ayrancı</option>
-                            <option value="Erkan Tunçer">Erkan Tunçer</option>
-                            <option value="Ersen Örenler">Ersen Örenler</option>
-                            <option value="Eyüp Boncuk">Eyüp Boncuk</option>
-                            <option value="Fatih Demirkaya">Fatih Demirkaya</option>
-                            <option value="Fatih Sefi">Fatih Sefi</option>
-                            <option value="Görkem Şahin">Görkem Şahin</option>
-                            <option value="Gülhan Şen">Gülhan Şen</option>
-                            <option value="Hale Karataş">Hale Karataş</option>
-                            <option value="İbrahim Taş">İbrahim Taş</option>
-                            <option value="İbrahim Ulaş Baldemir">İbrahim Ulaş Baldemir</option>
-                            <option value="İlayda Gültekin">İlayda Gültekin</option>
-                            <option value="İlhan Aslan">İlhan Aslan</option>
-                            <option value="İlyas Güneş">İlyas Güneş</option>
-                            <option value="İsmail Kocabaş">İsmail Kocabaş</option>
-                            <option value="Kader Altınel">Kader Altınel</option>
-                            <option value="Kadir Gümüş">Kadir Gümüş</option>
-                            <option value="Kadir Sefi">Kadir Sefi</option>
-                            <option value="Kemal Coşkun">Kemal Coşkun</option>
-                            <option value="Kenan Kara">Kenan Kara</option>
-                            <option value="Mahsum Öztürk">Mahsum Öztürk</option>
-                            <option value="Mehmet Celal Özyıldız">Mehmet Celal Özyıldız</option>
-                            <option value="Mehmet Dural">Mehmet Dural</option>
-                            <option value="Mehmet Durmuş">Mehmet Durmuş</option>
-                            <option value="Mehmet Özalp">Mehmet Özalp</option>
-                            <option value="Melih Akgündüz">Melih Akgündüz</option>
-                            <option value="Mesut Uğurdoğan">Mesut Uğurdoğan</option>
-                            <option value="Murat Namlı">Murat Namlı</option>
-                            <option value="Mustafa Öztürk">Mustafa Öztürk</option>
-                            <option value="Mustafa Yağcı">Mustafa Yağcı</option>
-                            <option value="Nagihan Damargüç">Nagihan Damargüç</option>
-                            <option value="Nurtaç Kozak">Nurtaç Kozak</option>
-                            <option value="Nurten Aydın">Nurten Aydın</option>
-                            <option value="Onur Soğuk">Onur Soğuk</option>
-                            <option value="Önay Çepe">Önay Çepe</option>
-                            <option value="Özer Akgümüş">Özer Akgümüş</option>
-                            <option value="Özcan Aykın">Özcan Aykın</option>
-                            <option value="Öznur Saat Yıldırım">Öznur Saat Yıldırım</option>
-                            <option value="Recep Üstünel">Recep Üstünel</option>
-                            <option value="Rıdvan Çelebi">Rıdvan Çelebi</option>
-                            <option value="Rümeysa Enise Özdemir">Rümeysa Enise Özdemir</option>
-                            <option value="Rüştü Bayındır">Rüştü Bayındır</option>
-                            <option value="Salih Yıldırır">Salih Yıldırır</option>
-                            <option value="Selim Yüksel">Selim Yüksel</option>
-                            <option value="Semih Akpınar">Semih Akpınar</option>
-                            <option value="Sercan Dural">Sercan Dural</option>
-                            <option value="Serkan Yeşilkan">Serkan Yeşilkan</option>
-                            <option value="Sinan Aydın">Sinan Aydın</option>
-                            <option value="Şenol Aydın">Şenol Aydın</option>
-                            <option value="Şükrü Akkoyun">Şükrü Akkoyun</option>
-                            <option value="Umut Öncül">Umut Öncül</option>
-                            <option value="Uzay Arslantürk">Uzay Arslantürk</option>
-                            <option value="Veysel Boynueğri">Veysel Boynueğri</option>
-                            <option value="Yavuz Tuna">Yavuz Tuna</option>
-                            <option value="Yaşar Aslan">Yaşar Aslan</option>
-                            <option value="Yunus Turan">Yunus Turan</option>
-                        </select>
+                            </select>
                     </div>
                     <div class="md:col-span-2 lg:col-span-2">
                         <label for="time" class="block text-sm font-medium text-gray-700 mb-2">Çekim Saatleri</label>
@@ -244,7 +171,7 @@
                     <label for="filter-teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmene Göre Filtrele</label>
                     <select id="filter-teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="">Tümü</option>
-                    </select>
+                        </select>
                 </div>
                 <div id="record-count" class="text-sm font-medium text-gray-600 self-end pb-2.5">
                     Toplam 0 kayıt bulundu.
@@ -318,15 +245,26 @@
         const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
         const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
         
+        // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
         const teacherSelectForm = document.getElementById('teacher');
         const teacherSelectFilter = document.getElementById('filter-teacher');
-        const teacherOptionsHtml = Array.from(teacherSelectForm.options).map(option => {
-            if (option.value) { 
-                return `<option value="${option.value}">${option.text}</option>`;
+
+        // Eski, HTML'den liste kopyalayan kod silindi.
+        // Bu yeni fonksiyon, öğretmenleri veritabanından çeker ve seçim kutularını doldurur.
+        async function populateTeacherDropdowns() {
+            const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
+            
+            if (error) {
+                console.error('Öğretmen listesi veritabanından alınamadı:', error);
+                return;
             }
-            return '';
-        }).join('');
-        teacherSelectFilter.innerHTML = `<option value="">Tümü</option>${teacherOptionsHtml}`;
+            
+            const teacherOptionsHTML = teachers.map(teacher => `<option value="${teacher.name}">${teacher.name}</option>`).join('');
+            
+            teacherSelectForm.innerHTML += teacherOptionsHTML;
+            teacherSelectFilter.innerHTML += teacherOptionsHTML;
+        }
+        // --- DEĞİŞİKLİK BURADA BİTİYOR ---
         
         function getRowColorClass(day) {
             switch (day) {
@@ -692,10 +630,10 @@
             .subscribe();
 
         document.addEventListener('DOMContentLoaded', async () => {
-            fetchInitialData();
+            populateTeacherDropdowns(); // Öğretmen listesini doldur
+            fetchInitialData(); // Mevcut çekim verilerini çek
             
             const { data: { user } } = await supabaseAuth.auth.getUser();
-            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
             const permissions = user?.user_metadata?.permissions || [];
             
             if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
