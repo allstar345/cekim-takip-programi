@@ -196,7 +196,6 @@ function renderCurrentPage() {
     updateNavControls();
 }
 
-// DÜZELTME: Bu fonksiyon artık hem eski hem yeni saat formatını gösterebiliyor.
 function createTimetableHtml(dateRange, shoots) {
     const gridData = {};
     DAYS_OF_WEEK.forEach(day => {
@@ -228,11 +227,10 @@ function createTimetableHtml(dateRange, shoots) {
             shootsInCell.sort((a,b) => (a.start_time || a.time || '').localeCompare(b.start_time || b.time || ''));
 
             const cellContent = shootsInCell.map(shoot => {
-                // Saat gösterimi için yeni mantık: Önce yeni formatı, yoksa eski formatı dene
                 let timeDisplay = '';
                 if (shoot.start_time && shoot.end_time) {
                     timeDisplay = `${shoot.start_time.substring(0, 5)} - ${shoot.end_time.substring(0, 5)}`;
-                } else if (shoot.time) { // Eski veriler için fallback
+                } else if (shoot.time) { 
                     timeDisplay = shoot.time;
                 }
 
@@ -285,16 +283,17 @@ function updateNavControls() {
     weekRangeDisplay.textContent = displayStr;
 }
 
-// DÜZELTME: Bu fonksiyon artık yeni saat alanlarını da dolduruyor.
+// DÜZELTME: Bu fonksiyon, form elemanlarına daha sağlam bir yöntemle erişecek şekilde güncellendi.
 function populateFormForEdit(shoot) {
-    form.date.value = shoot.date || '';
-    form.day.value = shoot.day || '';
-    form.studio.value = shoot.studio || '';
-    form.teacher.value = shoot.teacher || '';
-    form.start_time.value = shoot.start_time || '';
-    form.end_time.value = shoot.end_time || '';
-    form.director.value = shoot.director || '';
-    form.content.value = shoot.content || '';
+    const elements = form.elements;
+    elements['date'].value = shoot.date || '';
+    elements['day'].value = shoot.day || '';
+    elements['studio'].value = shoot.studio || '';
+    elements['teacher'].value = shoot.teacher || '';
+    elements['start_time'].value = shoot.start_time || '';
+    elements['end_time'].value = shoot.end_time || '';
+    elements['director'].value = shoot.director || '';
+    elements['content'].value = shoot.content || '';
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -347,6 +346,7 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
+// DÜZELTME: Düzenlenecek kaydı bulurken ID'yi sayıya çevirerek daha güvenli bir karşılaştırma yapıyoruz.
 weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
@@ -370,7 +370,8 @@ weeklyContainer.addEventListener('click', async (e) => {
     }
     if (target.classList.contains('edit-btn')) {
         const id = target.getAttribute('data-id');
-        const shootToEdit = allShoots.find(shoot => shoot.id == id);
+        // ID'yi sayıya çevirerek karşılaştırıyoruz
+        const shootToEdit = allShoots.find(shoot => shoot.id === Number(id)); 
         if (shootToEdit) {
             populateFormForEdit(shootToEdit);
         }
@@ -379,7 +380,6 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
-// DÜZELTME: Çakışma kontrolü artık sadece yeni verileri kontrol ediyor ve doğru çalışıyor.
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -404,7 +404,7 @@ form.addEventListener('submit', async (e) => {
             .select('start_time, end_time, teacher')
             .eq('date', shootData.date)
             .eq('studio', shootData.studio)
-            .not('start_time', 'is', null) // Sadece yeni formatla girilmiş kayıtları kontrol et
+            .not('start_time', 'is', null)
             .not('end_time', 'is', null);
 
         if (fetchError) {
