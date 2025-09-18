@@ -323,14 +323,27 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
+// DEĞİŞİKLİK: Silme fonksiyonu, daha güzel bir onay kutusu kullanacak şekilde güncellendi
 weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
 
     if (target.classList.contains('delete-btn')) {
         const id = target.getAttribute('data-id');
-        const { error } = await db.from('shoots').delete().eq('id', id);
-        if(error) console.error("Veri silme hatası:", error);
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: "Bu çekim planı kalıcı olarak silinecektir!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Evet, sil!',
+            cancelButtonText: 'İptal'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await db.from('shoots').delete().eq('id', id);
+            }
+        });
     }
     if (target.classList.contains('edit-btn')) {
         const id = target.getAttribute('data-id');
@@ -343,6 +356,7 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
+// DEĞİŞİKLİK: Form gönderme fonksiyonu güncellendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -365,7 +379,21 @@ form.addEventListener('submit', async (e) => {
 
     if (error) {
         console.error("Veri kaydetme/güncelleme hatası: ", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Çekim planı kaydedilirken bir hata oluştu.'
+        });
     } else {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: currentEditId ? 'Çekim Planı Güncellendi' : 'Çekim Planı Eklendi',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
         resetFormState();
     }
 });
@@ -446,8 +474,8 @@ const shootsSubscription = db.channel('public:shoots')
     .subscribe();
 
 document.addEventListener('DOMContentLoaded', async () => {
-    populateTeacherDropdowns(); // Öğretmen listesini doldur
-    fetchInitialData(); // Mevcut çekim verilerini çek
+    populateTeacherDropdowns();
+    fetchInitialData();
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
