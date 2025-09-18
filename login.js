@@ -1,5 +1,4 @@
 // Bu kod, çalışmaya başlamadan önce tüm HTML sayfasının yüklenmesini bekler.
-// Bu, olası zamanlama hatalarını engeller.
 document.addEventListener('DOMContentLoaded', () => {
 
     const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
@@ -27,9 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const username = loginForm.username.value;
+        // --- DEĞİŞİKLİK BURADA ---
+        // Artık kullanıcıdan gelen girdiyi doğrudan e-posta olarak kabul ediyoruz.
+        // "@sistem.local" eklemesi kaldırıldı.
+        const email = loginForm.username.value;
         const password = loginForm.password.value;
-        const email = `${username}@sistem.local`;
+        // --- DEĞİŞİKLİK SONU ---
 
         errorMessage.classList.add('hidden');
 
@@ -50,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (error) {
-            errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';
+            errorMessage.textContent = 'E-posta veya şifre hatalı.';
             errorMessage.classList.remove('hidden');
             console.error('Giriş hatası:', error);
         } else {
