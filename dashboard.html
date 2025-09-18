@@ -13,54 +13,6 @@
 </head>
 <body class="bg-gray-100">
 
-    <script>
-        const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-        const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-        const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-        const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
-        
-        // PERMISSIONS_MAP objesi buradan silindi. Yetkiler artık Supabase'den okunacak.
-
-        async function checkAuthAndApplyPermissions() {
-            const { data: { session } } = await supabaseAuth.auth.getSession();
-            if (!session) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const { data: { user } } = await supabaseAuth.auth.getUser();
-            // Yetkiler artık doğrudan Supabase'deki kullanıcı verisinden okunuyor.
-            const permissions = user?.user_metadata?.permissions || [];
-
-            const cekimTakipLink = document.getElementById('cekim-takip-link');
-            const monitoringLink = document.getElementById('monitoring-link');
-            const paymentLink = document.getElementById('payment-link');
-
-            function deactivateLink(link) {
-                if (link) {
-                    link.removeAttribute('href');
-                    link.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-            
-            if (permissions.includes('admin')) {
-                return; 
-            }
-
-            if (!permissions.includes('view_cekim')) {
-                deactivateLink(cekimTakipLink);
-            }
-            if (!permissions.includes('view_izleme')) {
-                deactivateLink(monitoringLink);
-            }
-            if (!permissions.includes('view_odeme')) {
-                deactivateLink(paymentLink);
-            }
-        }
-        
-        document.addEventListener('DOMContentLoaded', checkAuthAndApplyPermissions);
-    </script>
-
     <header class="bg-white shadow-sm">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
@@ -69,7 +21,7 @@
             </div>
             <div class="flex items-center space-x-2">
                 <p class="text-sm text-gray-500 hidden sm:block">Fatih Gülbudak tarafından oluşturulmuştur.</p>
-                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 V 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>Çıkış Yap</button>
+                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>Çıkış Yap</button>
             </div>
         </div>
     </header>
@@ -100,22 +52,6 @@
         </div>
     </main>
     
-    <script>
-        const logoutBtn = document.getElementById('logout-btn');
-        logoutBtn.addEventListener('click', async () => {
-            const mainStorageAdapter = {
-                getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-                setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
-                removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-            };
-            const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
-                auth: { storage: mainStorageAdapter }
-            });
-            await supabase_logout.auth.signOut();
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href = 'login.html';
-        });
-    </script>
+    <script src="dashboard.js" defer></script>
 </body>
 </html>
