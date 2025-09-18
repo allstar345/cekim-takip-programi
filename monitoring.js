@@ -74,10 +74,88 @@ clearFiltersBtn.addEventListener('click', clearFilters);
 function renderTablePage(page = 1) { currentPage = page; logsTableContainer.innerHTML = ''; const start = (page - 1) * ITEMS_PER_PAGE; const end = start + ITEMS_PER_PAGE; if (start >= filteredLogs.length && filteredLogs.length > 0) { currentPage = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE)); renderTablePage(currentPage); return; } const paginatedLogs = filteredLogs.slice(start, end); const table = document.createElement('table'); table.className = 'min-w-full'; table.style.borderCollapse = 'collapse'; table.innerHTML = `<thead class="bg-gray-50"><tr><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Tarih</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Öğretmen</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Giriş</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Çıkış</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Öğle Yemeği</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Akşam Yemeği</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">Toplam Süre</th><th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase" style="border: 1px solid #d1d5db;">İşlemler</th></tr></thead><tbody class="bg-white">${paginatedLogs.map(log => `<tr class="divide-x divide-gray-300"><td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${new Date(log.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center" style="border: 1px solid #d1d5db;">${log.teacher_name}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.start_time ? log.start_time.substring(0, 5) : ''}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.end_time ? log.end_time.substring(0, 5) : ''}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.lunch_status}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-center" style="border: 1px solid #d1d5db;">${log.dinner_status}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-center" style="border: 1px solid #d1d5db;">${log.total_duration}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center" style="border: 1px solid #d1d5db;"><button data-id="${log.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 mr-4">Düzenle</button><button data-id="${log.id}" class="delete-btn text-red-600 hover:text-red-900">Sil</button></td></tr>`).join('')}</tbody>`; logsTableContainer.appendChild(table); renderPagination(); }
 function renderPagination() { const totalItems = filteredLogs.length; const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE); paginationContainer.innerHTML = ''; const summary = document.createElement('div'); summary.className = 'text-sm text-gray-700'; summary.textContent = `Toplam ${totalItems} kayıt bulundu.`; paginationContainer.appendChild(summary); if (totalPages <= 1) return; const buttonsDiv = document.createElement('div'); buttonsDiv.className = 'flex items-center'; const prevButton = document.createElement('button'); prevButton.innerHTML = '&laquo;'; prevButton.className = 'pagination-btn'; prevButton.disabled = currentPage === 1; prevButton.addEventListener('click', () => renderTablePage(currentPage - 1)); buttonsDiv.appendChild(prevButton); let pages = []; if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); } else { pages.push(1); if (currentPage > 4) pages.push('...'); let startPage = Math.max(2, currentPage - 2); let endPage = Math.min(totalPages - 1, currentPage + 2); for(let i = startPage; i <= endPage; i++) pages.push(i); if (currentPage < totalPages - 3) pages.push('...'); pages.push(totalPages); } pages = [...new Set(pages)]; pages.forEach(p => { const pageButton = document.createElement('button'); pageButton.textContent = p; if (p === '...') { pageButton.className = 'pagination-btn'; pageButton.disabled = true; } else { pageButton.className = `pagination-btn ${p === currentPage ? 'active' : ''}`; pageButton.addEventListener('click', () => renderTablePage(p)); } buttonsDiv.appendChild(pageButton); }); const nextButton = document.createElement('button'); nextButton.innerHTML = '&raquo;'; nextButton.className = 'pagination-btn'; nextButton.disabled = currentPage === totalPages; nextButton.addEventListener('click', () => renderTablePage(currentPage + 1)); buttonsDiv.appendChild(nextButton); paginationContainer.appendChild(buttonsDiv); }
 async function fetchAndRenderLogs() { loadingDiv.style.display = 'block'; logsTableContainer.innerHTML = ''; paginationContainer.innerHTML = ''; const { data, error } = await db.from('monitoring_logs').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }); if (error) { logsTableContainer.innerHTML = `<p class="text-red-500">Veriler yüklenirken bir hata oluştu.</p>`; console.error(error); } else { originalLogs = data; if (originalLogs.length === 0) { logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`; } else { applyFilters(); } } loadingDiv.style.display = 'none'; }
-form.addEventListener('submit', async (e) => { e.preventDefault(); const formData = new FormData(form); const logData = Object.fromEntries(formData.entries()); logData.total_duration = calculateDurationAndBreaks(); let error; if (currentEditId) { ({ error } = await db.from('monitoring_logs').update(logData).eq('id', currentEditId)); } else { ({ error } = await db.from('monitoring_logs').insert([logData])); } if (error) { console.error("Veri kaydetme hatası:", error); alert('Kayıt eklenirken/güncellenirken bir hata oluştu!'); } else { resetForm(); } });
+
+// DEĞİŞİKLİK: Form gönderme fonksiyonu güncellendi
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const logData = Object.fromEntries(formData.entries());
+    logData.total_duration = calculateDurationAndBreaks();
+    
+    let error;
+    if (currentEditId) {
+        ({ error } = await db.from('monitoring_logs').update(logData).eq('id', currentEditId));
+    } else {
+        ({ error } = await db.from('monitoring_logs').insert([logData]));
+    }
+
+    if (error) {
+        console.error("Veri kaydetme hatası:", error);
+        // Hata durumunda kullanıcıya güzel bir mesaj göster
+        Swal.fire({
+            icon: 'error',
+            title: 'Hata!',
+            text: 'Kayıt eklenirken/güncellenirken bir hata oluştu. Lütfen tekrar deneyin.'
+        });
+    } else {
+        // Başarı durumunda kullanıcıya güzel bir mesaj göster
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: currentEditId ? 'Kayıt Başarıyla Güncellendi' : 'Kayıt Başarıyla Eklendi',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+        resetForm();
+    }
+});
+
 function resetForm() { form.reset(); currentEditId = null; submitBtn.textContent = 'Kaydı Ekle'; cancelBtn.classList.add('hidden'); durationDisplay.textContent = '0 Saat 0 Dakika'; }
 cancelBtn.addEventListener('click', resetForm);
-logsTableContainer.addEventListener('click', async (e) => { const target = e.target; const id = target.dataset.id; if (!id) return; if (target.classList.contains('delete-btn')) { if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) { await db.from('monitoring_logs').delete().eq('id', id); } } else if (target.classList.contains('edit-btn')) { const logToEdit = originalLogs.find(log => log.id == id); if (logToEdit) { form.date.value = logToEdit.date; form.teacher_name.value = logToEdit.teacher_name; form.start_time.value = logToEdit.start_time; form.end_time.value = logToEdit.end_time; form.lunch_status.value = logToEdit.lunch_status; form.dinner_status.value = logToEdit.dinner_status; calculateDurationAndBreaks(); currentEditId = id; submitBtn.textContent = 'Kaydı Güncelle'; cancelBtn.classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); } } });
+
+// DEĞİŞİKLİK: Silme fonksiyonu, daha güzel bir onay kutusu kullanacak şekilde güncellendi
+logsTableContainer.addEventListener('click', async (e) => {
+    const target = e.target;
+    const id = target.dataset.id;
+    if (!id) return;
+
+    if (target.classList.contains('delete-btn')) {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: "Bu kayıt kalıcı olarak silinecektir!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Evet, sil!',
+            cancelButtonText: 'İptal'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                // Kullanıcı silmeyi onaylarsa veritabanından sil
+                await db.from('monitoring_logs').delete().eq('id', id);
+                // Not: Başarı mesajına gerek yok çünkü sayfa zaten anlık olarak güncellenip
+                // silinen satırı listeden kaldıracaktır. Bu, en iyi geri bildirimdir.
+            }
+        });
+    } else if (target.classList.contains('edit-btn')) {
+        const logToEdit = originalLogs.find(log => log.id == id);
+        if (logToEdit) {
+            form.date.value = logToEdit.date;
+            form.teacher_name.value = logToEdit.teacher_name;
+            form.start_time.value = logToEdit.start_time;
+            form.end_time.value = logToEdit.end_time;
+            form.lunch_status.value = logToEdit.lunch_status;
+            form.dinner_status.value = logToEdit.dinner_status;
+            calculateDurationAndBreaks();
+            currentEditId = id;
+            submitBtn.textContent = 'Kaydı Güncelle';
+            cancelBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+});
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
