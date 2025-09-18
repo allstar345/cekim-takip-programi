@@ -196,6 +196,7 @@ function renderCurrentPage() {
     updateNavControls();
 }
 
+// DEĞİŞİKLİK: Tablo oluşturma fonksiyonu, yeni technical_team alanını gösterecek şekilde güncellendi
 function createTimetableHtml(dateRange, shoots) {
     const gridData = {};
     DAYS_OF_WEEK.forEach(day => {
@@ -234,12 +235,19 @@ function createTimetableHtml(dateRange, shoots) {
                     timeDisplay = shoot.time;
                 }
 
+                // Teknik ekip listesi için yeni HTML oluşturma
+                let teamDisplay = '';
+                if (shoot.technical_team && shoot.technical_team.length > 0) {
+                    teamDisplay = `<p class="text-blue-600 text-xs italic mt-1">Ekip: ${shoot.technical_team.join(', ')}</p>`;
+                }
+
                 return `
                 <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                     <p class="text-gray-600">${timeDisplay}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
                     <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
+                    ${teamDisplay}
                     <div class="flex items-center justify-end space-x-1 mt-2">
                          <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
                          <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
@@ -283,7 +291,7 @@ function updateNavControls() {
     weekRangeDisplay.textContent = displayStr;
 }
 
-// DÜZELTME: Bu fonksiyon, form elemanlarına daha sağlam bir yöntemle erişecek şekilde güncellendi.
+// DEĞİŞİKLİK: Form doldurma fonksiyonu, technical_team alanını da dolduracak şekilde güncellendi
 function populateFormForEdit(shoot) {
     const elements = form.elements;
     elements['date'].value = shoot.date || '';
@@ -294,6 +302,21 @@ function populateFormForEdit(shoot) {
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
     elements['content'].value = shoot.content || '';
+
+    // Teknik ekip çoklu seçim kutusunu doldurma
+    const teamSelect = elements['technical_team'];
+    const savedTeam = shoot.technical_team || [];
+    // Önce tüm seçimleri temizle
+    for (const option of teamSelect.options) {
+        option.selected = false;
+    }
+    // Sonra veritabanından gelenleri seç
+    for (const member of savedTeam) {
+        const option = teamSelect.querySelector(`option[value="${member}"]`);
+        if (option) {
+            option.selected = true;
+        }
+    }
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -346,7 +369,6 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// DÜZELTME: Düzenlenecek kaydı bulurken ID'yi sayıya çevirerek daha güvenli bir karşılaştırma yapıyoruz.
 weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
@@ -370,7 +392,6 @@ weeklyContainer.addEventListener('click', async (e) => {
     }
     if (target.classList.contains('edit-btn')) {
         const id = target.getAttribute('data-id');
-        // ID'yi sayıya çevirerek karşılaştırıyoruz
         const shootToEdit = allShoots.find(shoot => shoot.id === Number(id)); 
         if (shootToEdit) {
             populateFormForEdit(shootToEdit);
@@ -380,9 +401,14 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
+// DEĞİŞİKLİK: Form gönderme fonksiyonu, technical_team alanını da alacak şekilde güncellendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
+    
+    // Çoklu seçim alanından veriyi doğru almak için getAll kullanılır
+    const technicalTeam = formData.getAll('technical_team');
+
     const shootData = {
         studio: formData.get('studio'),
         teacher: formData.get('teacher'),
@@ -392,6 +418,7 @@ form.addEventListener('submit', async (e) => {
         end_time: formData.get('end_time'),
         director: formData.get('director'),
         content: formData.get('content'),
+        technical_team: technicalTeam, // Veritabanına dizi olarak gönder
     };
 
     if (shootData.start_time >= shootData.end_time) {
