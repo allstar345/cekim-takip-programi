@@ -152,7 +152,6 @@ async function processAndRenderData() {
     
     let filteredShoots = allShoots;
 
-    // Önce diğer filtreleri uygula
     if (selectedDay) {
         filteredShoots = filteredShoots.filter(shoot => shoot.day === selectedDay);
     }
@@ -163,37 +162,36 @@ async function processAndRenderData() {
         filteredShoots = filteredShoots.filter(shoot => shoot.teacher === selectedTeacher);
     }
 
-    // Sonra 'Çalışana Göre' filtresini uygula (eğer seçilmişse)
     if (selectedEmployee) {
-        // Tüm haftaların ekip ve izinli bilgilerini tek seferde çek
         const { data: allTeams } = await db.from('daily_teams').select('*');
         const { data: allLeaves } = await db.from('daily_leaves').select('*');
 
-        const employeeSchedule = {}; // hafta-gün: 'working' veya 'on_leave'
-
+        const teamSchedule = new Map();
         if (allTeams) {
-            allTeams.forEach(d => {
-                const key = `${d.week_identifier}-${d.day_of_week}`;
-                if (d.team_members && d.team_members.includes(selectedEmployee)) {
-                    employeeSchedule[key] = 'working';
-                }
-            });
+            allTeams.forEach(d => teamSchedule.set(`${d.week_identifier}-${d.day_of_week}`, d.team_members || []));
         }
+
+        const leaveSchedule = new Map();
         if (allLeaves) {
-            allLeaves.forEach(d => {
-                const key = `${d.week_identifier}-${d.day_of_week}`;
-                if (d.on_leave_members && d.on_leave_members.includes(selectedEmployee)) {
-                    employeeSchedule[key] = 'on_leave';
-                }
-            });
+            allLeaves.forEach(d => leaveSchedule.set(`${d.week_identifier}-${d.day_of_week}`, d.on_leave_members || []));
         }
 
         filteredShoots = filteredShoots.filter(shoot => {
             if (!shoot.date || !shoot.day) return false;
+
             const weekKey = getWeekIdentifier(new Date(shoot.date + 'T12:00:00'));
             const scheduleKey = `${weekKey}-${shoot.day}`;
-            // Sadece 'working' olarak işaretlenmiş günlerdeki çekimleri göster
-            return employeeSchedule[scheduleKey] === 'working';
+
+            const isOnLeave = (leaveSchedule.get(scheduleKey) || []).includes(selectedEmployee);
+            
+            if (isOnLeave) {
+                return false;
+            }
+            
+            const isDirector = shoot.director === selectedEmployee;
+            const isOnTeam = (teamSchedule.get(scheduleKey) || []).includes(selectedEmployee);
+
+            return isDirector || isOnTeam;
         });
     }
 
@@ -472,6 +470,8 @@ document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
+    if (!weekKey) return; // weekKey tanımsız ise işlem yapma
+
     // GÜNLÜK EKİP DÜZENLEME BUTONU
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
@@ -610,8 +610,8 @@ form.addEventListener('submit', async (e) => {
     }
 
     // YÖNETMEN İZİN KONTROLÜ
-    const weekKey = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
-    const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKey).eq('day_of_week', shootData.day).single();
+    const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
+    const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
 
     if (onLeaveToday.includes(shootData.director)) {
@@ -735,13 +735,14 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 async function fetchInitialData() {
+    loadingDiv.classList.remove('hidden'); // Yükleniyor'u hemen göster
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         console.error("Veri alınamadı:", error);
         loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
     } else {
         allShoots = data;
-        processAndRenderData();
+        await processAndRenderData(); // processAndRenderData'nın bitmesini bekle
     }
 }
 
@@ -759,7 +760,7 @@ const shootsSubscription = db.channel('public:shoots')
 document.addEventListener('DOMContentLoaded', async () => {
     populateTeacherDropdowns();
     populateStaticDropdowns();
-    fetchInitialData();
+    await fetchInitialData();
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
