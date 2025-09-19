@@ -198,19 +198,24 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
-    // Haftalık ekip ve izinli verilerini çek
     const { data: dailyTeamsData } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
     const { data: onLeaveData } = await db.from('weekly_leaves').select('on_leave_members').eq('week_identifier', weekKey).single();
     
-    const dailyTeamsMap = new Map(dailyTeamsData.map(d => [d.day_of_week, d.team_members]));
+    const dailyTeamsMap = new Map((dailyTeamsData || []).map(d => [d.day_of_week, d.team_members]));
     const onLeaveMembers = onLeaveData ? onLeaveData.on_leave_members : [];
 
-    // İzinli listesini ekranda göster
+    // --- DEĞİŞİKLİK: İzinli listesini estetik etiketlerle göster ---
     if (onLeaveMembers.length > 0) {
-        onLeaveDisplay.textContent = onLeaveMembers.join(', ');
+        const badgesHTML = onLeaveMembers.map(member => `
+            <span class="inline-block bg-gray-200 text-gray-800 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">
+                ${member}
+            </span>
+        `).join('');
+        onLeaveDisplay.innerHTML = badgesHTML;
     } else {
-        onLeaveDisplay.textContent = "Bu hafta izinli personel bulunmamaktadır.";
+        onLeaveDisplay.innerHTML = `<p class="text-sm text-gray-500">Bu hafta izinli personel bulunmamaktadır.</p>`;
     }
+    // --- DEĞİŞİKLİK SONU ---
 
     const timetableHtml = createTimetableHtml(shootsForWeek, dailyTeamsMap);
     weeklyContainer.innerHTML = timetableHtml;
@@ -220,6 +225,7 @@ async function renderCurrentPage() {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
+    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
