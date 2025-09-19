@@ -25,6 +25,7 @@ checkAuthAndPermissions();
 // --- Sayfa İşlevselliği ---
 const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH);
 
+// DOM Elementleri
 const teacherStatsBody = document.getElementById('teacher-stats-body');
 const directorStatsBody = document.getElementById('director-stats-body');
 const loadingDiv = document.getElementById('stats-loading');
@@ -35,12 +36,17 @@ const teacherFilterInput = document.getElementById('teacher-filter-input');
 const directorFilterInput = document.getElementById('director-filter-input');
 const reportTeacherSelect = document.getElementById('report-teacher-select');
 const teacherReportContainer = document.getElementById('teacher-report-container');
+const reportTeacherSearch = document.getElementById('report-teacher-search');
+const reportFilterDate = document.getElementById('report-filter-date');
+const reportFilterDirector = document.getElementById('report-filter-director');
         
 const filterButtons = {
     week: document.getElementById('filter-week'),
     month: document.getElementById('filter-month'),
     all: document.getElementById('filter-all'),
 };
+
+const DIRECTORS_LIST = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
 let allShootsData = [];
 let currentFilter = 'month';
@@ -140,27 +146,44 @@ function calculateAndRenderStats() {
     contentDiv.classList.remove('hidden');
 }
 
-async function populateReportTeacherDropdown() {
+async function populateReportDropdowns() {
+    // Öğretmenleri doldur
     const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
     if (error) {
         console.error("Rapor için öğretmen listesi alınamadı:", error);
         return;
     }
-    const optionsHTML = teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-    reportTeacherSelect.innerHTML += optionsHTML;
+    const teacherOptionsHTML = teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    reportTeacherSelect.innerHTML += teacherOptionsHTML;
+
+    // Yönetmenleri doldur
+    const directorOptionsHTML = DIRECTORS_LIST.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
+    reportFilterDirector.innerHTML += directorOptionsHTML;
 }
 
-async function fetchAndRenderTeacherReport(teacherName) {
+async function fetchAndRenderTeacherReport() {
+    const teacherName = reportTeacherSelect.value;
+    const filterDate = reportFilterDate.value;
+    const filterDirector = reportFilterDirector.value;
+
     if (!teacherName) {
         teacherReportContainer.innerHTML = '';
         return;
     }
     teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
 
-    const { data: shoots, error } = await db.from('shoots')
+    let query = db.from('shoots')
         .select('date, director, shoot_code, content')
-        .eq('teacher', teacherName)
-        .order('date', { ascending: false });
+        .eq('teacher', teacherName);
+
+    if (filterDate) {
+        query = query.eq('date', filterDate);
+    }
+    if (filterDirector) {
+        query = query.eq('director', filterDirector);
+    }
+
+    const { data: shoots, error } = await query.order('date', { ascending: false });
 
     if (error) {
         teacherReportContainer.innerHTML = `<p class="text-red-500">Rapor verileri alınırken bir hata oluştu.</p>`;
@@ -168,7 +191,7 @@ async function fetchAndRenderTeacherReport(teacherName) {
     }
 
     if (!shoots || shoots.length === 0) {
-        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
         return;
     }
 
@@ -177,9 +200,9 @@ async function fetchAndRenderTeacherReport(teacherName) {
             <thead class="bg-gray-50">
                 <tr>
                     <th>Tarih</th>
-                    <th>Yönetmen</th>
                     <th>Çekim Kodu</th>
                     <th>Çekim İçeriği</th>
+                    <th>Yönetmen</th>
                 </tr>
             </thead>
             <tbody>
@@ -188,9 +211,9 @@ async function fetchAndRenderTeacherReport(teacherName) {
         tableHTML += `
             <tr>
                 <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
-                <td>${shoot.director || '-'}</td>
                 <td>${shoot.shoot_code || '-'}</td>
                 <td>${shoot.content || '-'}</td>
+                <td>${shoot.director || '-'}</td>
             </tr>
         `;
     });
@@ -205,16 +228,25 @@ function setActiveButton(filter) {
      calculateAndRenderStats();
 }
 
+// Event Listeners
 Object.keys(filterButtons).forEach(key => {
     filterButtons[key].addEventListener('click', () => setActiveButton(key));
 });
 
 teacherFilterInput.addEventListener('input', calculateAndRenderStats);
 directorFilterInput.addEventListener('input', calculateAndRenderStats);
-reportTeacherSelect.addEventListener('change', () => {
-    const selectedTeacher = reportTeacherSelect.value;
-    fetchAndRenderTeacherReport(selectedTeacher);
+
+reportTeacherSearch.addEventListener('input', () => {
+    const searchText = reportTeacherSearch.value.toLowerCase();
+    Array.from(reportTeacherSelect.options).forEach(option => {
+        const isVisible = option.value === '' || option.text.toLowerCase().includes(searchText);
+        option.style.display = isVisible ? '' : 'none';
+    });
 });
+
+reportTeacherSelect.addEventListener('change', fetchAndRenderTeacherReport);
+reportFilterDate.addEventListener('change', fetchAndRenderTeacherReport);
+reportFilterDirector.addEventListener('change', fetchAndRenderTeacherReport);
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = {
@@ -232,7 +264,7 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    populateReportTeacherDropdown();
+    populateReportDropdowns();
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
