@@ -290,7 +290,6 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
-    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
