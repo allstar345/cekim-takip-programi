@@ -43,7 +43,6 @@ let sortedWeeks = [];
 let currentPage = 0;
 let currentEditId = null;
 
-// DOM Elementleri
 const form = document.getElementById('shoot-form');
 const weeklyContainer = document.getElementById('weekly-view-container');
 const loadingDiv = document.getElementById('loading');
@@ -65,14 +64,9 @@ const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const dateInput = document.getElementById('date');
 const daySelect = document.getElementById('day');
-const dailyLeavesContainer = document.getElementById('daily-leaves-container');
-const dailyLeavesPlanner = document.getElementById('daily-leaves-planner');
 
-// Sabit Listeler
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
-const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
-const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -179,19 +173,16 @@ async function renderCurrentPage() {
     if (!hasAnyData) {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
-        dailyLeavesContainer.classList.add('hidden');
         return;
     }
     
     noDataDiv.classList.add('hidden');
     navControls.classList.remove('hidden');
-    dailyLeavesContainer.classList.remove('hidden');
 
     const weekKey = sortedWeeks[currentPage];
     if (!weekKey) {
          noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
-        dailyLeavesContainer.classList.add('hidden');
         return;
     }
     
@@ -199,51 +190,14 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
-    let { data: dailyTeams, error: teamError } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
-    let { data: dailyLeaves, error: leaveError } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
-
-    if (teamError) { console.error("Günlük ekip verisi alınırken hata:", teamError); dailyTeams = []; }
-    if (leaveError) { console.error("Günlük izinli verisi alınırken hata:", leaveError); dailyLeaves = []; }
-    
-    const dailyTeamsMap = new Map((dailyTeams || []).map(d => [d.day_of_week, d.team_members]));
-    const dailyLeavesMap = new Map((dailyLeaves || []).map(d => [d.day_of_week, d.on_leave_members]));
-
-    renderDailyLeavesPlanner(dailyLeavesMap);
-    
-    const timetableHtml = createTimetableHtml(shootsForWeek, dailyTeamsMap);
+    const timetableHtml = createTimetableHtml(shootsForWeek);
     weeklyContainer.innerHTML = timetableHtml;
     
     updateNavControls();
 }
 
-function renderDailyLeavesPlanner(dailyLeavesMap) {
-    dailyLeavesPlanner.innerHTML = '';
-    const weekKey = sortedWeeks[currentPage];
-
-    DAYS_OF_WEEK.forEach(day => {
-        const onLeaveForDay = dailyLeavesMap.get(day) || [];
-        const onLeaveIsSet = onLeaveForDay.length > 0;
-        
-        const dayContainer = document.createElement('div');
-        dayContainer.className = 'border p-2 rounded-lg';
-        
-        let badgesHTML = onLeaveForDay.length > 0
-            ? onLeaveForDay.map(member => `<span class="inline-block bg-gray-200 text-gray-800 text-xs font-medium mr-1 mb-1 px-2 py-0.5 rounded-full">${member}</span>`).join('')
-            : '<p class="text-xs text-gray-400">İzinli yok</p>';
-
-        dayContainer.innerHTML = `
-            <p class="font-bold text-sm text-center">${day}</p>
-            <div class="mt-2 min-h-[40px]">${badgesHTML}</div>
-            <button data-day="${day}" class="daily-leave-edit-btn text-indigo-600 hover:underline text-xs w-full text-center mt-1">Düzenle</button>
-        `;
-        dailyLeavesPlanner.appendChild(dayContainer);
-    });
-}
-
-function createTimetableHtml(shoots, dailyTeamsMap) {
+function createTimetableHtml(shoots) {
     const gridData = {};
-    const weekKey = sortedWeeks[currentPage];
-
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
         STUDIOS.forEach(studio => {
@@ -268,20 +222,6 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
 
     const bodyHtml = DAYS_OF_WEEK.map(day => {
         const dayColorClass = getRowColorClass(day);
-        const teamForDay = dailyTeamsMap.get(day) || [];
-        const teamIsSet = teamForDay.length > 0;
-
-        const teamDisplayHTML = `
-            <div class="p-1 text-xs">
-                <div class="text-blue-600 font-normal min-h-[1.5rem] ${teamIsSet ? '' : 'hidden'}">
-                    ${teamForDay.join(', ')}
-                </div>
-                <button data-day="${day}" class="daily-team-edit-btn text-indigo-600 hover:underline mt-1">
-                    ${teamIsSet ? 'Ekibi Düzenle' : 'Ekip Ata'}
-                </button>
-            </div>
-        `;
-
         const cellsHtml = STUDIOS.map(studio => {
             const shootsInCell = gridData[day][studio];
             shootsInCell.sort((a,b) => (a.start_time || a.time || '').localeCompare(b.start_time || b.time || ''));
@@ -290,7 +230,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                 let timeDisplay = '';
                 if (shoot.start_time && shoot.end_time) {
                     timeDisplay = `${shoot.start_time.substring(0, 5)} - ${shoot.end_time.substring(0, 5)}`;
-                } else if (shoot.time) { 
+                } else if (shoot.time) {
                     timeDisplay = shoot.time;
                 }
 
@@ -310,7 +250,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
             return `<td class="timetable-cell">${cellContent}</td>`;
         }).join('');
         
-        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header"><div>${day}</div>${teamDisplayHTML}</td>${cellsHtml}</tr>`;
+        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}</td>${cellsHtml}</tr>`;
     }).join('');
 
     return `
@@ -353,6 +293,7 @@ function populateFormForEdit(shoot) {
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
     elements['content'].value = shoot.content || '';
+    elements['shoot_code'].value = shoot.shoot_code || '';
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -405,171 +346,35 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// Ana container'a tek bir click event listener ekliyoruz
-document.querySelector('main').addEventListener('click', async (e) => {
-    const target = e.target;
-    
-    // GÜNLÜK EKİP DÜZENLEME BUTONU
-    if (target.classList.contains('daily-team-edit-btn')) {
-        const day = target.dataset.day;
-        const weekKey = sortedWeeks[currentPage];
+weeklyContainer.addEventListener('click', async (e) => {
+    const target = e.target.closest('button');
+    if (!target) return;
 
-        const { data } = await db.from('daily_teams').select('team_members').eq('week_identifier', weekKey).eq('day_of_week', day).single();
-        const currentlySelected = data ? data.team_members : [];
-
-        const { value: selectedMembers } = await Swal.fire({
-            title: `${day} Günü Ekibini Seç`,
-            html: TEAM_MEMBERS.map(member => `
-                <div class="flex items-center my-2 justify-center">
-                    <input type="checkbox" id="member-team-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}>
-                    <label for="member-team-${member}" class="ml-2">${member}</label>
-                </div>
-            `).join(''),
-            confirmButtonText: 'Kaydet',
+    if (target.classList.contains('delete-btn')) {
+        const id = target.getAttribute('data-id');
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: "Bu çekim planı kalıcı olarak silinecektir!",
+            icon: 'warning',
             showCancelButton: true,
-            cancelButtonText: 'İptal',
-            preConfirm: () => {
-                return TEAM_MEMBERS
-                    .filter(member => document.getElementById(`member-team-${member}`).checked)
-                    .map(member => document.getElementById(`member-team-${member}`).value);
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Evet, sil!',
+            cancelButtonText: 'İptal'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await db.from('shoots').delete().eq('id', id);
             }
         });
-
-        if (typeof selectedMembers !== 'undefined') {
-            const { error } = await db.from('daily_teams').upsert({
-                week_identifier: weekKey,
-                day_of_week: day,
-                team_members: selectedMembers
-            }, { onConflict: 'week_identifier, day_of_week' });
-
-            if (error) {
-                console.error('Ekip kaydedilirken hata oluştu:', error);
-                Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
-            } else {
-                renderCurrentPage();
-            }
-        }
     }
-    
-    // GÜNLÜK İZİNLİ DÜZENLEME BUTONU
-    if (target.id === 'edit-on-leave-btn') {
-        const weekKey = sortedWeeks[currentPage];
-        const day = target.dataset.day; // Bu butona data-day eklemeliyiz
-
-        const { data } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKey).eq('day_of_week', day).single();
-        const currentlyOnLeave = data ? data.on_leave_members : [];
-
-        const { value: selectedOnLeave } = await Swal.fire({
-            title: `${day} Günü İzinlilerini Seç`,
-            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `
-                <div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto">
-                    <input type="checkbox" id="member-leave-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}>
-                    <label for="member-leave-${member}" class="ml-2">${member}</label>
-                </div>
-            `).join(''),
-            confirmButtonText: 'Kaydet',
-            showCancelButton: true,
-            cancelButtonText: 'İptal',
-            width: '40em',
-            preConfirm: () => {
-                return ON_LEAVE_MEMBERS
-                    .filter(member => document.getElementById(`member-leave-${member}`).checked)
-                    .map(member => document.getElementById(`member-leave-${member}`).value);
-            }
-        });
-
-        if (typeof selectedOnLeave !== 'undefined') {
-            const { error } = await db.from('daily_leaves').upsert({
-                week_identifier: weekKey,
-                day_of_week: day,
-                on_leave_members: selectedOnLeave
-            }, { onConflict: 'week_identifier, day_of_week' });
-
-            if (error) {
-                console.error('İzinliler kaydedilirken hata oluştu:', error);
-                Swal.fire('Hata!', 'İzinli listesi kaydedilirken bir hata oluştu.', 'error');
-            } else {
-                renderCurrentPage();
-            }
-        }
-    }
-
-    // ÇEKİM SİLME VEYA DÜZENLEME BUTONU (TABLO İÇİ)
-    const buttonInTable = e.target.closest('.shoot-entry button');
-    if (buttonInTable) {
-        if (buttonInTable.classList.contains('delete-btn')) {
-            const id = buttonInTable.getAttribute('data-id');
-            Swal.fire({
-                title: 'Emin misiniz?',
-                text: "Bu çekim planı kalıcı olarak silinecektir!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Evet, sil!',
-                cancelButtonText: 'İptal'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    await db.from('shoots').delete().eq('id', id);
-                }
-            });
-        }
-        if (buttonInTable.classList.contains('edit-btn')) {
-            const id = buttonInTable.getAttribute('data-id');
-            const shootToEdit = allShoots.find(shoot => shoot.id === Number(id)); 
-            if (shootToEdit) {
-                populateFormForEdit(shootToEdit);
-            }
+    if (target.classList.contains('edit-btn')) {
+        const id = target.getAttribute('data-id');
+        const shootToEdit = allShoots.find(shoot => shoot.id === Number(id)); 
+        if (shootToEdit) {
+            populateFormForEdit(shootToEdit);
         }
     }
 });
-
-// YENİ: daily-leaves-planner'daki Düzenle butonları için event listener
-dailyLeavesPlanner.addEventListener('click', async(e) => {
-    const target = e.target;
-    if (target.classList.contains('daily-leave-edit-btn')) {
-        const weekKey = sortedWeeks[currentPage];
-        const day = target.dataset.day;
-
-        const { data } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKey).eq('day_of_week', day).single();
-        const currentlyOnLeave = data ? data.on_leave_members : [];
-
-        const { value: selectedOnLeave } = await Swal.fire({
-            title: `${day} Günü İzinlilerini Seç`,
-            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `
-                <div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto">
-                    <input type="checkbox" id="member-leave-${member.replace(/\s+/g, '-')}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}>
-                    <label for="member-leave-${member.replace(/\s+/g, '-')}" class="ml-2">${member}</label>
-                </div>
-            `).join(''),
-            confirmButtonText: 'Kaydet',
-            showCancelButton: true,
-            cancelButtonText: 'İptal',
-            width: '40em',
-            preConfirm: () => {
-                return ON_LEAVE_MEMBERS
-                    .filter(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).checked)
-                    .map(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).value);
-            }
-        });
-        
-        if (typeof selectedOnLeave !== 'undefined') {
-            const { error } = await db.from('daily_leaves').upsert({
-                week_identifier: weekKey,
-                day_of_week: day,
-                on_leave_members: selectedOnLeave
-            }, { onConflict: 'week_identifier, day_of_week' });
-
-            if (error) {
-                console.error('İzinliler kaydedilirken hata oluştu:', error);
-                Swal.fire('Hata!', 'İzinli listesi kaydedilirken bir hata oluştu.', 'error');
-            } else {
-                renderCurrentPage();
-            }
-        }
-    }
-});
-
 
 cancelBtn.addEventListener('click', resetFormState);
 
@@ -586,6 +391,7 @@ form.addEventListener('submit', async (e) => {
         end_time: formData.get('end_time'),
         director: formData.get('director'),
         content: formData.get('content'),
+        shoot_code: formData.get('shoot_code'),
     };
 
     if (shootData.start_time >= shootData.end_time) {
