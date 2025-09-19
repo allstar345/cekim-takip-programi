@@ -1,7 +1,3 @@
-//
-// stats.html'in çalışması için gereken tüm JavaScript kodları buraya taşındı.
-//
-
 // --- Yetki Kontrolü ---
 const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
 const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
@@ -37,7 +33,9 @@ const logoutBtn = document.getElementById('logout-btn');
 const subtitle = document.getElementById('stats-subtitle');
 const teacherFilterInput = document.getElementById('teacher-filter-input');
 const directorFilterInput = document.getElementById('director-filter-input');
-
+const reportTeacherSelect = document.getElementById('report-teacher-select');
+const teacherReportContainer = document.getElementById('teacher-report-container');
+        
 const filterButtons = {
     week: document.getElementById('filter-week'),
     month: document.getElementById('filter-month'),
@@ -142,6 +140,64 @@ function calculateAndRenderStats() {
     contentDiv.classList.remove('hidden');
 }
 
+async function populateReportTeacherDropdown() {
+    const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
+    if (error) {
+        console.error("Rapor için öğretmen listesi alınamadı:", error);
+        return;
+    }
+    const optionsHTML = teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    reportTeacherSelect.innerHTML += optionsHTML;
+}
+
+async function fetchAndRenderTeacherReport(teacherName) {
+    if (!teacherName) {
+        teacherReportContainer.innerHTML = '';
+        return;
+    }
+    teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
+
+    const { data: shoots, error } = await db.from('shoots')
+        .select('date, director, shoot_code, content')
+        .eq('teacher', teacherName)
+        .order('date', { ascending: false });
+
+    if (error) {
+        teacherReportContainer.innerHTML = `<p class="text-red-500">Rapor verileri alınırken bir hata oluştu.</p>`;
+        return;
+    }
+
+    if (!shoots || shoots.length === 0) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
+        return;
+    }
+
+    let tableHTML = `
+        <table id="teacher-report-table" class="min-w-full mt-4 text-sm border-collapse">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th>Tarih</th>
+                    <th>Yönetmen</th>
+                    <th>Çekim Kodu</th>
+                    <th>Çekim İçeriği</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    shoots.forEach(shoot => {
+        tableHTML += `
+            <tr>
+                <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                <td>${shoot.director || '-'}</td>
+                <td>${shoot.shoot_code || '-'}</td>
+                <td>${shoot.content || '-'}</td>
+            </tr>
+        `;
+    });
+    tableHTML += `</tbody></table>`;
+    teacherReportContainer.innerHTML = tableHTML;
+}
+
 function setActiveButton(filter) {
      Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
      filterButtons[filter].classList.add('active');
@@ -155,6 +211,10 @@ Object.keys(filterButtons).forEach(key => {
 
 teacherFilterInput.addEventListener('input', calculateAndRenderStats);
 directorFilterInput.addEventListener('input', calculateAndRenderStats);
+reportTeacherSelect.addEventListener('change', () => {
+    const selectedTeacher = reportTeacherSelect.value;
+    fetchAndRenderTeacherReport(selectedTeacher);
+});
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = {
@@ -172,6 +232,7 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
+    populateReportTeacherDropdown();
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
