@@ -39,6 +39,7 @@ const teacherReportContainer = document.getElementById('teacher-report-container
 const reportTeacherSearch = document.getElementById('report-teacher-search');
 const reportFilterDate = document.getElementById('report-filter-date');
 const reportFilterDirector = document.getElementById('report-filter-director');
+const reportGlobalSearch = document.getElementById('report-global-search');
         
 const filterButtons = {
     week: document.getElementById('filter-week'),
@@ -49,6 +50,7 @@ const filterButtons = {
 const DIRECTORS_LIST = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
 let allShootsData = [];
+let teacherReportData = [];
 let currentFilter = 'month';
 
 function getThisWeekRange() {
@@ -147,7 +149,6 @@ function calculateAndRenderStats() {
 }
 
 async function populateReportDropdowns() {
-    // Öğretmenleri doldur
     const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
     if (error) {
         console.error("Rapor için öğretmen listesi alınamadı:", error);
@@ -156,41 +157,32 @@ async function populateReportDropdowns() {
     const teacherOptionsHTML = teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
     reportTeacherSelect.innerHTML += teacherOptionsHTML;
 
-    // Yönetmenleri doldur
     const directorOptionsHTML = DIRECTORS_LIST.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
     reportFilterDirector.innerHTML += directorOptionsHTML;
 }
 
-async function fetchAndRenderTeacherReport() {
-    const teacherName = reportTeacherSelect.value;
+function renderTeacherReport() {
     const filterDate = reportFilterDate.value;
     const filterDirector = reportFilterDirector.value;
+    const globalSearchText = reportGlobalSearch.value.toLowerCase().trim();
 
-    if (!teacherName) {
-        teacherReportContainer.innerHTML = '';
-        return;
-    }
-    teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
-
-    let query = db.from('shoots')
-        .select('date, director, shoot_code, content')
-        .eq('teacher', teacherName);
+    let filteredData = teacherReportData;
 
     if (filterDate) {
-        query = query.eq('date', filterDate);
+        filteredData = filteredData.filter(shoot => shoot.date === filterDate);
     }
     if (filterDirector) {
-        query = query.eq('director', filterDirector);
+        filteredData = filteredData.filter(shoot => shoot.director === filterDirector);
+    }
+    if (globalSearchText) {
+        filteredData = filteredData.filter(shoot => 
+            (shoot.shoot_code && shoot.shoot_code.toLowerCase().includes(globalSearchText)) ||
+            (shoot.content && shoot.content.toLowerCase().includes(globalSearchText)) ||
+            (shoot.director && shoot.director.toLowerCase().includes(globalSearchText))
+        );
     }
 
-    const { data: shoots, error } = await query.order('date', { ascending: false });
-
-    if (error) {
-        teacherReportContainer.innerHTML = `<p class="text-red-500">Rapor verileri alınırken bir hata oluştu.</p>`;
-        return;
-    }
-
-    if (!shoots || shoots.length === 0) {
+    if (!filteredData || filteredData.length === 0) {
         teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
         return;
     }
@@ -207,7 +199,7 @@ async function fetchAndRenderTeacherReport() {
             </thead>
             <tbody>
     `;
-    shoots.forEach(shoot => {
+    filteredData.forEach(shoot => {
         tableHTML += `
             <tr>
                 <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
@@ -220,6 +212,30 @@ async function fetchAndRenderTeacherReport() {
     tableHTML += `</tbody></table>`;
     teacherReportContainer.innerHTML = tableHTML;
 }
+
+
+async function fetchTeacherReportData(teacherName) {
+    if (!teacherName) {
+        teacherReportData = [];
+        renderTeacherReport();
+        return;
+    }
+    teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
+
+    const { data: shoots, error } = await db.from('shoots')
+        .select('date, director, shoot_code, content')
+        .eq('teacher', teacherName)
+        .order('date', { ascending: false });
+
+    if (error) {
+        teacherReportContainer.innerHTML = `<p class="text-red-500">Rapor verileri alınırken bir hata oluştu.</p>`;
+        return;
+    }
+
+    teacherReportData = shoots || [];
+    renderTeacherReport();
+}
+
 
 function setActiveButton(filter) {
      Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
@@ -238,15 +254,28 @@ directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
 reportTeacherSearch.addEventListener('input', () => {
     const searchText = reportTeacherSearch.value.toLowerCase();
+    let firstMatch = null;
     Array.from(reportTeacherSelect.options).forEach(option => {
         const isVisible = option.value === '' || option.text.toLowerCase().includes(searchText);
         option.style.display = isVisible ? '' : 'none';
+        if (isVisible && !firstMatch && option.value !== '') {
+            firstMatch = option;
+        }
     });
+    if (firstMatch && reportTeacherSelect.options.length > 1) {
+        reportTeacherSelect.value = firstMatch.value;
+    } else if (!firstMatch) {
+         reportTeacherSelect.value = '';
+    }
+     fetchTeacherReportData(reportTeacherSelect.value);
 });
 
-reportTeacherSelect.addEventListener('change', fetchAndRenderTeacherReport);
-reportFilterDate.addEventListener('change', fetchAndRenderTeacherReport);
-reportFilterDirector.addEventListener('change', fetchAndRenderTeacherReport);
+
+reportTeacherSelect.addEventListener('change', () => fetchTeacherReportData(reportTeacherSelect.value));
+reportFilterDate.addEventListener('change', renderTeacherReport);
+reportFilterDirector.addEventListener('change', renderTeacherReport);
+reportGlobalSearch.addEventListener('input', renderTeacherReport);
+
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = {
