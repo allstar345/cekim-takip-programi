@@ -67,12 +67,15 @@ const dateInput = document.getElementById('date');
 const daySelect = document.getElementById('day');
 const dailyLeavesContainer = document.getElementById('daily-leaves-container');
 const dailyLeavesPlanner = document.getElementById('daily-leaves-planner');
+const filterEmployee = document.getElementById('filter-employee');
+const directorSelectForm = document.getElementById('director');
 
 // Sabit Listeler
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
-const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin"];
+const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
+const DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -89,6 +92,14 @@ async function populateTeacherDropdowns() {
     
     teacherSelectForm.innerHTML += teacherOptionsHTML;
     teacherSelectFilter.innerHTML += teacherOptionsHTML;
+}
+
+function populateStaticDropdowns() {
+    const directorOptionsHTML = DIRECTORS.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
+    directorSelectForm.innerHTML += directorOptionsHTML;
+
+    const employeeOptionsHTML = ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(e => `<option value="${e}">${e}</option>`).join('');
+    filterEmployee.innerHTML += employeeOptionsHTML;
 }
 
 function getRowColorClass(day) {
@@ -132,10 +143,11 @@ function getWeekDateRange(year, weekNo) {
     return { start: monday, end: sunday };
 }
 
-function processAndRenderData() {
+async function processAndRenderData() {
     const selectedDay = filterDay.value;
     const selectedStudio = filterStudio.value;
     const selectedTeacher = filterTeacher.value;
+    const selectedEmployee = filterEmployee.value;
     
     let filteredShoots = allShoots;
 
@@ -148,6 +160,32 @@ function processAndRenderData() {
     if (selectedTeacher) {
         filteredShoots = filteredShoots.filter(shoot => shoot.teacher === selectedTeacher);
     }
+
+    if (selectedEmployee) {
+        const weekKey = sortedWeeks[currentPage];
+        if (weekKey) {
+            const { data: dailyLeaves } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
+            const { data: dailyTeams } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
+            
+            const daysEmployeeIsWorking = new Set();
+            if (dailyTeams) {
+                dailyTeams.forEach(d => {
+                    if (d.team_members && d.team_members.includes(selectedEmployee)) {
+                        daysEmployeeIsWorking.add(d.day_of_week);
+                    }
+                });
+            }
+            if (dailyLeaves) {
+                 dailyLeaves.forEach(d => {
+                    if (d.on_leave_members && d.on_leave_members.includes(selectedEmployee)) {
+                        daysEmployeeIsWorking.delete(d.day_of_week);
+                    }
+                });
+            }
+             filteredShoots = filteredShoots.filter(shoot => daysEmployeeIsWorking.has(shoot.day));
+        }
+    }
+
 
     recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
 
@@ -174,9 +212,9 @@ async function renderCurrentPage() {
     loadingDiv.classList.add('hidden');
     weeklyContainer.innerHTML = '';
 
-    const hasAnyData = Object.keys(groupedShoots).length > 0;
+    const hasAnyDataAtAll = allShoots.length > 0;
 
-    if (!hasAnyData) {
+    if (!hasAnyDataAtAll) {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
@@ -188,8 +226,19 @@ async function renderCurrentPage() {
     dailyLeavesContainer.classList.remove('hidden');
 
     const weekKey = sortedWeeks[currentPage];
+    if (!weekKey && allShoots.length > 0) {
+        const today = new Date();
+        const currentWeekKey = getWeekIdentifier(today);
+        if (!groupedShoots[currentWeekKey]) {
+            groupedShoots[currentWeekKey] = [];
+            sortedWeeks.push(currentWeekKey);
+            sortedWeeks.sort().reverse();
+        }
+        return renderCurrentPage();
+    }
+    
     if (!weekKey) {
-         noDataDiv.classList.remove('hidden');
+        noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
         return;
@@ -241,6 +290,7 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
+    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
@@ -388,6 +438,7 @@ formHeaderClickable.addEventListener('click', () => {
 filterDay.addEventListener('change', processAndRenderData);
 filterStudio.addEventListener('change', processAndRenderData);
 filterTeacher.addEventListener('change', processAndRenderData);
+filterEmployee.addEventListener('change', processAndRenderData);
 
 prevBtn.addEventListener('click', () => {
     const maxPage = sortedWeeks.length - 1;
@@ -546,6 +597,17 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
+    // YÖNETMEN İZİN KONTROLÜ
+    const weekKey = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
+    const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKey).eq('day_of_week', shootData.day).single();
+    const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
+
+    if (onLeaveToday.includes(shootData.director)) {
+        Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir yönetmen seçin veya izin planını güncelleyin.`, 'error');
+        return;
+    }
+
+
     if (currentEditId === null) {
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
             .select('start_time, end_time, teacher')
@@ -684,6 +746,7 @@ const shootsSubscription = db.channel('public:shoots')
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateTeacherDropdowns();
+    populateStaticDropdowns();
     fetchInitialData();
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
