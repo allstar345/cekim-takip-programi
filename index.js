@@ -143,6 +143,7 @@ function getWeekDateRange(year, weekNo) {
     return { start: monday, end: sunday };
 }
 
+// DÜZELTİLDİ: Filtreleme fonksiyonu artık 'Çalışana Göre' seçeneğini doğru işliyor.
 async function processAndRenderData() {
     const selectedDay = filterDay.value;
     const selectedStudio = filterStudio.value;
@@ -151,6 +152,7 @@ async function processAndRenderData() {
     
     let filteredShoots = allShoots;
 
+    // Önce diğer filtreleri uygula
     if (selectedDay) {
         filteredShoots = filteredShoots.filter(shoot => shoot.day === selectedDay);
     }
@@ -161,31 +163,39 @@ async function processAndRenderData() {
         filteredShoots = filteredShoots.filter(shoot => shoot.teacher === selectedTeacher);
     }
 
+    // Sonra 'Çalışana Göre' filtresini uygula (eğer seçilmişse)
     if (selectedEmployee) {
-        const weekKey = sortedWeeks[currentPage];
-        if (weekKey) {
-            const { data: dailyLeaves } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
-            const { data: dailyTeams } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
-            
-            const daysEmployeeIsWorking = new Set();
-            if (dailyTeams) {
-                dailyTeams.forEach(d => {
-                    if (d.team_members && d.team_members.includes(selectedEmployee)) {
-                        daysEmployeeIsWorking.add(d.day_of_week);
-                    }
-                });
-            }
-            if (dailyLeaves) {
-                 dailyLeaves.forEach(d => {
-                    if (d.on_leave_members && d.on_leave_members.includes(selectedEmployee)) {
-                        daysEmployeeIsWorking.delete(d.day_of_week);
-                    }
-                });
-            }
-             filteredShoots = filteredShoots.filter(shoot => daysEmployeeIsWorking.has(shoot.day));
-        }
-    }
+        // Tüm haftaların ekip ve izinli bilgilerini tek seferde çek
+        const { data: allTeams } = await db.from('daily_teams').select('*');
+        const { data: allLeaves } = await db.from('daily_leaves').select('*');
 
+        const employeeSchedule = {}; // hafta-gün: 'working' veya 'on_leave'
+
+        if (allTeams) {
+            allTeams.forEach(d => {
+                const key = `${d.week_identifier}-${d.day_of_week}`;
+                if (d.team_members && d.team_members.includes(selectedEmployee)) {
+                    employeeSchedule[key] = 'working';
+                }
+            });
+        }
+        if (allLeaves) {
+            allLeaves.forEach(d => {
+                const key = `${d.week_identifier}-${d.day_of_week}`;
+                if (d.on_leave_members && d.on_leave_members.includes(selectedEmployee)) {
+                    employeeSchedule[key] = 'on_leave';
+                }
+            });
+        }
+
+        filteredShoots = filteredShoots.filter(shoot => {
+            if (!shoot.date || !shoot.day) return false;
+            const weekKey = getWeekIdentifier(new Date(shoot.date + 'T12:00:00'));
+            const scheduleKey = `${weekKey}-${shoot.day}`;
+            // Sadece 'working' olarak işaretlenmiş günlerdeki çekimleri göster
+            return employeeSchedule[scheduleKey] === 'working';
+        });
+    }
 
     recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
 
@@ -225,7 +235,8 @@ async function renderCurrentPage() {
     navControls.classList.remove('hidden');
     dailyLeavesContainer.classList.remove('hidden');
 
-    const weekKey = sortedWeeks[currentPage];
+    let weekKey = sortedWeeks[currentPage];
+    
     if (!weekKey && allShoots.length > 0) {
         const today = new Date();
         const currentWeekKey = getWeekIdentifier(today);
@@ -233,8 +244,9 @@ async function renderCurrentPage() {
             groupedShoots[currentWeekKey] = [];
             sortedWeeks.push(currentWeekKey);
             sortedWeeks.sort().reverse();
+            currentPage = sortedWeeks.indexOf(currentWeekKey);
         }
-        return renderCurrentPage();
+        weekKey = sortedWeeks[currentPage];
     }
     
     if (!weekKey) {
@@ -290,6 +302,7 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
+    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
