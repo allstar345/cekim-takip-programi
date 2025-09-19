@@ -67,6 +67,7 @@ const daySelect = document.getElementById('day');
 
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
+const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -190,8 +191,12 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
-    // Haftalık ekip verisini çek
-    const { data: dailyTeams } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
+    const { data: dailyTeams, error } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
+    if (error) {
+        console.error("Günlük ekip verisi alınırken hata:", error);
+        // Hata durumunda boş bir harita ile devam et
+        dailyTeams = []; 
+    }
     const dailyTeamsMap = new Map(dailyTeams.map(d => [d.day_of_week, d.team_members]));
 
     const timetableHtml = createTimetableHtml(shootsForWeek, dailyTeamsMap);
@@ -202,6 +207,8 @@ async function renderCurrentPage() {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
+    const weekKey = sortedWeeks[currentPage];
+
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
         STUDIOS.forEach(studio => {
@@ -227,8 +234,13 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     const bodyHtml = DAYS_OF_WEEK.map(day => {
         const dayColorClass = getRowColorClass(day);
         const teamForDay = dailyTeamsMap.get(day) || [];
-        // GÜN KUTUCUĞUNDA GÖSTERİLECEK EKİP İSİMLERİ
-        const teamDisplay = teamForDay.length > 0 ? `<div class="text-xs text-blue-600 font-normal mt-1">${teamForDay.join(', ')}</div>` : '';
+        
+        let teamSelectHTML = `<select data-day="${day}" data-week="${weekKey}" multiple class="daily-team-select w-full h-20 bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg mt-2 p-1">`;
+        TEAM_MEMBERS.forEach(member => {
+            const isSelected = teamForDay.includes(member) ? 'selected' : '';
+            teamSelectHTML += `<option value="${member}" ${isSelected}>${member}</option>`;
+        });
+        teamSelectHTML += `</select>`;
 
         const cellsHtml = STUDIOS.map(studio => {
             const shootsInCell = gridData[day][studio];
@@ -258,8 +270,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
             return `<td class="timetable-cell">${cellContent}</td>`;
         }).join('');
         
-        // GÜN İSMİNİN YANINA EKİP İSİMLERİNİ EKLE
-        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}${teamDisplay}</td>${cellsHtml}</tr>`;
+        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header"><div>${day}</div>${teamSelectHTML}</td>${cellsHtml}</tr>`;
     }).join('');
 
     return `
@@ -302,14 +313,6 @@ function populateFormForEdit(shoot) {
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
     elements['content'].value = shoot.content || '';
-    
-    // Not: Düzenleme modunda teknik ekip alanı doldurulmaz, çünkü o günün ekibi sabittir.
-    // İstenirse, o günün ekibi buraya da yüklenebilir ama kafa karıştırabilir.
-    // Şimdilik temiz bırakmak en iyisi.
-    const teamSelect = elements['technical_team'];
-    for (const option of teamSelect.options) {
-        option.selected = false;
-    }
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -362,6 +365,29 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
+weeklyContainer.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('daily-team-select')) {
+        const selectElement = e.target;
+        const day = selectElement.dataset.day;
+        const week = selectElement.dataset.week;
+        
+        const selectedMembers = Array.from(selectElement.selectedOptions).map(option => option.value);
+
+        const { error } = await db.from('daily_teams').upsert({
+            week_identifier: week,
+            day_of_week: day,
+            team_members: selectedMembers
+        }, {
+            onConflict: 'week_identifier, day_of_week'
+        });
+
+        if (error) {
+            console.error('Ekip kaydedilirken hata oluştu:', error);
+            Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
+        }
+    }
+});
+
 weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
@@ -394,12 +420,10 @@ weeklyContainer.addEventListener('click', async (e) => {
 
 cancelBtn.addEventListener('click', resetFormState);
 
-// GÜNCELLENDİ: Form gönderme fonksiyonu, çekim verisini kaydederken AYRICA o günün ekibini de kaydeder
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     
-    // Çekim bilgilerini al
     const shootData = {
         studio: formData.get('studio'),
         teacher: formData.get('teacher'),
@@ -416,27 +440,6 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
-    // O GÜNÜN TEKNİK EKİBİNİ KAYDETMEK İÇİN GEREKLİ BİLGİLERİ AL
-    const technicalTeam = formData.getAll('technical_team');
-    const shootDateObj = new Date(shootData.date + 'T12:00:00');
-    const weekIdentifier = getWeekIdentifier(shootDateObj);
-
-    // Ekip verisini 'daily_teams' tablosuna kaydet/güncelle (upsert)
-    const { error: teamError } = await db.from('daily_teams').upsert({
-        week_identifier: weekIdentifier,
-        day_of_week: shootData.day,
-        team_members: technicalTeam
-    }, {
-        onConflict: 'week_identifier, day_of_week'
-    });
-
-    if (teamError) {
-        console.error('Ekip kaydedilirken hata oluştu:', teamError);
-        Swal.fire('Hata!', 'Günün teknik ekibi kaydedilirken bir hata oluştu.', 'error');
-        return;
-    }
-
-    // Çakışma kontrolü (sadece yeni kayıtlarda)
     if (currentEditId === null) {
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
             .select('start_time, end_time, teacher')
@@ -469,7 +472,6 @@ form.addEventListener('submit', async (e) => {
         }
     }
 
-    // Çekim verisini 'shoots' tablosuna kaydet/güncelle
     let error;
     if (currentEditId) {
         ({ error } = await db.from('shoots').update(shootData).eq('id', currentEditId));
