@@ -17,7 +17,7 @@
         .timetable { border-collapse: collapse; width: 100%; }
         .timetable th, .timetable td { border: 1px solid #d1d5db; padding: 0; vertical-align: top; }
         .timetable th { padding: 12px 8px; background-color: #f9fafb; text-align: center; }
-        .timetable .day-header { padding: 12px 8px; font-weight: 600; text-align: center; min-width: 120px; }
+        .timetable .day-header { padding: 8px; font-weight: 600; text-align: center; min-width: 140px; }
         .timetable .timetable-cell { min-height: 120px; }
         .timetable .shoot-entry { padding: 8px; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; }
         .timetable .shoot-entry:last-child { border-bottom: none; }
@@ -104,18 +104,9 @@
                         <input type="time" id="end_time" name="end_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                     </div>
 
-                    <div>
+                    <div class="lg:col-span-2">
                         <label for="director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmen</label>
                         <input type="text" id="director" name="director" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: Zeynep Kaya">
-                    </div>
-                    
-                    <div>
-                        <label for="technical_team" class="block text-sm font-medium text-gray-700 mb-2">Günün Teknik Ekibi</label>
-                        <select id="technical_team" name="technical_team" multiple class="w-full h-20 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                            <option value="Emirhan">Emirhan</option>
-                            <option value="Eren">Eren</option>
-                            <option value="Yavuz Selim">Yavuz Selim</option>
-                        </select>
                     </div>
                     
                      <div class="col-span-full">
