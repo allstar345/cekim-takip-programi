@@ -64,10 +64,14 @@ const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const dateInput = document.getElementById('date');
 const daySelect = document.getElementById('day');
+const onLeaveContainer = document.getElementById('on-leave-container');
+const onLeaveDisplay = document.getElementById('on-leave-display');
+const editOnLeaveBtn = document.getElementById('edit-on-leave-btn');
 
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
+const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -174,16 +178,19 @@ async function renderCurrentPage() {
     if (!hasAnyData) {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
+        onLeaveContainer.classList.add('hidden');
         return;
     }
     
     noDataDiv.classList.add('hidden');
     navControls.classList.remove('hidden');
+    onLeaveContainer.classList.remove('hidden');
 
     const weekKey = sortedWeeks[currentPage];
     if (!weekKey) {
          noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
+        onLeaveContainer.classList.add('hidden');
         return;
     }
     
@@ -191,12 +198,19 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
-    let { data: dailyTeams, error } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
-    if (error) {
-        console.error("Günlük ekip verisi alınırken hata:", error);
-        dailyTeams = []; 
+    // Haftalık ekip ve izinli verilerini çek
+    const { data: dailyTeamsData } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
+    const { data: onLeaveData } = await db.from('weekly_leaves').select('on_leave_members').eq('week_identifier', weekKey).single();
+    
+    const dailyTeamsMap = new Map(dailyTeamsData.map(d => [d.day_of_week, d.team_members]));
+    const onLeaveMembers = onLeaveData ? onLeaveData.on_leave_members : [];
+
+    // İzinli listesini ekranda göster
+    if (onLeaveMembers.length > 0) {
+        onLeaveDisplay.textContent = onLeaveMembers.join(', ');
+    } else {
+        onLeaveDisplay.textContent = "Bu hafta izinli personel bulunmamaktadır.";
     }
-    const dailyTeamsMap = new Map(dailyTeams.map(d => [d.day_of_week, d.team_members]));
 
     const timetableHtml = createTimetableHtml(shootsForWeek, dailyTeamsMap);
     weeklyContainer.innerHTML = timetableHtml;
@@ -206,7 +220,6 @@ async function renderCurrentPage() {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
-    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
@@ -235,14 +248,13 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
         const teamForDay = dailyTeamsMap.get(day) || [];
         const teamIsSet = teamForDay.length > 0;
 
-        // Estetik görünüm için ekip listesi ve düzenle butonu
         const teamDisplayHTML = `
             <div class="p-1 text-xs">
                 <div class="text-blue-600 font-normal ${teamIsSet ? '' : 'hidden'}">
                     ${teamForDay.join(', ')}
                 </div>
-                <button data-day="${day}" data-week="${weekKey}" class="daily-team-edit-btn text-indigo-600 hover:underline mt-1">
-                    ${teamIsSet ? 'Düzenle' : 'Ekip Ata'}
+                <button data-day="${day}" class="daily-team-edit-btn text-indigo-600 hover:underline mt-1">
+                    ${teamIsSet ? 'Ekibi Düzenle' : 'Ekip Ata'}
                 </button>
             </div>
         `;
@@ -374,21 +386,18 @@ weeklyContainer.addEventListener('click', async (e) => {
     const target = e.target.closest('button');
     if (!target) return;
 
-    // YENİ: GÜNLÜK EKİP DÜZENLEME BUTONU MANTIĞI
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
-        const week = target.dataset.week;
+        const weekKey = sortedWeeks[currentPage];
 
-        // Mevcut seçili ekibi al
-        const { data } = await db.from('daily_teams').select('team_members').eq('week_identifier', week).eq('day_of_week', day).single();
+        const { data } = await db.from('daily_teams').select('team_members').eq('week_identifier', weekKey).eq('day_of_week', day).single();
         const currentlySelected = data ? data.team_members : [];
 
-        // SweetAlert2 ile checkbox'lı bir pencere aç
         const { value: selectedMembers } = await Swal.fire({
             title: `${day} Günü Ekibini Seç`,
             html: TEAM_MEMBERS.map(member => `
-                <div class="flex items-center my-2">
-                    <input type="checkbox" id="member-${member}" value="${member}" class="swal2-checkbox" ${currentlySelected.includes(member) ? 'checked' : ''}>
+                <div class="flex items-center my-2 justify-center">
+                    <input type="checkbox" id="member-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}>
                     <label for="member-${member}" class="ml-2">${member}</label>
                 </div>
             `).join(''),
@@ -402,10 +411,9 @@ weeklyContainer.addEventListener('click', async (e) => {
             }
         });
 
-        // Kullanıcı "Kaydet" dediyse ve seçim değiştiyse
-        if (selectedMembers) {
+        if (typeof selectedMembers !== 'undefined') {
             const { error } = await db.from('daily_teams').upsert({
-                week_identifier: week,
+                week_identifier: weekKey,
                 day_of_week: day,
                 team_members: selectedMembers
             }, { onConflict: 'week_identifier, day_of_week' });
@@ -414,7 +422,6 @@ weeklyContainer.addEventListener('click', async (e) => {
                 console.error('Ekip kaydedilirken hata oluştu:', error);
                 Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
             } else {
-                // Başarılı kayıttan sonra tabloyu yeniden çizerek güncel ekibi göster
                 renderCurrentPage();
             }
         }
@@ -442,6 +449,46 @@ weeklyContainer.addEventListener('click', async (e) => {
         const shootToEdit = allShoots.find(shoot => shoot.id === Number(id)); 
         if (shootToEdit) {
             populateFormForEdit(shootToEdit);
+        }
+    }
+});
+
+editOnLeaveBtn.addEventListener('click', async () => {
+    const weekKey = sortedWeeks[currentPage];
+    
+    const { data } = await db.from('weekly_leaves').select('on_leave_members').eq('week_identifier', weekKey).single();
+    const currentlyOnLeave = data ? data.on_leave_members : [];
+
+    const { value: selectedOnLeave } = await Swal.fire({
+        title: `Haftanın İzinlilerini Seç`,
+        html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `
+            <div class="flex items-center my-2 justify-center text-left w-1/2 mx-auto">
+                <input type="checkbox" id="member-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}>
+                <label for="member-${member}" class="ml-2">${member}</label>
+            </div>
+        `).join(''),
+        confirmButtonText: 'Kaydet',
+        showCancelButton: true,
+        cancelButtonText: 'İptal',
+        width: '40em',
+        preConfirm: () => {
+            return ON_LEAVE_MEMBERS
+                .filter(member => document.getElementById(`member-${member}`).checked)
+                .map(member => document.getElementById(`member-${member}`).value);
+        }
+    });
+
+    if (typeof selectedOnLeave !== 'undefined') {
+        const { error } = await db.from('weekly_leaves').upsert({
+            week_identifier: weekKey,
+            on_leave_members: selectedOnLeave
+        }, { onConflict: 'week_identifier' });
+
+        if (error) {
+            console.error('İzinliler kaydedilirken hata oluştu:', error);
+            Swal.fire('Hata!', 'İzinli listesi kaydedilirken bir hata oluştu.', 'error');
+        } else {
+            renderCurrentPage();
         }
     }
 });
@@ -556,7 +603,7 @@ downloadPdfBtn.addEventListener('click', () => {
 
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-        const weekText = weekRangeDisplay.textContent.replace('Gösterilen Haftfta: ', '');
+        const weekText = weekRangeDisplay.textContent.replace('Gösterilen Hafta: ', '');
         pdf.save(`cekim_plani_${weekText}.pdf`);
     }).catch(err => {
         console.error("PDF oluşturma hatası:", err);
