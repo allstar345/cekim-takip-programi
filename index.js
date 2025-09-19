@@ -199,7 +199,6 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
-    // Haftalık ekip ve izinli verilerini çek
     let { data: dailyTeams, error: teamError } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
     let { data: dailyLeaves, error: leaveError } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
 
@@ -217,7 +216,6 @@ async function renderCurrentPage() {
     updateNavControls();
 }
 
-// YENİ FONKSİYON: Günlük İzinli Planlayıcısını oluşturur
 function renderDailyLeavesPlanner(dailyLeavesMap) {
     dailyLeavesPlanner.innerHTML = '';
     
@@ -243,7 +241,6 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
 
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
-    const weekKey = sortedWeeks[currentPage];
 
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
@@ -353,8 +350,8 @@ function populateFormForEdit(shoot) {
     elements['start_time'].value = shoot.start_time || '';
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
-    elements['content'].value = shoot.content || '';
     elements['shoot_code'].value = shoot.shoot_code || '';
+    elements['content'].value = shoot.content || '';
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -407,7 +404,7 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// YENİ: Ana container için tek bir click listener, tüm butonları yönetir
+// Ana container için tek bir click listener, tüm butonları yönetir
 document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
@@ -540,8 +537,8 @@ form.addEventListener('submit', async (e) => {
         start_time: formData.get('start_time'),
         end_time: formData.get('end_time'),
         director: formData.get('director'),
-        content: formData.get('content'),
         shoot_code: formData.get('shoot_code'),
+        content: formData.get('content'),
     };
 
     if (shootData.start_time >= shootData.end_time) {
