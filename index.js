@@ -64,9 +64,12 @@ const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const dateInput = document.getElementById('date');
 const daySelect = document.getElementById('day');
+const teamPlannerContainer = document.getElementById('team-planner-container');
+const dailyTeamSelectorsDiv = document.getElementById('daily-team-selectors');
 
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
+const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -164,7 +167,7 @@ function processAndRenderData() {
     renderCurrentPage();
 }
 
-function renderCurrentPage() {
+async function renderCurrentPage() {
     loadingDiv.classList.add('hidden');
     weeklyContainer.innerHTML = '';
 
@@ -173,31 +176,64 @@ function renderCurrentPage() {
     if (!hasAnyData) {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
+        teamPlannerContainer.classList.add('hidden');
         return;
     }
     
     noDataDiv.classList.add('hidden');
     navControls.classList.remove('hidden');
+    teamPlannerContainer.classList.remove('hidden');
 
     const weekKey = sortedWeeks[currentPage];
     if (!weekKey) {
          noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
+        teamPlannerContainer.classList.add('hidden');
         return;
     }
     
     const [year, weekNo] = weekKey.split('-').map(Number);
     const dateRange = getWeekDateRange(year, weekNo);
-    const shootsForWeek = groupedShoots[weekKey];
+    const shootsForWeek = groupedShoots[weekKey] || [];
     
-    const timetableHtml = createTimetableHtml(dateRange, shootsForWeek);
+    // YENİ: Haftalık ekip verisini çek ve planlayıcıyı doldur
+    const { data: dailyTeams } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
+    const dailyTeamsMap = new Map(dailyTeams.map(d => [d.day_of_week, d.team_members]));
+    
+    populateTeamPlanner(dailyTeamsMap);
+
+    const timetableHtml = createTimetableHtml(shootsForWeek, dailyTeamsMap);
     weeklyContainer.innerHTML = timetableHtml;
     
     updateNavControls();
 }
 
-// DEĞİŞİKLİK: Tablo oluşturma fonksiyonu, yeni technical_team alanını gösterecek şekilde güncellendi
-function createTimetableHtml(dateRange, shoots) {
+// YENİ FONKSİYON: Haftalık Ekip Planlayıcısını oluşturur
+function populateTeamPlanner(dailyTeamsMap) {
+    dailyTeamSelectorsDiv.innerHTML = '';
+    const weekKey = sortedWeeks[currentPage];
+
+    DAYS_OF_WEEK.forEach(day => {
+        const teamForDay = dailyTeamsMap.get(day) || [];
+
+        const dayContainer = document.createElement('div');
+        
+        let selectHTML = `<label class="block text-sm font-medium text-gray-700 mb-2">${day}</label>
+            <select data-day="${day}" data-week="${weekKey}" multiple class="daily-team-select w-full h-24 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">`;
+        
+        TEAM_MEMBERS.forEach(member => {
+            const isSelected = teamForDay.includes(member) ? 'selected' : '';
+            selectHTML += `<option value="${member}" ${isSelected}>${member}</option>`;
+        });
+
+        selectHTML += '</select>';
+        dayContainer.innerHTML = selectHTML;
+        dailyTeamSelectorsDiv.appendChild(dayContainer);
+    });
+}
+
+// GÜNCELLENDİ: Artık günlük ekip verisini de alıyor ve tablo başlığında gösteriyor
+function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
@@ -223,6 +259,9 @@ function createTimetableHtml(dateRange, shoots) {
 
     const bodyHtml = DAYS_OF_WEEK.map(day => {
         const dayColorClass = getRowColorClass(day);
+        const teamForDay = dailyTeamsMap.get(day) || [];
+        const teamDisplay = teamForDay.length > 0 ? `<div class="text-xs text-blue-600 font-normal mt-1">${teamForDay.join(', ')}</div>` : '';
+
         const cellsHtml = STUDIOS.map(studio => {
             const shootsInCell = gridData[day][studio];
             shootsInCell.sort((a,b) => (a.start_time || a.time || '').localeCompare(b.start_time || b.time || ''));
@@ -235,19 +274,12 @@ function createTimetableHtml(dateRange, shoots) {
                     timeDisplay = shoot.time;
                 }
 
-                // Teknik ekip listesi için yeni HTML oluşturma
-                let teamDisplay = '';
-                if (shoot.technical_team && shoot.technical_team.length > 0) {
-                    teamDisplay = `<p class="text-blue-600 text-xs italic mt-1">Ekip: ${shoot.technical_team.join(', ')}</p>`;
-                }
-
                 return `
                 <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                     <p class="text-gray-600">${timeDisplay}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
                     <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
-                    ${teamDisplay}
                     <div class="flex items-center justify-end space-x-1 mt-2">
                          <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
                          <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
@@ -258,7 +290,7 @@ function createTimetableHtml(dateRange, shoots) {
             return `<td class="timetable-cell">${cellContent}</td>`;
         }).join('');
         
-        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}</td>${cellsHtml}</tr>`;
+        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header">${day}${teamDisplay}</td>${cellsHtml}</tr>`;
     }).join('');
 
     return `
@@ -291,7 +323,6 @@ function updateNavControls() {
     weekRangeDisplay.textContent = displayStr;
 }
 
-// DEĞİŞİKLİK: Form doldurma fonksiyonu, technical_team alanını da dolduracak şekilde güncellendi
 function populateFormForEdit(shoot) {
     const elements = form.elements;
     elements['date'].value = shoot.date || '';
@@ -302,21 +333,6 @@ function populateFormForEdit(shoot) {
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
     elements['content'].value = shoot.content || '';
-
-    // Teknik ekip çoklu seçim kutusunu doldurma
-    const teamSelect = elements['technical_team'];
-    const savedTeam = shoot.technical_team || [];
-    // Önce tüm seçimleri temizle
-    for (const option of teamSelect.options) {
-        option.selected = false;
-    }
-    // Sonra veritabanından gelenleri seç
-    for (const member of savedTeam) {
-        const option = teamSelect.querySelector(`option[value="${member}"]`);
-        if (option) {
-            option.selected = true;
-        }
-    }
 
     currentEditId = shoot.id;
     submitBtn.textContent = 'Kaydı Güncelle';
@@ -399,16 +415,40 @@ weeklyContainer.addEventListener('click', async (e) => {
     }
 });
 
+// YENİ EVENT LISTENER: Ekip planlayıcısındaki değişiklikleri dinler ve kaydeder
+dailyTeamSelectorsDiv.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('daily-team-select')) {
+        const selectElement = e.target;
+        const day = selectElement.dataset.day;
+        const week = selectElement.dataset.week;
+        
+        const selectedMembers = Array.from(selectElement.selectedOptions).map(option => option.value);
+
+        // upsert: Eğer bu hafta/gün için kayıt varsa günceller, yoksa yeni kayıt oluşturur.
+        const { error } = await db.from('daily_teams').upsert({
+            week_identifier: week,
+            day_of_week: day,
+            team_members: selectedMembers
+        }, {
+            onConflict: 'week_identifier, day_of_week'
+        });
+
+        if (error) {
+            console.error('Ekip kaydedilirken hata oluştu:', error);
+            Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
+        } else {
+            // Başarılı kayıttan sonra tabloyu yeniden çizerek güncel ekibi göster
+            renderCurrentPage();
+        }
+    }
+});
+
 cancelBtn.addEventListener('click', resetFormState);
 
-// DEĞİŞİKLİK: Form gönderme fonksiyonu, technical_team alanını da alacak şekilde güncellendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     
-    // Çoklu seçim alanından veriyi doğru almak için getAll kullanılır
-    const technicalTeam = formData.getAll('technical_team');
-
     const shootData = {
         studio: formData.get('studio'),
         teacher: formData.get('teacher'),
@@ -418,7 +458,6 @@ form.addEventListener('submit', async (e) => {
         end_time: formData.get('end_time'),
         director: formData.get('director'),
         content: formData.get('content'),
-        technical_team: technicalTeam, // Veritabanına dizi olarak gönder
     };
 
     if (shootData.start_time >= shootData.end_time) {
