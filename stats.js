@@ -91,6 +91,12 @@ const minutesToHHMM = (totalMinutes) => {
 // =================================================================================
 
 function renderGeneralStats() {
+    console.log("renderGeneralStats fonksiyonu çalıştı.");
+    if (!statsContent) {
+        console.error("HATA: 'stats-content' elementi HTML'de bulunamadı!");
+        return;
+    }
+
     let filteredShoots = allShootsData;
 
     if (currentStatsFilter === 'week') {
@@ -123,6 +129,7 @@ function renderGeneralStats() {
 
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
+    console.log("Genel İstatistikler bölümü başarıyla render edildi ve görünür yapıldı.");
 }
 
 function setActiveStatsButton(filter) {
@@ -145,11 +152,9 @@ function setupCollapsibleSections() {
         icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
     };
     
-    // Başlangıçta bölümler açık olsun
-    reportIcon.style.transform = 'rotate(180deg)';
-    timesheetIcon.style.transform = 'rotate(180deg)';
-    reportContent.classList.remove('hidden');
-    timesheetContent.classList.remove('hidden');
+    // Başlangıçta bölümler kapalı olsun
+    reportIcon.style.transform = 'rotate(0deg)';
+    timesheetIcon.style.transform = 'rotate(0deg)';
     
     reportHeader.addEventListener('click', () => toggleSection(reportContent, reportIcon));
     timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon));
@@ -161,11 +166,9 @@ function setupCollapsibleSections() {
 // =================================================================================
 
 function renderTeacherReport() {
-    teacherReportContainer.innerHTML = '';
-    
     if (filteredReportData.length === 0) {
         teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
-        renderPaginationControls(); // Butonları ve sayacı temizle
+        renderPaginationControls(); // Butonları ve sayacı temizlemek için
         return;
     }
 
@@ -274,10 +277,11 @@ async function renderTimesheet() {
             if (s.director) employeeSet.add(s.director);
             if (s.start_time && s.end_time) {
                 const key = `${s.director}-${s.date}`;
-                if (!autoTimes[key] || s.start_time < autoTimes[key].start) {
+                if (!autoTimes[key]) {
                     autoTimes[key] = { start: s.start_time, end: s.end_time };
-                } else if (s.end_time > autoTimes[key].end) {
-                     autoTimes[key].end = s.end_time;
+                } else {
+                    if (s.start_time < autoTimes[key].start) autoTimes[key].start = s.start_time;
+                    if (s.end_time > autoTimes[key].end) autoTimes[key].end = s.end_time;
                 }
             }
         });
@@ -371,24 +375,30 @@ async function saveTimesheet() {
 // =================================================================================
 
 async function initializePage() {
+    console.log("Sayfa başlatılıyor...");
     // 1. Yetki kontrolü
     const { data: { session } } = await supabaseAuth.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
+    console.log("Yetki kontrolü başarılı.");
 
     // 2. Ana veriyi çek
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
+        console.error("Veri çekme hatası:", error);
         teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`;
         return;
     }
     allShootsData = data;
+    console.log(`${allShootsData.length} adet çekim verisi yüklendi.`);
     
     // 3. Tüm modülleri başlat
+    console.log("Modüller başlatılıyor...");
     setActiveStatsButton('month');
     await populateReportDropdowns();
     applyReportFilters(); 
     await renderTimesheet();
     setupCollapsibleSections();
+    console.log("Tüm modüller başarıyla başlatıldı.");
 
     // 4. Tüm Olay Dinleyicileri (Event Listeners) ata
     Object.keys(filterButtons).forEach(key => {
@@ -417,6 +427,7 @@ async function initializePage() {
         await supabaseAuth.auth.signOut(); 
         window.location.href = 'login.html'; 
     });
+    console.log("Tüm olay dinleyicileri atandı. Sayfa hazır.");
 }
 
 // Sayfa yüklendiğinde ana fonksiyonu çalıştır
