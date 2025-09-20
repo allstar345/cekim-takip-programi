@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>İstatistikler ve Raporlar - Çekim Takip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,6 +17,21 @@
         .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .section-toggle-icon { transition: transform 0.3s; }
         .section-content.hidden { display: none; }
+
+        /* YENİ EKLENEN STİLLER */
+        #timesheet-table th, #timesheet-table td {
+            padding: 8px 4px; /* Dikey padding aynı, yatay padding azaltıldı */
+            text-align: center;
+            min-width: 120px; /* Sütunların çok daralmasını önle */
+        }
+        #timesheet-table input[type="time"] {
+            width: 100%;
+            max-width: 95px; /* Saat kutularının genişliği sınırlandırıldı */
+            padding: 4px 2px;
+            font-size: 0.875rem; /* Yazı boyutu hafif küçültüldü */
+            display: inline-block;
+        }
+        /* YENİ EKLENEN STİLLER SONU */
     </style>
 </head>
 <body class="bg-gray-100">
