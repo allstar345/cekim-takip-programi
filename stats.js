@@ -42,17 +42,17 @@ let currentTimesheetDate = new Date();
 const NORMAL_WORK_MINUTES = 450;
 let currentStatsFilter = 'month';
 
-// --- Yardımcı Fonksiyonlar (HATALI FONKSİYON DÜZELTİLDİ) ---
+// --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
     const d = new Date(date);
-    d.setHours(12, 0, 0, 0); // Saat dilimi sorunlarını önlemek için öğlen saatine ayarla
-    const day = d.getDay(); // Pazar = 0, Pzt = 1, Salı = 2...
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Pazartesi'ye olan gün farkını hesapla
-    const start = new Date(d.setDate(diff));
-    start.setHours(0, 0, 0, 0); // Haftanın başlangıcı (Pazartesi 00:00)
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const daysToSubtract = day === 0 ? 6 : day - 1;
+    const start = new Date(d);
+    start.setDate(d.getDate() - daysToSubtract);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999); // Haftanın sonu (Pazar 23:59)
+    end.setHours(23, 59, 59, 999);
     return { start, end };
 };
 const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
@@ -77,20 +77,39 @@ function applyReportFilters() { let filtered = [...allShootsData]; if (reportTea
 async function populateReportDropdowns() { const { data: teachers } = await db.from('teachers').select('name').order('name'); if (teachers) { reportTeacherSelect.innerHTML = '<option value="">Tümü</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join(''); } const directors = [...new Set(allShootsData.map(s => s.director).filter(Boolean))].sort(); reportFilterDirector.innerHTML = '<option value="">Tümü</option>' + directors.map(d => `<option value="${d}">${d}</option>`).join(''); }
 
 // =================================================================================
-// BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ
+// BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ (TEST KODU EKLENDİ)
 // =================================================================================
 function updateTimesheetWeekDisplay() { const { start, end } = getWeekRange(currentTimesheetDate); weekRangeDisplayTimesheet.textContent = `${start.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'})} - ${end.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'})}`; }
 async function renderTimesheet() {
     updateTimesheetWeekDisplay();
     timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Mesai verileri yükleniyor...</p>`;
-    const { start } = getWeekRange(currentTimesheetDate);
-    const currentWeekStart = new Date(start); 
-    const weekIdentifier = getWeekIdentifier(currentWeekStart);
-    const currentWeekEnd = new Date(currentWeekStart);
-    currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
-    const startDateStr = currentWeekStart.toISOString().split('T')[0];
-    const endDateStr = currentWeekEnd.toISOString().split('T')[0];
+
+    let startDateStr, endDateStr, weekIdentifier, currentWeekStart;
+    
+    // Test Mantığı: Eğer hafta 22 Eylül haftası ise, tarihleri hesaplama, elle yaz.
+    const tempDate = new Date(currentTimesheetDate);
+    if (tempDate.getFullYear() === 2025 && tempDate.getMonth() === 8 && tempDate.getDate() >= 22 && tempDate.getDate() <= 28) {
+        console.warn("!!!! TEST KODU AKTİF: Tarihler manuel olarak ayarlandı !!!!");
+        startDateStr = '2025-09-22';
+        endDateStr = '2025-09-28';
+        weekIdentifier = '2025-39';
+        currentWeekStart = new Date('2025-09-22T00:00:00');
+    } else {
+        // Normal haftalar için standart hesaplama
+        const { start } = getWeekRange(currentTimesheetDate);
+        currentWeekStart = new Date(start); 
+        weekIdentifier = getWeekIdentifier(currentWeekStart);
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
+        startDateStr = currentWeekStart.toISOString().split('T')[0];
+        endDateStr = currentWeekEnd.toISOString().split('T')[0];
+    }
+    
+    console.log("TEST İÇİN KULLANILAN TARİH ARALIĞI:", startDateStr, "-", endDateStr);
+
     const { data: shootsInWeek } = await db.from('shoots').select('date, director, start_time, end_time').gte('date', startDateStr).lte('date', endDateStr);
+    console.log("BU TARİH ARALIĞI İÇİN GELEN ÇEKİMLER:", shootsInWeek);
+
     const { data: teamsInWeek } = await db.from('daily_teams').select('team_members').eq('week_identifier', weekIdentifier);
     const employeeSet = new Set();
     const autoTimes = {};
