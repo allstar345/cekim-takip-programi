@@ -186,7 +186,6 @@ function setActiveButton(filter) {
      calculateAndRenderStats();
 }
 
-
 // --- Mesai Tablosu Fonksiyonları ---
 function updateTimesheetWeekDisplay() {
     const { start, end } = getThisWeekRange(currentTimesheetDate);
@@ -346,9 +345,9 @@ async function saveTimesheet() {
     saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet';
 }
 
-
-// --- Ana Event Listeners ---
+// --- Ana Yükleme ve Event Listeners ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // Önceki HTML'i dinamik olarak yükle
     mainStatsContainer.innerHTML = `
         <div class="bg-white rounded-2xl shadow-lg mb-8 p-6">
              <div class="flex flex-col md:flex-row md:justify-between md:items-start">
