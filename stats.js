@@ -43,24 +43,35 @@ const NORMAL_WORK_MINUTES = 450;
 let currentStatsFilter = 'month';
 
 // --- Yardımcı Fonksiyonlar ---
+
+// ******** HATALI FONKSİYON DÜZELTİLDİ VE YENİDEN YAZILDI *********
 const getWeekRange = (date = new Date()) => {
+    // Tarihin bir kopyasını oluştur ve saatini sıfırla
     const d = new Date(date);
-    d.setHours(0, 0, 0, 0); // Saati sıfırla
+    d.setHours(0, 0, 0, 0);
 
-    // Haftanın günü (Pazar=0, Pzt=1...)
+    // Haftanın gününü al (Pazar=0, Pzt=1, Salı=2...)
     const day = d.getDay();
-    
-    // Pazartesi'nin tarihini hesapla
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
-    
-    const start = new Date(d.setDate(diff));
 
+    // Pazartesi'ye geri gitmek için kaç gün çıkarılacağını hesapla
+    // Eğer Pzt (1) ise 0 gün çıkar.
+    // Eğer Salı (2) ise 1 gün çıkar.
+    // Eğer Pazar (0) ise 6 gün çıkar.
+    const daysToSubtract = day === 0 ? 6 : day - 1;
+
+    // Haftanın başlangıç (Pazartesi) tarihini oluştur
+    const start = new Date(d);
+    start.setDate(d.getDate() - daysToSubtract);
+
+    // Haftanın bitiş (Pazar) tarihini oluştur
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
 
     return { start, end };
 };
+// ******** DÜZELTME SONU *********
+
 const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
 const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
 const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
