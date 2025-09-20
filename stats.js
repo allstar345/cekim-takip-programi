@@ -50,7 +50,7 @@ const filterButtons = {
 const DIRECTORS_LIST = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
 let allShootsData = [];
-let teacherReportData = []; // Seçilen öğretmenin tüm çekimlerini tutan ana veri
+let teacherReportData = [];
 let currentFilter = 'month';
 
 function getThisWeekRange() {
@@ -199,8 +199,13 @@ function renderTeacherReport(shootsToRender) {
 }
 
 function applyReportFilters() {
+    if (!reportTeacherSelect.value) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen raporu görüntülemek için bir öğretmen seçin.</p>`;
+        return;
+    }
+
     if (teacherReportData.length === 0) {
-        renderTeacherReport([]);
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
         return;
     }
 
@@ -265,7 +270,6 @@ async function handleTeacherSelection() {
     toggleReportFilters(false);
 }
 
-
 function setActiveButton(filter) {
      Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
      filterButtons[filter].classList.add('active');
@@ -290,7 +294,12 @@ reportTeacherSearch.addEventListener('input', () => {
 });
 
 
-reportTeacherSelect.addEventListener('change', handleTeacherSelection);
+reportTeacherSelect.addEventListener('change', () => {
+    const selectedTeacher = reportTeacherSelect.value;
+    reportTeacherSearch.value = selectedTeacher;
+    handleTeacherSelection();
+});
+
 reportFilterDate.addEventListener('change', applyReportFilters);
 reportFilterDirector.addEventListener('change', applyReportFilters);
 reportGlobalSearch.addEventListener('input', applyReportFilters);
