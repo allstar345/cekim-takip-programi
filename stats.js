@@ -43,7 +43,8 @@ let allShootsData = [];
 let teacherReportData = [];
 let currentFilter = 'month';
 let currentTimesheetDate = new Date();
-const NORMAL_WORK_MINUTES = 450; // 7.5 saat * 60 dakika
+const NORMAL_WORK_MINUTES = 450;
+
 
 // --- Yardımcı Fonksiyonlar ---
 function getThisWeekRange(date = new Date()) {
@@ -92,22 +93,97 @@ function minutesToHHMM(totalMinutes) {
 
 // --- İstatistik ve Raporlama Fonksiyonları ---
 function calculateAndRenderStats() {
-    // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
+    let filteredShoots = allShootsData;
+    if (currentFilter === 'week') {
+        const { start, end } = getThisWeekRange();
+        filteredShoots = allShootsData.filter(s => s.date && new Date(s.date) >= start && new Date(s.date) <= end);
+        subtitle.textContent = `Bu haftanın verileri gösterilmektedir.`;
+    } else if (currentFilter === 'month') {
+        const { start, end } = getThisMonthRange();
+        filteredShoots = allShootsData.filter(s => s.date && new Date(s.date) >= start && new Date(s.date) <= end);
+        subtitle.textContent = `Bu ayın verileri gösterilmektedir.`;
+    } else {
+         subtitle.textContent = `Tüm zamanlara ait veriler gösterilmektedir.`;
+    }
+    
+    const teacherCounts = filteredShoots.reduce((acc, shoot) => {
+        if (shoot.teacher) { acc[shoot.teacher] = (acc[shoot.teacher] || 0) + 1; }
+        return acc;
+    }, {});
+    const directorCounts = filteredShoots.reduce((acc, shoot) => {
+        if (shoot.director) { acc[shoot.director] = (acc[shoot.director] || 0) + 1; }
+        return acc;
+    }, {});
+
+    let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
+    let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
+    
+    if(teacherFilterInput.value) {
+        sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterInput.value.toLowerCase()));
+    }
+    if(directorFilterInput.value) {
+        sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterInput.value.toLowerCase()));
+    }
+
+    teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-6 py-4">${name}</td><td class="px-6 py-4">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç yok.</td></tr>';
+    directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `<tr><td class="px-6 py-4">${name}</td><td class="px-6 py-4">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç yok.</td></tr>';
+    
+    loadingDiv.style.display = 'none';
+    contentDiv.style.display = 'block';
 }
+
 async function populateReportDropdowns() {
-    // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
+    const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
+    if (error) return;
+    reportTeacherSelect.innerHTML += teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    reportFilterDirector.innerHTML += DIRECTORS_LIST.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
 }
+
 function renderTeacherReport(shootsToRender) {
-    // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
+    if (!shootsToRender || shootsToRender.length === 0) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
+        return;
+    }
+    let tableHTML = `
+        <table id="teacher-report-table" class="min-w-full mt-4 text-sm border-collapse">
+            <thead class="bg-gray-50">
+                <tr><th>Tarih</th><th>Çekim Kodu</th><th>Çekim İçeriği</th><th>Yönetmen</th></tr>
+            </thead>
+            <tbody>
+                ${shootsToRender.map(shoot => `
+                    <tr>
+                        <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                        <td>${shoot.shoot_code || '-'}</td>
+                        <td>${shoot.content || '-'}</td>
+                        <td>${shoot.director || '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
+    teacherReportContainer.innerHTML = tableHTML;
 }
+
 function applyReportFilters() {
-    // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
+    let filteredData = allShootsData;
+    if (reportTeacherSelect.value) filteredData = filteredData.filter(s => s.teacher === reportTeacherSelect.value);
+    if (reportFilterDate.value) filteredData = filteredData.filter(s => s.date === reportFilterDate.value);
+    if (reportFilterDirector.value) filteredData = filteredData.filter(s => s.director === reportFilterDirector.value);
+    if (reportGlobalSearch.value) {
+        const searchText = reportGlobalSearch.value.toLowerCase();
+        filteredData = filteredData.filter(s => 
+            (s.shoot_code && s.shoot_code.toLowerCase().includes(searchText)) ||
+            (s.content && s.content.toLowerCase().includes(searchText)) ||
+            (s.director && s.director.toLowerCase().includes(searchText))
+        );
+    }
+    renderTeacherReport(filteredData);
 }
-async function fetchTeacherReportData() {
-    // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
-}
+
 function setActiveButton(filter) {
-     // ... Bu fonksiyonun içeriği aynı kalacak (önceki versiyondan alınabilir)
+     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
+     filterButtons[filter].classList.add('active');
+     currentFilter = filter;
+     calculateAndRenderStats();
 }
 
 
@@ -192,8 +268,8 @@ function calculateAllTotals() {
     const rows = document.querySelectorAll('#timesheet-table tbody tr');
     rows.forEach(row => {
         let weeklyTotalMinutes = 0;
-        const inputs = row.querySelectorAll('input[type="time"]');
         let workDays = 0;
+        const inputs = row.querySelectorAll('input[type="time"]');
         
         for (let i = 0; i < inputs.length; i += 2) {
             const start = inputs[i].value;
@@ -208,8 +284,8 @@ function calculateAllTotals() {
             }
         }
         
+        const normalWorkMinutes = Math.min(weeklyTotalMinutes, NORMAL_WORK_MINUTES * workDays);
         const overtimeMinutes = Math.max(0, weeklyTotalMinutes - (NORMAL_WORK_MINUTES * workDays));
-        const normalWorkMinutes = weeklyTotalMinutes - overtimeMinutes;
 
         row.querySelector('.total-work').textContent = minutesToHHMM(normalWorkMinutes);
         row.querySelector('.total-overtime').textContent = minutesToHHMM(overtimeMinutes);
@@ -270,9 +346,123 @@ async function saveTimesheet() {
     saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet';
 }
 
-// --- Event Listeners ---
+
+// --- Ana Event Listeners ---
 document.addEventListener('DOMContentLoaded', async () => {
-    await initializePage();
+    mainStatsContainer.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-lg mb-8 p-6">
+             <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Zaman Aralığına Göre Filtrele</h2>
+                    <p id="stats-subtitle" class="text-sm text-gray-500 mt-1">Veriler filtrelenmektedir...</p>
+                </div>
+                <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                    <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Bu Hafta</button>
+                    <button id="filter-month" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors active">Bu Ay</button>
+                    <button id="filter-all" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Tüm Zamanlar</button>
+                </div>
+            </div>
+        </div>
+        <div id="stats-loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
+            <p class="text-gray-500">İstatistikler hesaplanıyor, lütfen bekleyin...</p>
+        </div>
+        <div id="stats-content" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Öğretmen İstatistikleri</h2>
+                    <input type="text" id="teacher-filter-input" placeholder="Öğretmen adıyla filtrele..." class="w-full px-3 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4">
+                    <div class="overflow-y-auto max-h-96">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Toplam Çekim Sayısı</th></tr></thead>
+                            <tbody id="teacher-stats-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                     <h2 class="text-xl font-bold text-gray-800 mb-4">Yönetmen İstatistikleri</h2>
+                     <input type="text" id="director-filter-input" placeholder="Yönetmen adıyla filtrele..." class="w-full px-3 py-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-4">
+                    <div class="overflow-y-auto max-h-96">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yönetmen</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Toplam Çekim Sayısı</th></tr></thead>
+                            <tbody id="director-stats-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 bg-white rounded-2xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Detaylı Çekim Dökümü</h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end border-b pb-4 mb-4">
+                    <div>
+                        <label for="report-teacher-search" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen Ara</label>
+                        <input type="text" id="report-teacher-search" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5" placeholder="Öğretmen adı...">
+                    </div>
+                    <div>
+                        <label for="report-teacher-select" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen Filtrele</label>
+                        <select id="report-teacher-select" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"><option value="">Tümü</option></select>
+                    </div>
+                    <div>
+                        <label for="report-filter-date" class="block text-sm font-medium text-gray-700 mb-2">Tarihe Göre</label>
+                        <input type="date" id="report-filter-date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                    </div>
+                    <div>
+                        <label for="report-filter-director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmene Göre</label>
+                         <select id="report-filter-director" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"><option value="">Tümü</option></select>
+                    </div>
+                    <div>
+                        <label for="report-global-search" class="block text-sm font-medium text-gray-700 mb-2">Genel Arama</label>
+                        <input type="text" id="report-global-search" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5" placeholder="Kod, içerik, yönetmen ara...">
+                    </div>
+                </div>
+                <div id="teacher-report-container" class="mt-4 overflow-x-auto"></div>
+            </div>
+        </div>
+    `;
+
+    // Elementleri yeniden ata
+    loadingDiv = document.getElementById('stats-loading');
+    contentDiv = document.getElementById('stats-content');
+    teacherStatsBody = document.getElementById('teacher-stats-body');
+    directorStatsBody = document.getElementById('director-stats-body');
+    subtitle = document.getElementById('stats-subtitle');
+    teacherFilterInput = document.getElementById('teacher-filter-input');
+    directorFilterInput = document.getElementById('director-filter-input');
+    reportTeacherSelect = document.getElementById('report-teacher-select');
+    teacherReportContainer = document.getElementById('teacher-report-container');
+    reportTeacherSearch = document.getElementById('report-teacher-search');
+    reportFilterDate = document.getElementById('report-filter-date');
+    reportFilterDirector = document.getElementById('report-filter-director');
+    reportGlobalSearch = document.getElementById('report-global-search');
+    filterButtons = {
+        week: document.getElementById('filter-week'),
+        month: document.getElementById('filter-month'),
+        all: document.getElementById('filter-all'),
+    };
+
+    // Event listener'ları ata
+    Object.keys(filterButtons).forEach(key => filterButtons[key].addEventListener('click', () => { setActiveButton(key); calculateAndRenderStats(); }));
+    teacherFilterInput.addEventListener('input', calculateAndRenderStats);
+    directorFilterInput.addEventListener('input', calculateAndRenderStats);
+    reportTeacherSearch.addEventListener('input', () => {
+        const searchText = reportTeacherSearch.value.toLowerCase();
+        Array.from(reportTeacherSelect.options).forEach(option => {
+            option.style.display = option.text.toLowerCase().includes(searchText) || option.value === '' ? '' : 'none';
+        });
+    });
+    [reportTeacherSelect, reportFilterDate, reportFilterDirector, reportGlobalSearch].forEach(el => el.addEventListener('change', applyReportFilters));
+    reportGlobalSearch.addEventListener('input', applyReportFilters);
+    
+    await populateReportDropdowns();
+    applyReportFilters();
+    
+    const { data, error } = await db.from('shoots').select('*');
+    if (error) {
+        loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
+    } else {
+        allShootsData = data.filter(shoot => shoot.date && new Date(shoot.date) <= new Date());
+        setActiveButton('month');
+        calculateAndRenderStats();
+    }
+    
     renderTimesheet();
 });
 
