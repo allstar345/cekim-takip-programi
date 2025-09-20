@@ -42,17 +42,17 @@ let currentTimesheetDate = new Date();
 const NORMAL_WORK_MINUTES = 450;
 let currentStatsFilter = 'month';
 
-// --- Yardımcı Fonksiyonlar ---
+// --- Yardımcı Fonksiyonlar (HATALI FONKSİYON DÜZELTİLDİ) ---
 const getWeekRange = (date = new Date()) => {
     const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    const daysToSubtract = day === 0 ? 6 : day - 1;
-    const start = new Date(d);
-    start.setDate(d.getDate() - daysToSubtract);
+    d.setHours(12, 0, 0, 0); // Saat dilimi sorunlarını önlemek için öğlen saatine ayarla
+    const day = d.getDay(); // Pazar = 0, Pzt = 1, Salı = 2...
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Pazartesi'ye olan gün farkını hesapla
+    const start = new Date(d.setDate(diff));
+    start.setHours(0, 0, 0, 0); // Haftanın başlangıcı (Pazartesi 00:00)
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
+    end.setHours(23, 59, 59, 999); // Haftanın sonu (Pazar 23:59)
     return { start, end };
 };
 const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
