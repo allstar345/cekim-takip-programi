@@ -161,7 +161,6 @@ async function populateReportDropdowns() {
     reportFilterDirector.innerHTML += directorOptionsHTML;
 }
 
-// DÜZELTME: Bu fonksiyon artık sadece tabloyu çizer. Veri filtreleme kendi fonksiyonunda yapılır.
 function renderTeacherReport(shootsToRender) {
     if (!shootsToRender || shootsToRender.length === 0) {
         teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
@@ -194,14 +193,14 @@ function renderTeacherReport(shootsToRender) {
     teacherReportContainer.innerHTML = tableHTML;
 }
 
-// YENİ FONKSİYON: Tüm filtreleri ana veri üzerinden uygular ve tabloyu yeniden çizer.
 function applyReportFilters() {
+    if (!reportTeacherSelect.value) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen raporu görüntülemek için bir öğretmen seçin.</p>`;
+        return;
+    }
+    
     if (teacherReportData.length === 0) {
-        if (reportTeacherSelect.value) { // Eğer bir öğretmen seçili ama verisi yoksa
-             teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
-        } else {
-            teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen raporu görüntülemek için bir öğretmen seçin.</p>`;
-        }
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
         return;
     }
 
@@ -229,9 +228,13 @@ function applyReportFilters() {
 }
 
 async function fetchTeacherReportData(teacherName) {
+    reportFilterDate.value = '';
+    reportFilterDirector.value = '';
+    reportGlobalSearch.value = '';
+
     if (!teacherName) {
         teacherReportData = [];
-        applyReportFilters(); // Öğretmen seçilmediğinde mesajı göstermek için
+        applyReportFilters();
         return;
     }
     teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
@@ -247,7 +250,7 @@ async function fetchTeacherReportData(teacherName) {
     }
 
     teacherReportData = shoots || [];
-    applyReportFilters(); // Veri geldikten sonra mevcut filtrelere göre çiz
+    applyReportFilters();
 }
 
 
@@ -266,7 +269,6 @@ Object.keys(filterButtons).forEach(key => {
 teacherFilterInput.addEventListener('input', calculateAndRenderStats);
 directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
-// DÜZELTME: Arama ve Seçim entegrasyonu
 reportTeacherSearch.addEventListener('input', () => {
     const searchText = reportTeacherSearch.value.toLowerCase();
     let firstVisibleOption = null;
@@ -279,27 +281,28 @@ reportTeacherSearch.addEventListener('input', () => {
         }
     });
 
-    // Arama kutusu boşsa seçimi temizle, değilse ilk bulduğunu seç
+    const currentSelectedValue = reportTeacherSelect.value;
+    let newSelectedValue = '';
+    
     if (searchText === '') {
-        reportTeacherSelect.value = '';
+       newSelectedValue = '';
     } else if (firstVisibleOption) {
-        reportTeacherSelect.value = firstVisibleOption.value;
+       newSelectedValue = firstVisibleOption.value;
     } else {
-        reportTeacherSelect.value = '';
+       newSelectedValue = '';
     }
 
-    // Arama yapıldığında seçimi ve dolayısıyla veri çekmeyi tetikle
-    reportTeacherSelect.dispatchEvent(new Event('change'));
+    if (currentSelectedValue !== newSelectedValue) {
+        reportTeacherSelect.value = newSelectedValue;
+        reportTeacherSelect.dispatchEvent(new Event('change'));
+    }
 });
 
 
 reportTeacherSelect.addEventListener('change', () => {
     const selectedTeacher = reportTeacherSelect.value;
-    // Arama kutusunu da seçime göre güncelle, böylece senkronize kalırlar
     if (selectedTeacher) {
         reportTeacherSearch.value = selectedTeacher;
-    } else {
-        reportTeacherSearch.value = '';
     }
     fetchTeacherReportData(selectedTeacher);
 });
