@@ -47,7 +47,6 @@ const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getM
 const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 
-
 // =================================================================================
 // BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
 // =================================================================================
@@ -55,19 +54,44 @@ function renderGeneralStats() { if (!statsContent) { return; } let filteredShoot
 function setActiveStatsButton(filter) { currentStatsFilter = filter; Object.values(filterButtons).forEach(btn => btn.classList.remove('active')); filterButtons[filter].classList.add('active'); renderGeneralStats(); }
 function setupCollapsibleSections() { const reportHeader = document.getElementById('report-section-header'); const reportContent = document.getElementById('report-section-content'); const reportIcon = document.getElementById('report-toggle-icon'); const timesheetHeader = document.getElementById('timesheet-section-header'); const timesheetContent = document.getElementById('timesheet-section-content'); const timesheetIcon = document.getElementById('timesheet-toggle-icon'); const toggleSection = (content, icon) => { const isHidden = content.classList.toggle('hidden'); icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)'; }; reportIcon.style.transform = 'rotate(0deg)'; timesheetIcon.style.transform = 'rotate(0deg)'; reportHeader.addEventListener('click', () => toggleSection(reportContent, reportIcon)); timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon)); }
 
-
 // =================================================================================
 // BÖLÜM 3: DETAYLI ÇEKİM DÖKÜMÜ (RAPORLAMA VE SAYFALAMA)
 // =================================================================================
-function renderTeacherReport() { if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
+function renderTeacherReport() {
+    if (filteredReportData.length === 0) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
+        renderPaginationControls();
+        return;
+    }
+    const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE;
+    const endIndex = startIndex + REPORT_ROWS_PER_PAGE;
+    const paginatedItems = filteredReportData.slice(startIndex, endIndex);
+
+    // ********* DÜZELTME BURADA YAPILDI *********
+    // Eksik olan id="teacher-report-table" etiketi eklendi.
+    let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm">
+        <thead class="bg-gray-50"><tr>
+            <th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th>
+        </tr></thead><tbody>
+        ${paginatedItems.map(shoot => `
+            <tr>
+                <td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                <td class="px-4 py-2">${shoot.teacher || '-'}</td>
+                <td class="px-4 py-2">${shoot.shoot_code || '-'}</td>
+                <td class="px-4 py-2">${shoot.content || '-'}</td>
+                <td class="px-4 py-2">${shoot.director || '-'}</td>
+            </tr>`).join('')}
+    </tbody></table>`;
+    teacherReportContainer.innerHTML = tableHTML;
+    renderPaginationControls();
+}
 function renderPaginationControls() { reportPaginationContainer.innerHTML = ''; reportTotalCount.textContent = `Toplam ${filteredReportData.length} kayıt bulundu.`; const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (pageCount <= 1) return; let paginationHTML = ''; paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage - 1})" ${reportCurrentPage === 1 ? 'disabled' : ''}>&laquo;</button>`; for (let i = 1; i <= pageCount; i++) { paginationHTML += `<button class="pagination-btn ${i === reportCurrentPage ? 'active' : ''}" onclick="changeReportPage(${i})">${i}</button>`; } paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage + 1})" ${reportCurrentPage === pageCount ? 'disabled' : ''}>&raquo;</button>`; reportPaginationContainer.innerHTML = paginationHTML; }
 window.changeReportPage = (page) => { const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (page < 1 || page > pageCount) return; reportCurrentPage = page; renderTeacherReport(); };
 function applyReportFilters() { let filtered = [...allShootsData]; if (reportTeacherSelect.value) filtered = filtered.filter(s => s.teacher === reportTeacherSelect.value); if (reportFilterDate.value) filtered = filtered.filter(s => s.date === reportFilterDate.value); if (reportFilterDirector.value) filtered = filtered.filter(s => s.director === reportFilterDirector.value); if (reportGlobalSearch.value) { const searchText = reportGlobalSearch.value.toLowerCase(); filtered = filtered.filter(s => (s.teacher && s.teacher.toLowerCase().includes(searchText)) || (s.shoot_code && s.shoot_code.toLowerCase().includes(searchText)) || (s.content && s.content.toLowerCase().includes(searchText)) || (s.director && s.director.toLowerCase().includes(searchText))); } filteredReportData = filtered.sort((a, b) => new Date(b.date) - new Date(a.date)); reportCurrentPage = 1; renderTeacherReport(); }
 async function populateReportDropdowns() { const { data: teachers } = await db.from('teachers').select('name').order('name'); if (teachers) { reportTeacherSelect.innerHTML = '<option value="">Tümü</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join(''); } const directors = [...new Set(allShootsData.map(s => s.director).filter(Boolean))].sort(); reportFilterDirector.innerHTML = '<option value="">Tümü</option>' + directors.map(d => `<option value="${d}">${d}</option>`).join(''); }
 
-
 // =================================================================================
-// BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ VE SAYFA BAŞLATMA
+// BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ
 // =================================================================================
 function updateTimesheetWeekDisplay() { const { start, end } = getWeekRange(currentTimesheetDate); weekRangeDisplayTimesheet.textContent = `${start.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'})} - ${end.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'})}`; }
 async function renderTimesheet() {
