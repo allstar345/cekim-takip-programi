@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>İstatistikler ve Raporlar - Çekim Takip</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,21 +17,17 @@
         .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .section-toggle-icon { transition: transform 0.3s; }
         .section-content.hidden { display: none; }
-
-        /* YENİ EKLENEN STİLLER */
+        
+        /* Önceki daraltma stilleri kaldırıldı, orijinal haline döndü */
         #timesheet-table th, #timesheet-table td {
-            padding: 8px 4px; /* Dikey padding aynı, yatay padding azaltıldı */
-            text-align: center;
-            min-width: 120px; /* Sütunların çok daralmasını önle */
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: middle;
         }
         #timesheet-table input[type="time"] {
-            width: 100%;
-            max-width: 95px; /* Saat kutularının genişliği sınırlandırıldı */
-            padding: 4px 2px;
-            font-size: 0.875rem; /* Yazı boyutu hafif küçültüldü */
-            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.875rem;
         }
-        /* YENİ EKLENEN STİLLER SONU */
     </style>
 </head>
 <body class="bg-gray-100">
@@ -48,6 +44,7 @@
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">Genel İstatistikler</h2>
                     <p id="stats-subtitle" class="text-sm text-gray-500 mt-1">Veriler filtrelenmektedir...</p>
+                    <p class="text-xs text-gray-400 mt-1">(* Veriler 15.09.2025 tarihinden itibaren esas alınmıştır.)</p>
                 </div>
                 <div class="flex items-center space-x-2 mt-4 md:mt-0">
                     <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg transition-colors">Bu Hafta</button>
@@ -66,13 +63,11 @@
             <div id="report-section-header" class="flex justify-between items-center cursor-pointer mb-4"><h2 class="text-xl font-bold text-gray-800">Detaylı Çekim Dökümü</h2><svg class="section-toggle-icon w-6 h-6 text-gray-600" id="report-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
             <div id="report-section-content" class="section-content hidden"><div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end border-b pb-4 mb-4"><div><label for="report-teacher-select" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen</label><select id="report-teacher-select" class="w-full bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"><option value="">Tümü</option></select></div><div><label for="report-filter-date" class="block text-sm font-medium text-gray-700 mb-2">Tarih</label><input type="date" id="report-filter-date" class="w-full bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"></div><div><label for="report-filter-director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmen</label><select id="report-filter-director" class="w-full bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"><option value="">Tümü</option></select></div><div class="col-span-2"><label for="report-global-search" class="block text-sm font-medium text-gray-700 mb-2">Genel Arama</label><input type="text" id="report-global-search" class="w-full bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"></div></div><div id="teacher-report-container" class="mt-4 overflow-x-auto"></div><div class="flex justify-between items-center mt-4"><div id="report-total-count" class="text-sm text-gray-600"></div><div id="report-pagination-container"></div></div></div>
         </div>
-
         <div class="bg-white rounded-2xl shadow-lg p-6">
             <div id="timesheet-section-header" class="flex justify-between items-center cursor-pointer mb-4"><h2 class="text-xl font-bold text-gray-800">Çalışan Haftalık Mesai Dökümü</h2><svg class="section-toggle-icon w-6 h-6 text-gray-600" id="timesheet-toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
             <div id="timesheet-section-content" class="section-content hidden"><div class="flex flex-col md:flex-row justify-between items-center mb-4"><div class="flex items-center space-x-2 mt-4 md:mt-0"><button id="prev-week-timesheet" class="bg-gray-200 hover:bg-gray-300 font-bold py-2 px-4 rounded-lg">&larr;</button><div id="week-range-display-timesheet" class="text-center text-lg font-semibold text-gray-700 w-64"></div><button id="next-week-timesheet" class="bg-gray-200 hover:bg-gray-300 font-bold py-2 px-4 rounded-lg">&rarr;</button></div></div><div id="timesheet-container" class="overflow-x-auto"></div><div class="flex justify-end mt-4"><button id="save-timesheet-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Değişiklikleri Kaydet</button></div></div>
         </div>
     </main>
-
     <script src="stats.js" defer></script>
 </body>
 </html>
