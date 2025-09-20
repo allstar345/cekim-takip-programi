@@ -50,7 +50,7 @@ const filterButtons = {
 const DIRECTORS_LIST = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
 let allShootsData = [];
-let teacherReportData = [];
+let teacherReportData = []; // Seçilen öğretmenin tüm çekimlerini tutan ana veri
 let currentFilter = 'month';
 
 function getThisWeekRange() {
@@ -161,7 +161,46 @@ async function populateReportDropdowns() {
     reportFilterDirector.innerHTML += directorOptionsHTML;
 }
 
-function renderTeacherReport() {
+// DÜZELTME: Bu fonksiyon artık sadece tabloyu çizer. Veri filtreleme kendi fonksiyonunda yapılır.
+function renderTeacherReport(shootsToRender) {
+    if (!shootsToRender || shootsToRender.length === 0) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
+        return;
+    }
+
+    let tableHTML = `
+        <table id="teacher-report-table" class="min-w-full mt-4 text-sm border-collapse">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th>Tarih</th>
+                    <th>Çekim Kodu</th>
+                    <th>Çekim İçeriği</th>
+                    <th>Yönetmen</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    shootsToRender.forEach(shoot => {
+        tableHTML += `
+            <tr>
+                <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
+                <td>${shoot.shoot_code || '-'}</td>
+                <td>${shoot.content || '-'}</td>
+                <td>${shoot.director || '-'}</td>
+            </tr>
+        `;
+    });
+    tableHTML += `</tbody></table>`;
+    teacherReportContainer.innerHTML = tableHTML;
+}
+
+// YENİ FONKSİYON: Tüm filtreleri ana veri üzerinden uygular ve tabloyu yeniden çizer.
+function applyReportFilters() {
+    if (teacherReportData.length === 0) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen önce bir öğretmen seçin.</p>`;
+        return;
+    }
+
     const filterDate = reportFilterDate.value;
     const filterDirector = reportFilterDirector.value;
     const globalSearchText = reportGlobalSearch.value.toLowerCase().trim();
@@ -181,43 +220,17 @@ function renderTeacherReport() {
             (shoot.director && shoot.director.toLowerCase().includes(globalSearchText))
         );
     }
-
-    if (!filteredData || filteredData.length === 0) {
-        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
-        return;
-    }
-
-    let tableHTML = `
-        <table id="teacher-report-table" class="min-w-full mt-4 text-sm border-collapse">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th>Tarih</th>
-                    <th>Çekim Kodu</th>
-                    <th>Çekim İçeriği</th>
-                    <th>Yönetmen</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    filteredData.forEach(shoot => {
-        tableHTML += `
-            <tr>
-                <td>${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td>
-                <td>${shoot.shoot_code || '-'}</td>
-                <td>${shoot.content || '-'}</td>
-                <td>${shoot.director || '-'}</td>
-            </tr>
-        `;
-    });
-    tableHTML += `</tbody></table>`;
-    teacherReportContainer.innerHTML = tableHTML;
+    
+    renderTeacherReport(filteredData);
 }
-
 
 async function fetchTeacherReportData(teacherName) {
     if (!teacherName) {
         teacherReportData = [];
-        renderTeacherReport();
+        teacherReportContainer.innerHTML = '';
+        reportFilterDate.value = '';
+        reportFilterDirector.value = '';
+        reportGlobalSearch.value = '';
         return;
     }
     teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
@@ -233,9 +246,8 @@ async function fetchTeacherReportData(teacherName) {
     }
 
     teacherReportData = shoots || [];
-    renderTeacherReport();
+    applyReportFilters(); // Veri geldikten sonra mevcut filtrelere göre çiz
 }
-
 
 function setActiveButton(filter) {
      Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
@@ -252,29 +264,19 @@ Object.keys(filterButtons).forEach(key => {
 teacherFilterInput.addEventListener('input', calculateAndRenderStats);
 directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
+// DÜZELTME: Arama ve Seçim entegrasyonu
 reportTeacherSearch.addEventListener('input', () => {
     const searchText = reportTeacherSearch.value.toLowerCase();
-    let firstMatch = null;
     Array.from(reportTeacherSelect.options).forEach(option => {
         const isVisible = option.value === '' || option.text.toLowerCase().includes(searchText);
         option.style.display = isVisible ? '' : 'none';
-        if (isVisible && !firstMatch && option.value !== '') {
-            firstMatch = option;
-        }
     });
-    if (firstMatch && reportTeacherSelect.options.length > 1) {
-        reportTeacherSelect.value = firstMatch.value;
-    } else if (!firstMatch) {
-         reportTeacherSelect.value = '';
-    }
-     fetchTeacherReportData(reportTeacherSelect.value);
 });
 
-
 reportTeacherSelect.addEventListener('change', () => fetchTeacherReportData(reportTeacherSelect.value));
-reportFilterDate.addEventListener('change', renderTeacherReport);
-reportFilterDirector.addEventListener('change', renderTeacherReport);
-reportGlobalSearch.addEventListener('input', renderTeacherReport);
+reportFilterDate.addEventListener('change', applyReportFilters);
+reportFilterDirector.addEventListener('change', applyReportFilters);
+reportGlobalSearch.addEventListener('input', applyReportFilters);
 
 
 logoutBtn.addEventListener('click', async () => {
