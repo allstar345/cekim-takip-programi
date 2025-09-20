@@ -200,7 +200,7 @@ function renderTeacherReport(shootsToRender) {
 
 function applyReportFilters() {
     if (teacherReportData.length === 0) {
-        renderTeacherReport([]); // renderTeacherReport'a boş dizi göndererek "kayıt bulunamadı" mesajını tetikle
+        renderTeacherReport([]);
         return;
     }
 
@@ -233,17 +233,14 @@ function toggleReportFilters(disabled) {
     reportGlobalSearch.disabled = disabled;
 }
 
-async function fetchTeacherReportData() {
-    const teacherName = reportTeacherSelect.value;
-    
-    // Filtreleri ve arama kutusunu sıfırla/pasif et
+async function fetchTeacherReportData(teacherName) {
     reportFilterDate.value = '';
     reportFilterDirector.value = '';
     reportGlobalSearch.value = '';
-    toggleReportFilters(true);
     
     if (!teacherName) {
         teacherReportData = [];
+        toggleReportFilters(true);
         applyReportFilters();
         return;
     }
@@ -262,7 +259,7 @@ async function fetchTeacherReportData() {
 
     teacherReportData = shoots || [];
     renderTeacherReport(teacherReportData);
-    toggleReportFilters(false); // Veri yüklendikten sonra filtreleri aktif et
+    toggleReportFilters(false);
 }
 
 
@@ -290,7 +287,12 @@ reportTeacherSearch.addEventListener('input', () => {
 });
 
 
-reportTeacherSelect.addEventListener('change', fetchTeacherReportData);
+reportTeacherSelect.addEventListener('change', () => {
+    const selectedTeacher = reportTeacherSelect.value;
+    reportTeacherSearch.value = selectedTeacher;
+    fetchTeacherReportData(selectedTeacher);
+});
+
 reportFilterDate.addEventListener('change', applyReportFilters);
 reportFilterDirector.addEventListener('change', applyReportFilters);
 reportGlobalSearch.addEventListener('input', applyReportFilters);
