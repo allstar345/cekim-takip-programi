@@ -199,7 +199,7 @@ function renderTeacherReport(shootsToRender) {
 }
 
 function applyReportFilters() {
-    if (teacherReportData.length === 0) {
+    if (!reportTeacherSelect.value || teacherReportData.length === 0) {
         renderTeacherReport([]);
         return;
     }
@@ -256,6 +256,7 @@ async function fetchTeacherReportData() {
 
     if (error) {
         teacherReportContainer.innerHTML = `<p class="text-red-500">Rapor verileri alınırken bir hata oluştu.</p>`;
+        toggleReportFilters(true);
         return;
     }
 
@@ -291,7 +292,7 @@ reportTeacherSearch.addEventListener('input', () => {
 
 reportTeacherSelect.addEventListener('change', () => {
     const selectedTeacher = reportTeacherSelect.value;
-    reportTeacherSearch.value = selectedTeacher;
+    reportTeacherSearch.value = selectedTeacher; // Arama kutusunu senkronize et
     fetchTeacherReportData();
 });
 
@@ -317,7 +318,7 @@ logoutBtn.addEventListener('click', async () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateReportDropdowns();
-    applyReportFilters();
+    applyReportFilters(); // Başlangıçta "öğretmen seçin" mesajını göstermek ve filtreleri pasif etmek için
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
