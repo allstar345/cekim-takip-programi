@@ -161,6 +161,7 @@ async function populateReportDropdowns() {
     reportFilterDirector.innerHTML += directorOptionsHTML;
 }
 
+// DÜZELTME: Bu fonksiyon artık sadece tabloyu çizer. Veri filtreleme kendi fonksiyonunda yapılır.
 function renderTeacherReport(shootsToRender) {
     if (!shootsToRender || shootsToRender.length === 0) {
         teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
@@ -193,6 +194,7 @@ function renderTeacherReport(shootsToRender) {
     teacherReportContainer.innerHTML = tableHTML;
 }
 
+// YENİ FONKSİYON: Tüm filtreleri ana veri üzerinden uygular ve tabloyu yeniden çizer.
 function applyReportFilters() {
     if (teacherReportData.length === 0) {
         if (reportTeacherSelect.value) { // Eğer bir öğretmen seçili ama verisi yoksa
@@ -245,7 +247,7 @@ async function fetchTeacherReportData(teacherName) {
     }
 
     teacherReportData = shoots || [];
-    applyReportFilters();
+    applyReportFilters(); // Veri geldikten sonra mevcut filtrelere göre çiz
 }
 
 
@@ -264,6 +266,7 @@ Object.keys(filterButtons).forEach(key => {
 teacherFilterInput.addEventListener('input', calculateAndRenderStats);
 directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
+// DÜZELTME: Arama ve Seçim entegrasyonu
 reportTeacherSearch.addEventListener('input', () => {
     const searchText = reportTeacherSearch.value.toLowerCase();
     let firstVisibleOption = null;
@@ -276,6 +279,7 @@ reportTeacherSearch.addEventListener('input', () => {
         }
     });
 
+    // Arama kutusu boşsa seçimi temizle, değilse ilk bulduğunu seç
     if (searchText === '') {
         reportTeacherSelect.value = '';
     } else if (firstVisibleOption) {
@@ -284,16 +288,18 @@ reportTeacherSearch.addEventListener('input', () => {
         reportTeacherSelect.value = '';
     }
 
-    // Arama yapıldığında seçimi tetikle
+    // Arama yapıldığında seçimi ve dolayısıyla veri çekmeyi tetikle
     reportTeacherSelect.dispatchEvent(new Event('change'));
 });
 
 
 reportTeacherSelect.addEventListener('change', () => {
     const selectedTeacher = reportTeacherSelect.value;
-    // Arama kutusunu da seçime göre güncelle
+    // Arama kutusunu da seçime göre güncelle, böylece senkronize kalırlar
     if (selectedTeacher) {
         reportTeacherSearch.value = selectedTeacher;
+    } else {
+        reportTeacherSearch.value = '';
     }
     fetchTeacherReportData(selectedTeacher);
 });
