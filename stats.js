@@ -162,6 +162,11 @@ async function populateReportDropdowns() {
 }
 
 function renderTeacherReport(shootsToRender) {
+    if (!reportTeacherSelect.value) {
+        teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen raporu görüntülemek için bir öğretmen seçin.</p>`;
+        return;
+    }
+
     if (!shootsToRender || shootsToRender.length === 0) {
         teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`;
         return;
@@ -194,13 +199,8 @@ function renderTeacherReport(shootsToRender) {
 }
 
 function applyReportFilters() {
-    if (!reportTeacherSelect.value) {
-        teacherReportContainer.innerHTML = `<p class="text-gray-500">Lütfen raporu görüntülemek için bir öğretmen seçin.</p>`;
-        return;
-    }
-    
     if (teacherReportData.length === 0) {
-        teacherReportContainer.innerHTML = `<p class="text-gray-500">Bu öğretmen için çekim kaydı bulunamadı.</p>`;
+        renderTeacherReport([]); // renderTeacherReport'a boş dizi göndererek "kayıt bulunamadı" mesajını tetikle
         return;
     }
 
@@ -227,16 +227,27 @@ function applyReportFilters() {
     renderTeacherReport(filteredData);
 }
 
-async function fetchTeacherReportData(teacherName) {
+function toggleReportFilters(disabled) {
+    reportFilterDate.disabled = disabled;
+    reportFilterDirector.disabled = disabled;
+    reportGlobalSearch.disabled = disabled;
+}
+
+async function fetchTeacherReportData() {
+    const teacherName = reportTeacherSelect.value;
+    
+    // Filtreleri ve arama kutusunu sıfırla/pasif et
     reportFilterDate.value = '';
     reportFilterDirector.value = '';
     reportGlobalSearch.value = '';
-
+    toggleReportFilters(true);
+    
     if (!teacherName) {
         teacherReportData = [];
         applyReportFilters();
         return;
     }
+
     teacherReportContainer.innerHTML = '<p class="text-gray-500">Rapor yükleniyor...</p>';
 
     const { data: shoots, error } = await db.from('shoots')
@@ -250,7 +261,8 @@ async function fetchTeacherReportData(teacherName) {
     }
 
     teacherReportData = shoots || [];
-    applyReportFilters();
+    renderTeacherReport(teacherReportData);
+    toggleReportFilters(false); // Veri yüklendikten sonra filtreleri aktif et
 }
 
 
@@ -271,42 +283,14 @@ directorFilterInput.addEventListener('input', calculateAndRenderStats);
 
 reportTeacherSearch.addEventListener('input', () => {
     const searchText = reportTeacherSearch.value.toLowerCase();
-    let firstVisibleOption = null;
-
     Array.from(reportTeacherSelect.options).forEach(option => {
         const isVisible = option.value === '' || option.text.toLowerCase().includes(searchText);
         option.style.display = isVisible ? '' : 'none';
-        if (isVisible && option.value !== '' && !firstVisibleOption) {
-            firstVisibleOption = option;
-        }
     });
-
-    const currentSelectedValue = reportTeacherSelect.value;
-    let newSelectedValue = '';
-    
-    if (searchText === '') {
-       newSelectedValue = '';
-    } else if (firstVisibleOption) {
-       newSelectedValue = firstVisibleOption.value;
-    } else {
-       newSelectedValue = '';
-    }
-
-    if (currentSelectedValue !== newSelectedValue) {
-        reportTeacherSelect.value = newSelectedValue;
-        reportTeacherSelect.dispatchEvent(new Event('change'));
-    }
 });
 
 
-reportTeacherSelect.addEventListener('change', () => {
-    const selectedTeacher = reportTeacherSelect.value;
-    if (selectedTeacher) {
-        reportTeacherSearch.value = selectedTeacher;
-    }
-    fetchTeacherReportData(selectedTeacher);
-});
-
+reportTeacherSelect.addEventListener('change', fetchTeacherReportData);
 reportFilterDate.addEventListener('change', applyReportFilters);
 reportFilterDirector.addEventListener('change', applyReportFilters);
 reportGlobalSearch.addEventListener('input', applyReportFilters);
@@ -329,6 +313,7 @@ logoutBtn.addEventListener('click', async () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateReportDropdowns();
+    applyReportFilters(); // Başlangıçta "öğretmen seçin" mesajını göstermek için
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
