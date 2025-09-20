@@ -233,7 +233,9 @@ function toggleReportFilters(disabled) {
     reportGlobalSearch.disabled = disabled;
 }
 
-async function fetchTeacherReportData(teacherName) {
+async function fetchTeacherReportData() {
+    const teacherName = reportTeacherSelect.value;
+    
     reportFilterDate.value = '';
     reportFilterDirector.value = '';
     reportGlobalSearch.value = '';
@@ -290,7 +292,7 @@ reportTeacherSearch.addEventListener('input', () => {
 reportTeacherSelect.addEventListener('change', () => {
     const selectedTeacher = reportTeacherSelect.value;
     reportTeacherSearch.value = selectedTeacher;
-    fetchTeacherReportData(selectedTeacher);
+    fetchTeacherReportData();
 });
 
 reportFilterDate.addEventListener('change', applyReportFilters);
@@ -315,7 +317,7 @@ logoutBtn.addEventListener('click', async () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateReportDropdowns();
-    applyReportFilters(); // Başlangıçta "öğretmen seçin" mesajını göstermek için
+    applyReportFilters();
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         loadingDiv.innerHTML = `<p class="text-red-500">Veriler alınırken bir hata oluştu: ${error.message}</p>`;
