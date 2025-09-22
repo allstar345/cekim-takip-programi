@@ -18,46 +18,57 @@ const logoutBtn = document.getElementById('logout-btn');
 let currentDate = new Date();
 let paymentData = []; 
 
-// --- YARDIMCI FONKSİYON ---
-// 'HH:MM' formatındaki metni toplam dakikaya çevirir
+// --- Yardımcı Fonksiyonlar ---
 function HHMMToMinutes(timeStr) {
-    if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) {
-        return 0;
-    }
+    if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) { return 0; }
     const [hours, minutes] = timeStr.split(':').map(Number);
-    if (isNaN(hours) || isNaN(minutes)) {
-        return 0;
-    }
+    if (isNaN(hours) || isNaN(minutes)) { return 0; }
     return (hours * 60) + minutes;
 }
 
-
 // --- Ana Fonksiyonlar ---
+
+// ******** DÜZELTME BAŞLANGICI: Tarih hesaplama fonksiyonu güncellendi ********
+// Bu fonksiyon artık Date nesneleri döndürüyor ve gösterim hatasını engelliyor.
 function getPaymentPeriod(date) {
     const currentDay = date.getDate();
     const currentMonth = date.getMonth();
     const currentYear = date.getFullYear();
+    
+    let start, end;
+
     if (currentDay < 10) {
-        const end = new Date(currentYear, currentMonth, 9);
-        const start = new Date(currentYear, currentMonth - 1, 10);
-        return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+        // Ayın 10'undan önceyse, bir önceki dönemi göster
+        end = new Date(currentYear, currentMonth, 9);
+        start = new Date(currentYear, currentMonth - 1, 10);
     } else {
-        const start = new Date(currentYear, currentMonth, 10);
-        const end = new Date(currentYear, currentMonth + 1, 9);
-        return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+        // Ayın 10'u veya sonrasındaysa, mevcut dönemi göster
+        start = new Date(currentYear, currentMonth, 10);
+        end = new Date(currentYear, currentMonth + 1, 9);
     }
+    return { start, end };
 }
+// ******** DÜZELTME SONU ********
 
 async function fetchAndRenderData() {
     loadingDiv.style.display = 'block';
     tableContainer.innerHTML = '';
     
+    // Tarih nesnelerini al
     const period = getPaymentPeriod(currentDate);
-    periodDisplay.textContent = `${new Date(period.start+'T00:00:00').toLocaleDateString('tr-TR')} - ${new Date(period.end+'T00:00:00').toLocaleDateString('tr-TR')}`;
+    
+    // Ekranda doğru formatta göster
+    periodDisplay.textContent = `${period.start.toLocaleDateString('tr-TR')} - ${period.end.toLocaleDateString('tr-TR')}`;
 
-    // DİKKAT: total_duration metin formatında ('HH:MM') geldiği için onu seçiyoruz.
-    const { data: logs, error: logsError } = await db.from('monitoring_logs').select('teacher_name, total_duration').gte('date', period.start).lte('date', period.end);
-    const { data: payments, error: paymentsError } = await db.from('payment_records').select('id, teacher_name, paid_duration_minutes').eq('payment_period_start', period.start);
+    // Veritabanı sorgusu için tarihleri YYYY-MM-DD formatına çevir
+    const formatDateForDB = (dateObj) => dateObj.toISOString().split('T')[0];
+    const periodForDB = {
+        start: formatDateForDB(period.start),
+        end: formatDateForDB(period.end)
+    };
+    
+    const { data: logs, error: logsError } = await db.from('monitoring_logs').select('teacher_name, total_duration').gte('date', periodForDB.start).lte('date', periodForDB.end);
+    const { data: payments, error: paymentsError } = await db.from('payment_records').select('id, teacher_name, paid_duration_minutes').eq('payment_period_start', periodForDB.start);
     const { data: teachers, error: teachersError } = await db.from('teachers').select('name, iban');
 
     if (logsError || paymentsError || teachersError) {
@@ -70,12 +81,8 @@ async function fetchAndRenderData() {
         if (!acc[log.teacher_name]) {
             acc[log.teacher_name] = 0;
         }
-        
-        // ******** DÜZELTME BURADA YAPILDI ********
-        // '06:00' gibi metinleri dakikaya çevirmek için yeni yardımcı fonksiyon kullanılıyor.
         const durationInMinutes = HHMMToMinutes(log.total_duration);
         acc[log.teacher_name] += durationInMinutes;
-        
         return acc;
     }, {});
 
@@ -103,13 +110,11 @@ function renderTotals() {
     const grandTotalAmount = includedTeachers.reduce((sum, p) => sum + p.totalAmount, 0);
     const table = tableContainer.querySelector('table');
     if (!table) return;
-    
     let tfoot = table.querySelector('tfoot');
     if (!tfoot) {
         tfoot = document.createElement('tfoot');
         table.appendChild(tfoot);
     }
-    
     tfoot.innerHTML = `
         <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
             <td class="px-6 py-4 text-right" colspan="4">Toplam Kayıt: ${totalTeacherCount} Öğretmen</td>
@@ -124,7 +129,6 @@ function renderTable() {
         loadingDiv.style.display = 'none';
         return;
     }
-    
     let tableHTML = `
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -140,16 +144,13 @@ function renderTable() {
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
     `;
-
     paymentData.forEach(teacher => {
         const durationHours = Math.floor(teacher.totalMinutes / 60);
         const durationMinutes = teacher.totalMinutes % 60;
         const durationString = `${String(durationHours).padStart(2, '0')}:${String(durationMinutes).padStart(2, '0')}`;
-        
         const rowClass = teacher.isExcluded ? 'excluded-row' : '';
         const excludeButtonText = teacher.isExcluded ? 'Dahil Et' : 'Dahil Etme';
         const excludeButtonClass = teacher.isExcluded ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600';
-
         tableHTML += `
             <tr class="${rowClass}" data-teacher-name="${teacher.name}">
                 <td class="px-6 py-4 whitespace-nowrap">${teacher.name}</td>
@@ -174,11 +175,9 @@ function renderTable() {
             </tr>
         `;
     });
-
     tableHTML += `</tbody><tfoot></tfoot></table>`;
     tableContainer.innerHTML = tableHTML;
     loadingDiv.style.display = 'none';
-    
     renderTotals();
 }
 
@@ -204,13 +203,13 @@ tableContainer.addEventListener('click', (e) => {
 });
 
 prevMonthBtn.addEventListener('click', () => {
-    currentDate.setDate(1);
+    currentDate.setDate(1); // Ayın 1'ine giderek bir önceki ayın doğru hesaplanmasını garantile
     currentDate.setMonth(currentDate.getMonth() - 1);
     fetchAndRenderData();
 });
 
 nextMonthBtn.addEventListener('click', () => {
-    currentDate.setDate(15);
+    currentDate.setDate(15); // Ayın 15'ine giderek bir sonraki ayın doğru hesaplanmasını garantile
     currentDate.setMonth(currentDate.getMonth() + 1);
     fetchAndRenderData();
 });
