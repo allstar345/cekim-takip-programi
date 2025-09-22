@@ -27,46 +27,31 @@ function HHMMToMinutes(timeStr) {
 }
 
 // --- Ana Fonksiyonlar ---
-
-// ******** DÜZELTME BAŞLANGICI: Tarih hesaplama fonksiyonu güncellendi ********
-// Bu fonksiyon artık Date nesneleri döndürüyor ve gösterim hatasını engelliyor.
 function getPaymentPeriod(date) {
     const currentDay = date.getDate();
     const currentMonth = date.getMonth();
     const currentYear = date.getFullYear();
-    
     let start, end;
-
     if (currentDay < 10) {
-        // Ayın 10'undan önceyse, bir önceki dönemi göster
         end = new Date(currentYear, currentMonth, 9);
         start = new Date(currentYear, currentMonth - 1, 10);
     } else {
-        // Ayın 10'u veya sonrasındaysa, mevcut dönemi göster
         start = new Date(currentYear, currentMonth, 10);
         end = new Date(currentYear, currentMonth + 1, 9);
     }
     return { start, end };
 }
-// ******** DÜZELTME SONU ********
 
 async function fetchAndRenderData() {
     loadingDiv.style.display = 'block';
     tableContainer.innerHTML = '';
-    
-    // Tarih nesnelerini al
     const period = getPaymentPeriod(currentDate);
-    
-    // Ekranda doğru formatta göster
     periodDisplay.textContent = `${period.start.toLocaleDateString('tr-TR')} - ${period.end.toLocaleDateString('tr-TR')}`;
-
-    // Veritabanı sorgusu için tarihleri YYYY-MM-DD formatına çevir
     const formatDateForDB = (dateObj) => dateObj.toISOString().split('T')[0];
     const periodForDB = {
         start: formatDateForDB(period.start),
         end: formatDateForDB(period.end)
     };
-    
     const { data: logs, error: logsError } = await db.from('monitoring_logs').select('teacher_name, total_duration').gte('date', periodForDB.start).lte('date', periodForDB.end);
     const { data: payments, error: paymentsError } = await db.from('payment_records').select('id, teacher_name, paid_duration_minutes').eq('payment_period_start', periodForDB.start);
     const { data: teachers, error: teachersError } = await db.from('teachers').select('name, iban');
@@ -95,7 +80,8 @@ async function fetchAndRenderData() {
             name,
             iban: teacherMap.get(name) || '-',
             totalMinutes,
-            totalAmount: (totalMinutes / 60) * 250,
+            // ******** DÜZELTME BURADA YAPILDI: Saatlik ücret 500 TL olarak güncellendi ********
+            totalAmount: (totalMinutes / 60) * 500,
             isPaid: paymentRecord ? paymentRecord.paid_duration_minutes === totalMinutes : false,
             isExcluded: false
         };
@@ -203,13 +189,13 @@ tableContainer.addEventListener('click', (e) => {
 });
 
 prevMonthBtn.addEventListener('click', () => {
-    currentDate.setDate(1); // Ayın 1'ine giderek bir önceki ayın doğru hesaplanmasını garantile
+    currentDate.setDate(1);
     currentDate.setMonth(currentDate.getMonth() - 1);
     fetchAndRenderData();
 });
 
 nextMonthBtn.addEventListener('click', () => {
-    currentDate.setDate(15); // Ayın 15'ine giderek bir sonraki ayın doğru hesaplanmasını garantile
+    currentDate.setDate(15);
     currentDate.setMonth(currentDate.getMonth() + 1);
     fetchAndRenderData();
 });
