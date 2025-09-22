@@ -44,14 +44,15 @@ async function fetchAndRenderData() {
 
     if (logsError || teachersError || additionalPaymentsError) { console.error(logsError || teachersError || additionalPaymentsError); return; }
 
+    // Bu, SADECE o dönemde dersi olan öğretmenlerin listesini oluşturur.
     const teacherTotals = logs.reduce((acc, log) => { if (!acc[log.teacher_name]) { acc[log.teacher_name] = 0; } acc[log.teacher_name] += HHMMToMinutes(log.total_duration); return acc; }, {});
+    
     const teacherMap = new Map(teachers.map(t => [t.name, t.iban]));
     const additionalPaymentMap = new Map(additionalPayments.map(p => [p.teacher_name, { amount: p.amount, description: p.description }]));
-
-    const allTeacherNames = new Set([...Object.keys(teacherTotals), ...teachers.map(t => t.name)]);
     
-    paymentData = Array.from(allTeacherNames).map(name => {
-        const totalMinutes = teacherTotals[name] || 0;
+    // ******** DÜZELTME BURADA YAPILDI ********
+    // Liste artık tüm öğretmenleri değil, SADECE o dönemde dersi olanları ('teacherTotals' içindekileri) gösterecek.
+    paymentData = Object.entries(teacherTotals).map(([name, totalMinutes]) => {
         const additionalPayment = additionalPaymentMap.get(name) || { amount: 0, description: '' };
         return {
             name,
@@ -138,17 +139,14 @@ function closeModal() {
 // --- Olay Dinleyicileri ---
 tableContainer.addEventListener('click', (e) => {
     const target = e.target;
-    
-    // *** DAHİL ETME FONKSİYONU GERİ EKLENDİ ***
     if (target.classList.contains('exclude-btn')) {
         const teacherName = target.dataset.teacherName;
         const teacher = paymentData.find(p => p.name === teacherName);
         if (teacher) {
-            teacher.isExcluded = !teacher.isExcluded; // Durumu tersine çevir
-            renderTable(); // Tabloyu yeniden çizerek durumu ve toplamı güncelle
+            teacher.isExcluded = !teacher.isExcluded;
+            renderTable();
         }
     }
-    
     if (target.classList.contains('add-payment-btn')) {
         openModal(target.dataset.teacherName);
     }
