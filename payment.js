@@ -63,26 +63,9 @@ async function fetchAndRenderData() {
         iban: teacherMap.get(name) || '-',
         totalMinutes,
         totalAmount: (totalMinutes / 60) * 500, // Saatlik ücret 500 TL
-        isExcluded: false
     })).sort((a,b) => a.name.localeCompare(b.name));
 
     renderTable();
-}
-
-function renderTotals() {
-    const includedTeachers = paymentData.filter(p => !p.isExcluded);
-    const totalTeacherCount = includedTeachers.length;
-    const grandTotalAmount = includedTeachers.reduce((sum, p) => sum + p.totalAmount, 0);
-    const table = tableContainer.querySelector('table');
-    if (!table) return;
-    let tfoot = table.querySelector('tfoot');
-    if (!tfoot) { tfoot = document.createElement('tfoot'); table.appendChild(tfoot); }
-    tfoot.innerHTML = `
-        <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
-            <td class="px-6 py-4 text-right" colspan="3">Toplam Kayıt: ${totalTeacherCount} Öğretmen</td>
-            <td class="px-6 py-4" colspan="2">Toplam Tutar: ${grandTotalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td>
-        </tr>
-    `;
 }
 
 function renderTable() {
@@ -99,7 +82,6 @@ function renderTable() {
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IBAN</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Süre</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Tutar</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlem</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">`;
@@ -108,37 +90,33 @@ function renderTable() {
         const durationHours = Math.floor(teacher.totalMinutes / 60);
         const durationMinutes = teacher.totalMinutes % 60;
         const durationString = `${String(durationHours).padStart(2, '0')}:${String(durationMinutes).padStart(2, '0')}`;
-        const rowClass = teacher.isExcluded ? 'excluded-row' : '';
-        const excludeButtonText = teacher.isExcluded ? 'Dahil Et' : 'Dahil Etme';
-        const excludeButtonClass = teacher.isExcluded ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600';
         tableHTML += `
-            <tr class="${rowClass}" data-teacher-name="${teacher.name}">
+            <tr>
                 <td class="px-6 py-4 whitespace-nowrap">${teacher.name}</td>
                 <td class="px-6 py-4 whitespace-nowrap">${teacher.iban}</td>
                 <td class="px-6 py-4 whitespace-nowrap">${durationString}</td>
                 <td class="px-6 py-4 whitespace-nowrap">${teacher.totalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <button class="exclude-btn ${excludeButtonClass} text-white text-sm py-1 px-3 rounded" data-teacher-name="${teacher.name}">${excludeButtonText}</button>
-                </td>
             </tr>`;
     });
-    tableHTML += `</tbody><tfoot></tfoot></table>`;
+
+    const totalTeacherCount = paymentData.length;
+    const grandTotalAmount = paymentData.reduce((sum, p) => sum + p.totalAmount, 0);
+
+    tableHTML += `
+            </tbody>
+            <tfoot class="bg-gray-100 font-bold">
+                <tr class="border-t-2 border-gray-300">
+                    <td class="px-6 py-4 text-right" colspan="2">Toplam Kayıt: ${totalTeacherCount} Öğretmen</td>
+                    <td class="px-6 py-4" colspan="2">Toplam Tutar: ${grandTotalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td>
+                </tr>
+            </tfoot>
+        </table>`;
+        
     tableContainer.innerHTML = tableHTML;
     loadingDiv.style.display = 'none';
-    renderTotals();
 }
 
 // --- Olay Dinleyicileri (Event Listeners) ---
-tableContainer.addEventListener('click', (e) => {
-    if (e.target.classList.contains('exclude-btn')) {
-        const teacherName = e.target.dataset.teacherName;
-        const teacher = paymentData.find(p => p.name === teacherName);
-        if (teacher) {
-            teacher.isExcluded = !teacher.isExcluded;
-            renderTable();
-        }
-    }
-});
 prevMonthBtn.addEventListener('click', () => { currentDate.setDate(1); currentDate.setMonth(currentDate.getMonth() - 1); fetchAndRenderData(); });
 nextMonthBtn.addEventListener('click', () => { currentDate.setDate(15); currentDate.setMonth(currentDate.getMonth() + 1); fetchAndRenderData(); });
 document.addEventListener('DOMContentLoaded', fetchAndRenderData);
