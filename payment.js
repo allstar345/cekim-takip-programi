@@ -16,16 +16,27 @@ const logoutBtn = document.getElementById('logout-btn');
 
 // --- Global Değişkenler ---
 let currentDate = new Date();
-let paymentData = []; // Öğretmen verilerini ve dahil edilme durumunu tutacak global dizi
+let paymentData = []; 
+
+// --- YARDIMCI FONKSİYON ---
+// 'HH:MM' formatındaki metni toplam dakikaya çevirir
+function HHMMToMinutes(timeStr) {
+    if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) {
+        return 0;
+    }
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) {
+        return 0;
+    }
+    return (hours * 60) + minutes;
+}
+
 
 // --- Ana Fonksiyonlar ---
-
-// Ödeme dönemini hesaplayan fonksiyon (her ayın 10'u)
 function getPaymentPeriod(date) {
     const currentDay = date.getDate();
     const currentMonth = date.getMonth();
     const currentYear = date.getFullYear();
-    
     if (currentDay < 10) {
         const end = new Date(currentYear, currentMonth, 9);
         const start = new Date(currentYear, currentMonth - 1, 10);
@@ -37,7 +48,6 @@ function getPaymentPeriod(date) {
     }
 }
 
-// Verileri Supabase'den çeken ve işleyen ana fonksiyon
 async function fetchAndRenderData() {
     loadingDiv.style.display = 'block';
     tableContainer.innerHTML = '';
@@ -45,6 +55,7 @@ async function fetchAndRenderData() {
     const period = getPaymentPeriod(currentDate);
     periodDisplay.textContent = `${new Date(period.start+'T00:00:00').toLocaleDateString('tr-TR')} - ${new Date(period.end+'T00:00:00').toLocaleDateString('tr-TR')}`;
 
+    // DİKKAT: total_duration metin formatında ('HH:MM') geldiği için onu seçiyoruz.
     const { data: logs, error: logsError } = await db.from('monitoring_logs').select('teacher_name, total_duration').gte('date', period.start).lte('date', period.end);
     const { data: payments, error: paymentsError } = await db.from('payment_records').select('id, teacher_name, paid_duration_minutes').eq('payment_period_start', period.start);
     const { data: teachers, error: teachersError } = await db.from('teachers').select('name, iban');
@@ -61,9 +72,9 @@ async function fetchAndRenderData() {
         }
         
         // ******** DÜZELTME BURADA YAPILDI ********
-        // Gelen 'total_duration' değerinin sayı olduğundan emin ol, değilse 0 kabul et.
-        const duration = Number(log.total_duration) || 0;
-        acc[log.teacher_name] += duration;
+        // '06:00' gibi metinleri dakikaya çevirmek için yeni yardımcı fonksiyon kullanılıyor.
+        const durationInMinutes = HHMMToMinutes(log.total_duration);
+        acc[log.teacher_name] += durationInMinutes;
         
         return acc;
     }, {});
@@ -77,16 +88,15 @@ async function fetchAndRenderData() {
             name,
             iban: teacherMap.get(name) || '-',
             totalMinutes,
-            totalAmount: (totalMinutes / 60) * 250, // Saatlik ücret 250 TL varsayımı
+            totalAmount: (totalMinutes / 60) * 250,
             isPaid: paymentRecord ? paymentRecord.paid_duration_minutes === totalMinutes : false,
-            isExcluded: false // Dahil etme durumu için başlangıç değeri
+            isExcluded: false
         };
     }).sort((a,b) => a.name.localeCompare(b.name));
 
     renderTable();
 }
 
-// Toplam tutarı ve kaydı hesaplayıp gösteren fonksiyon
 function renderTotals() {
     const includedTeachers = paymentData.filter(p => !p.isExcluded);
     const totalTeacherCount = includedTeachers.length;
@@ -108,7 +118,6 @@ function renderTotals() {
     `;
 }
 
-// `paymentData` dizisindeki verilere göre HTML tablosunu oluşturan fonksiyon
 function renderTable() {
     if (paymentData.length === 0) {
         tableContainer.innerHTML = `<p class="text-center text-gray-500 py-8">Bu dönem için kayıt bulunmamaktadır.</p>`;
@@ -174,10 +183,8 @@ function renderTable() {
 }
 
 // --- Olay Dinleyicileri (Event Listeners) ---
-
 tableContainer.addEventListener('click', (e) => {
     const target = e.target;
-    
     if (target.classList.contains('exclude-btn')) {
         const teacherName = target.dataset.teacherName;
         const teacher = paymentData.find(p => p.name === teacherName);
@@ -193,10 +200,7 @@ tableContainer.addEventListener('click', (e) => {
             renderTotals();
         }
     }
-
-    if (target.classList.contains('pay-btn')) {
-        // ... Ödeme fonksiyonları burada ...
-    }
+    if (target.classList.contains('pay-btn')) { /* Ödeme fonksiyonları buraya eklenebilir */ }
 });
 
 prevMonthBtn.addEventListener('click', () => {
