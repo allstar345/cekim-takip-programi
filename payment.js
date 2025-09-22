@@ -56,8 +56,15 @@ async function fetchAndRenderData() {
     }
 
     const teacherTotals = logs.reduce((acc, log) => {
-        if (!acc[log.teacher_name]) acc[log.teacher_name] = 0;
-        acc[log.teacher_name] += log.total_duration;
+        if (!acc[log.teacher_name]) {
+            acc[log.teacher_name] = 0;
+        }
+        
+        // ******** DÜZELTME BURADA YAPILDI ********
+        // Gelen 'total_duration' değerinin sayı olduğundan emin ol, değilse 0 kabul et.
+        const duration = Number(log.total_duration) || 0;
+        acc[log.teacher_name] += duration;
+        
         return acc;
     }, {});
 
