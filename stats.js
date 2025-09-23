@@ -124,7 +124,7 @@ async function renderTimesheet() {
                     autoTimes[key] = { start: shoot.start_time, end: shoot.end_time };
                 } else {
                     if (shoot.start_time < autoTimes[key].start) autoTimes[key].start = shoot.start_time;
-                    if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = shoot.end_time;
+                    if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = autoTimes[key].end;
                 }
             });
         });
@@ -136,9 +136,9 @@ async function renderTimesheet() {
         return;
     }
     
-    // NOT: Manuel kaydedilen verileri getiren satır AŞAĞIDA DEVRE DIŞI BIRAKILACAK.
-    // const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
-    // const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
+    // GÜNCELLENDİ: Manuel kaydedilen veriler tekrar okunur hale getirildi.
+    const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
+    const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
     
     const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
     
@@ -156,14 +156,26 @@ async function renderTimesheet() {
         tableHTML += `<tr data-employee="${employee}"><td class="sticky left-0 bg-white font-medium text-gray-800 z-10">${employee}</td>`;
         weekDays.forEach((day, index) => {
             const dateStr = weekDates[index];
-            // const savedEntry = savedTimesheetMap.get(`${employee}-${day}`); // MANUEL KAYIT OKUMASI DEVRE DIŞI
+            const savedEntry = savedTimesheetMap.get(`${employee}-${day}`);
             const autoEntry = autoTimes[`${employee}-${dateStr}`];
             
-            // DÜZELTME: Artık sadece otomatik hesaplanan 'autoEntry' kullanılacak.
-            const startTime = autoEntry?.start?.substring(0, 5) ?? '';
-            const endTime = autoEntry?.end?.substring(0, 5) ?? '';
+            let startTime = '';
+            let endTime = '';
+            let colorClass = '';
 
-            tableHTML += `<td><div class="flex items-center space-x-1"><input type="time" class="start-time w-full" value="${startTime}" data-day="${day}"><input type="time" class="end-time w-full" value="${endTime}" data-day="${day}"></div></td>`;
+            // GÜNCELLENDİ: Manuel veri varsa onu kullan ve kırmızı yap, yoksa otomatiği kullan.
+            if (savedEntry) {
+                startTime = savedEntry.start_time?.substring(0, 5) ?? '';
+                endTime = savedEntry.end_time?.substring(0, 5) ?? '';
+                if (startTime || endTime) {
+                    colorClass = 'text-red-600 font-semibold';
+                }
+            } else {
+                startTime = autoEntry?.start?.substring(0, 5) ?? '';
+                endTime = autoEntry?.end?.substring(0, 5) ?? '';
+            }
+
+            tableHTML += `<td><div class="flex items-center space-x-1"><input type="time" class="start-time w-full ${colorClass}" value="${startTime}" data-day="${day}"><input type="time" class="end-time w-full ${colorClass}" value="${endTime}" data-day="${day}"></div></td>`;
         });
         tableHTML += `<td class="total-work font-semibold">00:00</td><td class="total-overtime font-semibold">00:00</td></tr>`;
     });
@@ -179,5 +191,21 @@ async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheet
 // =================================================================================
 // BÖLÜM 5: ANA FONKSİYON VE OLAY DİNLEYİCİLER
 // =================================================================================
-async function initializePage() { const { data: { session } } = await supabaseAuth.auth.getSession(); if (!session) { window.location.href = 'login.html'; return; } const { data, error } = await db.from('shoots').select('*'); if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; } allShootsData = data; await setActiveStatsButton('month'); await populateReportDropdowns(); applyReportFilters(); await renderTimesheet(); setupCollapsibleSections(); Object.keys(filterButtons).forEach(key => { filterButtons[key].addEventListener('click', () => setActiveStatsButton(key)); }); teacherStatsFilter.addEventListener('input', renderGeneralStats); directorStatsFilter.addEventListener('input', renderGeneralStats); [reportTeacherSelect, reportFilterDate, reportFilterDirector].forEach(el => { el.addEventListener('change', applyReportFilters); }); reportGlobalSearch.addEventListener('input', applyReportFilters); prevWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() - 7); renderTimesheet(); }); nextWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() + 7); renderTimesheet(); }); saveTimesheetBtn.addEventListener('click', saveTimesheet); timesheetContainer.addEventListener('input', (e) => { if (e.target.matches('input[type="time"]')) { calculateAllTotals(); } }); logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; }); }
+async function initializePage() { const { data: { session } } = await supabaseAuth.auth.getSession(); if (!session) { window.location.href = 'login.html'; return; } const { data, error } = await db.from('shoots').select('*'); if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; } allShootsData = data; await setActiveStatsButton('month'); await populateReportDropdowns(); applyReportFilters(); await renderTimesheet(); setupCollapsibleSections(); Object.keys(filterButtons).forEach(key => { filterButtons[key].addEventListener('click', () => setActiveStatsButton(key)); }); teacherStatsFilter.addEventListener('input', renderGeneralStats); directorStatsFilter.addEventListener('input', renderGeneralStats); [reportTeacherSelect, reportFilterDate, reportFilterDirector].forEach(el => { el.addEventListener('change', applyReportFilters); }); reportGlobalSearch.addEventListener('input', applyReportFilters); prevWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() - 7); renderTimesheet(); }); nextWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() + 7); renderTimesheet(); }); saveTimesheetBtn.addEventListener('click', saveTimesheet); 
+// GÜNCELLENDİ: Olay dinleyici, anlık renk değişimi için genişletildi.
+timesheetContainer.addEventListener('input', (e) => { 
+    if (e.target.matches('input[type="time"]')) { 
+        calculateAllTotals(); 
+        
+        // YENİ: Hücreye manuel veri girildiğinde anında kırmızı yap
+        const parentDiv = e.target.parentElement;
+        const startInput = parentDiv.querySelector('.start-time');
+        const endInput = parentDiv.querySelector('.end-time');
+        
+        // Her iki input'u da kırmızı ve kalın yap
+        startInput.classList.add('text-red-600', 'font-semibold');
+        endInput.classList.add('text-red-600', 'font-semibold');
+    } 
+}); 
+logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; }); }
 document.addEventListener('DOMContentLoaded', initializePage);
