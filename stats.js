@@ -85,7 +85,7 @@ async function renderTimesheet() {
     updateTimesheetWeekDisplay();
     timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Mesai verileri yükleniyor...</p>`;
     
-    // DÜZELTME: Kalan test kodu tamamen kaldırıldı. Hesaplama artık her zaman normal şekilde çalışacak.
+    // Test kodu tamamen kaldırıldı. Hesaplama artık her zaman normal ve doğru şekilde çalışacak.
     const { start } = getWeekRange(currentTimesheetDate);
     const currentWeekStart = new Date(start);
     const weekIdentifier = getWeekIdentifier(currentWeekStart);
@@ -94,7 +94,7 @@ async function renderTimesheet() {
     const startDateStr = currentWeekStart.toISOString().split('T')[0];
     const endDateStr = currentWeekEnd.toISOString().split('T')[0];
 
-    // DÜZELTME: 'shoots' sorgusuna 'day' sütunu eklendi. Bu, ekibi günle eşleştirmek için kritik öneme sahiptir.
+    // 'shoots' sorgusuna 'day' sütunu eklendi. Bu, ekibi günle eşleştirmek için kritik öneme sahip.
     const { data: shootsInWeek } = await db.from('shoots').select('date, day, director, start_time, end_time').gte('date', startDateStr).lte('date', endDateStr);
     const { data: teamsInWeek } = await db.from('daily_teams').select('*').eq('week_identifier', weekIdentifier);
 
