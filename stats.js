@@ -136,7 +136,6 @@ async function renderTimesheet() {
         return;
     }
     
-    // GÜNCELLENDİ: Manuel kaydedilen veriler tekrar okunur hale getirildi.
     const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
     const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
     
@@ -159,20 +158,24 @@ async function renderTimesheet() {
             const savedEntry = savedTimesheetMap.get(`${employee}-${day}`);
             const autoEntry = autoTimes[`${employee}-${dateStr}`];
             
-            let startTime = '';
-            let endTime = '';
-            let colorClass = '';
+            let startTime, endTime, colorClass = '';
+            
+            const autoStartTime = autoEntry?.start?.substring(0, 5) ?? '';
+            const autoEndTime = autoEntry?.end?.substring(0, 5) ?? '';
 
-            // GÜNCELLENDİ: Manuel veri varsa onu kullan ve kırmızı yap, yoksa otomatiği kullan.
             if (savedEntry) {
                 startTime = savedEntry.start_time?.substring(0, 5) ?? '';
                 endTime = savedEntry.end_time?.substring(0, 5) ?? '';
-                if (startTime || endTime) {
-                    colorClass = 'text-red-600 font-semibold';
+                
+                // NİHAİ DÜZELTME: Sadece kaydedilen veri otomatik veriden FARKLIYSA kırmızı yap.
+                if (startTime !== autoStartTime || endTime !== autoEndTime) {
+                    if (startTime || endTime) {
+                        colorClass = 'text-red-600 font-semibold';
+                    }
                 }
             } else {
-                startTime = autoEntry?.start?.substring(0, 5) ?? '';
-                endTime = autoEntry?.end?.substring(0, 5) ?? '';
+                startTime = autoStartTime;
+                endTime = autoEndTime;
             }
 
             tableHTML += `<td><div class="flex items-center space-x-1"><input type="time" class="start-time w-full ${colorClass}" value="${startTime}" data-day="${day}"><input type="time" class="end-time w-full ${colorClass}" value="${endTime}" data-day="${day}"></div></td>`;
@@ -192,17 +195,14 @@ async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheet
 // BÖLÜM 5: ANA FONKSİYON VE OLAY DİNLEYİCİLER
 // =================================================================================
 async function initializePage() { const { data: { session } } = await supabaseAuth.auth.getSession(); if (!session) { window.location.href = 'login.html'; return; } const { data, error } = await db.from('shoots').select('*'); if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; } allShootsData = data; await setActiveStatsButton('month'); await populateReportDropdowns(); applyReportFilters(); await renderTimesheet(); setupCollapsibleSections(); Object.keys(filterButtons).forEach(key => { filterButtons[key].addEventListener('click', () => setActiveStatsButton(key)); }); teacherStatsFilter.addEventListener('input', renderGeneralStats); directorStatsFilter.addEventListener('input', renderGeneralStats); [reportTeacherSelect, reportFilterDate, reportFilterDirector].forEach(el => { el.addEventListener('change', applyReportFilters); }); reportGlobalSearch.addEventListener('input', applyReportFilters); prevWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() - 7); renderTimesheet(); }); nextWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() + 7); renderTimesheet(); }); saveTimesheetBtn.addEventListener('click', saveTimesheet); 
-// GÜNCELLENDİ: Olay dinleyici, anlık renk değişimi için genişletildi.
 timesheetContainer.addEventListener('input', (e) => { 
     if (e.target.matches('input[type="time"]')) { 
         calculateAllTotals(); 
         
-        // YENİ: Hücreye manuel veri girildiğinde anında kırmızı yap
         const parentDiv = e.target.parentElement;
         const startInput = parentDiv.querySelector('.start-time');
         const endInput = parentDiv.querySelector('.end-time');
         
-        // Her iki input'u da kırmızı ve kalın yap
         startInput.classList.add('text-red-600', 'font-semibold');
         endInput.classList.add('text-red-600', 'font-semibold');
     } 
