@@ -80,10 +80,12 @@ async function populateReportDropdowns() { const { data: teachers } = await db.f
 // BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ
 // =================================================================================
 function updateTimesheetWeekDisplay() { const { start, end } = getWeekRange(currentTimesheetDate); weekRangeDisplayTimesheet.textContent = `${start.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'})} - ${end.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'})}`; }
+
 async function renderTimesheet() {
     updateTimesheetWeekDisplay();
     timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Mesai verileri yükleniyor...</p>`;
-
+    
+    // DÜZELTME: Kalan test kodu tamamen kaldırıldı. Hesaplama artık her zaman normal şekilde çalışacak.
     const { start } = getWeekRange(currentTimesheetDate);
     const currentWeekStart = new Date(start);
     const weekIdentifier = getWeekIdentifier(currentWeekStart);
@@ -92,45 +94,40 @@ async function renderTimesheet() {
     const startDateStr = currentWeekStart.toISOString().split('T')[0];
     const endDateStr = currentWeekEnd.toISOString().split('T')[0];
 
-    // Gerekli verileri veritabanından çek
+    // DÜZELTME: 'shoots' sorgusuna 'day' sütunu eklendi. Bu, ekibi günle eşleştirmek için kritik öneme sahiptir.
     const { data: shootsInWeek } = await db.from('shoots').select('date, day, director, start_time, end_time').gte('date', startDateStr).lte('date', endDateStr);
-    
-    // DÜZELTME: 'daily_teams' sorgusu '*' ile tüm sütunları (özellikle 'day_of_week') alacak şekilde güncellendi.
     const { data: teamsInWeek } = await db.from('daily_teams').select('*').eq('week_identifier', weekIdentifier);
 
     const employeeSet = new Set();
     const autoTimes = {};
 
-    // GÜNCELLENDİ: Hem yönetmenlerin hem de ekip üyelerinin saatlerini doğru şekilde hesaplayan yeni mantık
     const teamSchedule = new Map();
     if (teamsInWeek) {
         teamsInWeek.forEach(d => teamSchedule.set(d.day_of_week, d.team_members || []));
     }
-    
-    // Önce tüm çalışanları listeye ekle
-    if (shootsInWeek) { shootsInWeek.forEach(s => { if (s.director) employeeSet.add(s.director); }); }
-    if (teamsInWeek) { teamsInWeek.forEach(t => (t.team_members || []).forEach(m => employeeSet.add(m))); }
 
-    // Şimdi herkesin mesaisini hesapla
+    if (shootsInWeek) {
+        shootsInWeek.forEach(s => { if (s.director) employeeSet.add(s.director); });
+    }
+    if (teamsInWeek) {
+        teamsInWeek.forEach(t => (t.team_members || []).forEach(m => employeeSet.add(m)));
+    }
+
     if (shootsInWeek) {
         shootsInWeek.forEach(shoot => {
             if (!shoot.date || !shoot.day || !shoot.start_time || !shoot.end_time) return;
 
             const peopleForThisShoot = new Set();
-            // Yönetmeni ekle
             if (shoot.director) peopleForThisShoot.add(shoot.director);
             
-            // O günün ekibini ekle
             const teamForDay = teamSchedule.get(shoot.day) || [];
             teamForDay.forEach(member => peopleForThisShoot.add(member));
 
-            // Her bir kişi için mesaiyi güncelle
             peopleForThisShoot.forEach(person => {
                 const key = `${person}-${shoot.date}`;
                 if (!autoTimes[key]) {
                     autoTimes[key] = { start: shoot.start_time, end: shoot.end_time };
                 } else {
-                    // Mevcut saatlerden daha erken bir başlangıç veya daha geç bir bitiş varsa güncelle
                     if (shoot.start_time < autoTimes[key].start) autoTimes[key].start = shoot.start_time;
                     if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = shoot.end_time;
                 }
@@ -139,9 +136,11 @@ async function renderTimesheet() {
     }
 
     const employees = Array.from(employeeSet).sort((a, b) => a.localeCompare(b));
-    if (employees.length === 0) { timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bu hafta görevli çalışan bulunamadı.</p>`; return; }
+    if (employees.length === 0) {
+        timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bu hafta için planlanmış bir çekim veya görevli çalışan bulunamadı.</p>`;
+        return;
+    }
     
-    // Kayıtlı mesai verilerini çek
     const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
     const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
     
