@@ -143,7 +143,6 @@ function getWeekDateRange(year, weekNo) {
     return { start: monday, end: sunday };
 }
 
-// DÜZELTİLDİ: Filtreleme fonksiyonu artık 'Çalışana Göre' seçeneğini doğru işliyor.
 async function processAndRenderData() {
     const selectedDay = filterDay.value;
     const selectedStudio = filterStudio.value;
@@ -195,8 +194,8 @@ async function processAndRenderData() {
         });
     }
 
-    recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
-
+    // GÜNCELLENDİ: Toplam kayıt sayısı satırı buradan kaldırıldı.
+    
     groupedShoots = {};
     filteredShoots.forEach(shoot => {
         if (shoot.date) {
@@ -226,6 +225,7 @@ async function renderCurrentPage() {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
+        recordCount.textContent = 'Haftalık Toplam: 0 kayıt'; // Boşken de göster
         return;
     }
     
@@ -251,12 +251,16 @@ async function renderCurrentPage() {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
+        recordCount.textContent = 'Haftalık Toplam: 0 kayıt'; // Boşken de göster
         return;
     }
     
     const [year, weekNo] = weekKey.split('-').map(Number);
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
+    
+    // YENİ: Haftalık kayıt sayısı artık burada, sadece o haftanın verisine göre hesaplanıyor.
+    recordCount.textContent = `Haftalık Toplam: ${shootsForWeek.length} kayıt`;
     
     let { data: dailyTeams, error: teamError } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
     let { data: dailyLeaves, error: leaveError } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
@@ -310,8 +314,8 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     });
 
     shoots.forEach(shoot => {
-        if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][shoot.studio]) {
-            gridData[shoot.day][shoot.studio].push(shoot);
+        if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][studio]) {
+            gridData[shoot.day][studio].push(shoot);
         }
     });
 
