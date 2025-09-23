@@ -136,8 +136,9 @@ async function renderTimesheet() {
         return;
     }
     
-    const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
-    const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
+    // NOT: Manuel kaydedilen verileri getiren satır AŞAĞIDA DEVRE DIŞI BIRAKILACAK.
+    // const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
+    // const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
     
     const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
     
@@ -155,10 +156,13 @@ async function renderTimesheet() {
         tableHTML += `<tr data-employee="${employee}"><td class="sticky left-0 bg-white font-medium text-gray-800 z-10">${employee}</td>`;
         weekDays.forEach((day, index) => {
             const dateStr = weekDates[index];
-            const savedEntry = savedTimesheetMap.get(`${employee}-${day}`);
+            // const savedEntry = savedTimesheetMap.get(`${employee}-${day}`); // MANUEL KAYIT OKUMASI DEVRE DIŞI
             const autoEntry = autoTimes[`${employee}-${dateStr}`];
-            const startTime = savedEntry?.start_time?.substring(0, 5) ?? autoEntry?.start?.substring(0, 5) ?? '';
-            const endTime = savedEntry?.end_time?.substring(0, 5) ?? autoEntry?.end?.substring(0, 5) ?? '';
+            
+            // DÜZELTME: Artık sadece otomatik hesaplanan 'autoEntry' kullanılacak.
+            const startTime = autoEntry?.start?.substring(0, 5) ?? '';
+            const endTime = autoEntry?.end?.substring(0, 5) ?? '';
+
             tableHTML += `<td><div class="flex items-center space-x-1"><input type="time" class="start-time w-full" value="${startTime}" data-day="${day}"><input type="time" class="end-time w-full" value="${endTime}" data-day="${day}"></div></td>`;
         });
         tableHTML += `<td class="total-work font-semibold">00:00</td><td class="total-overtime font-semibold">00:00</td></tr>`;
@@ -167,6 +171,7 @@ async function renderTimesheet() {
     timesheetContainer.innerHTML = tableHTML;
     calculateAllTotals();
 }
+
 
 function calculateAllTotals() { document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { let weeklyTotalMinutes = 0, workDays = 0; row.querySelectorAll('.start-time').forEach((startInput, index) => { const endInput = row.querySelectorAll('.end-time')[index]; if(startInput.value && endInput.value) { let duration = HHMMToMinutes(endInput.value) - HHMMToMinutes(startInput.value); if (duration > 0) { workDays++; if (duration > 300) duration -= 60; weeklyTotalMinutes += duration; } } }); const weeklyNormalLimit = NORMAL_WORK_MINUTES * workDays; const normalWorkMinutes = Math.min(weeklyTotalMinutes, weeklyNormalLimit); const overtimeMinutes = Math.max(0, weeklyTotalMinutes - weeklyNormalLimit); row.querySelector('.total-work').textContent = minutesToHHMM(normalWorkMinutes); row.querySelector('.total-overtime').textContent = minutesToHHMM(overtimeMinutes); }); }
 async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheetBtn.textContent = 'Kaydediliyor...'; const weekIdentifier = getWeekIdentifier(currentTimesheetDate); const dataToUpsert = []; document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { const employeeName = row.dataset.employee; row.querySelectorAll('input.start-time').forEach(startInput => { const day = startInput.dataset.day; const endInput = row.querySelector(`input.end-time[data-day="${day}"]`); dataToUpsert.push({ week_identifier: weekIdentifier, employee_name: employeeName, day_of_week: day, start_time: startInput.value || null, end_time: endInput.value || null }); }); }); const { error } = await db.from('employee_timesheets').upsert(dataToUpsert, { onConflict: 'week_identifier, employee_name, day_of_week' }); if (error) { Swal.fire('Hata!', `Mesai kaydedilemedi: ${error.message}`, 'error'); } else { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesai Tablosu Kaydedildi', showConfirmButton: false, timer: 2000 }); } saveTimesheetBtn.disabled = false; saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet'; }
