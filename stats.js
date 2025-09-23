@@ -45,7 +45,10 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45; // YENİ: Haftalık normal mesai sınırı (saat olarak)
+const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
+// YENİ: Tüm yönetmenleri içeren ana liste
+const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
+
 
 // --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
@@ -95,9 +98,24 @@ function renderGeneralStats() {
     }
 
     const teacherCounts = filteredShoots.reduce((acc, shoot) => { if (shoot.teacher) { acc[shoot.teacher] = (acc[shoot.teacher] || 0) + 1; } return acc; }, {});
-    const directorCounts = filteredShoots.reduce((acc, shoot) => { if (shoot.director) { acc[shoot.director] = (acc[shoot.director] || 0) + 1; } return acc; }, {});
+    
+    // GÜNCELLENDİ: Yönetmen sayısı hesaplama mantığı
+    // 1. Adım: Tüm yönetmenler için sayacı 0'dan başlat
+    const directorCounts = {};
+    ALL_DIRECTORS.forEach(director => {
+        directorCounts[director] = 0;
+    });
+
+    // 2. Adım: Filtrelenmiş çekim verileriyle sayaçları artır
+    filteredShoots.forEach(shoot => {
+        if (shoot.director && directorCounts.hasOwnProperty(shoot.director)) {
+            directorCounts[shoot.director]++;
+        }
+    });
+    
     let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
     let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
+    
     const teacherFilterText = teacherStatsFilter.value.toLowerCase().trim();
     if (teacherFilterText) {
         sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterText));
@@ -106,8 +124,10 @@ function renderGeneralStats() {
     if (directorFilterText) {
         sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterText));
     }
+    
     teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
     directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
+    
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
 }
@@ -127,6 +147,9 @@ function setActiveStatsButton(filter) {
     }
     renderGeneralStats();
 }
+
+// Diğer fonksiyonlar (setupCollapsibleSections, renderTeacherReport, renderTimesheet vb.) değişmeden kalır...
+// ... (Kodun geri kalanı önceki çalışan versiyonla aynı) ...
 
 function setupCollapsibleSections() {
     const reportHeader = document.getElementById('report-section-header');
@@ -158,11 +181,9 @@ async function populateReportDropdowns() { const { data: teachers } = await db.f
 // BÖLÜM 4: HAFTALIK MESAİ DÖKÜMÜ
 // =================================================================================
 function updateTimesheetWeekDisplay() { const { start, end } = getWeekRange(currentTimesheetDate); weekRangeDisplayTimesheet.textContent = `${start.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'})} - ${end.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'})}`; }
-
 async function renderTimesheet() {
     updateTimesheetWeekDisplay();
     timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Mesai verileri yükleniyor...</p>`;
-
     const { start } = getWeekRange(currentTimesheetDate);
     const currentWeekStart = new Date(start);
     const weekIdentifier = getWeekIdentifier(currentWeekStart);
@@ -170,21 +191,14 @@ async function renderTimesheet() {
     const currentWeekEnd = new Date(currentWeekStart);
     currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
     const endDateStr = `${currentWeekEnd.getFullYear()}-${String(currentWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(currentWeekEnd.getDate()).padStart(2, '0')}`;
-
     const { data: shootsInWeek } = await db.from('shoots').select('date, day, director, start_time, end_time').gte('date', startDateStr).lte('date', endDateStr);
     const { data: teamsInWeek } = await db.from('daily_teams').select('*').eq('week_identifier', weekIdentifier);
-
     const employeeSet = new Set();
     const autoTimes = {};
-
     const teamSchedule = new Map();
-    if (teamsInWeek) {
-        teamsInWeek.forEach(d => teamSchedule.set(d.day_of_week, d.team_members || []));
-    }
-
+    if (teamsInWeek) { teamsInWeek.forEach(d => teamSchedule.set(d.day_of_week, d.team_members || [])); }
     if (shootsInWeek) { shootsInWeek.forEach(s => { if (s.director) employeeSet.add(s.director); }); }
     if (teamsInWeek) { teamsInWeek.forEach(t => (t.team_members || []).forEach(m => employeeSet.add(m))); }
-
     if (shootsInWeek) {
         shootsInWeek.forEach(shoot => {
             if (!shoot.date || !shoot.day || !shoot.start_time || !shoot.end_time) return;
@@ -194,32 +208,20 @@ async function renderTimesheet() {
             teamForDay.forEach(member => peopleForThisShoot.add(member));
             peopleForThisShoot.forEach(person => {
                 const key = `${person}-${shoot.date}`;
-                if (!autoTimes[key]) {
-                    autoTimes[key] = { start: shoot.start_time, end: shoot.end_time };
-                } else {
+                if (!autoTimes[key]) { autoTimes[key] = { start: shoot.start_time, end: shoot.end_time }; } 
+                else {
                     if (shoot.start_time < autoTimes[key].start) autoTimes[key].start = shoot.start_time;
                     if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = autoTimes[key].end;
                 }
             });
         });
     }
-
     const employees = Array.from(employeeSet).sort((a, b) => a.localeCompare(b));
-    if (employees.length === 0) {
-        timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bu hafta için planlanmış bir çekim veya görevli çalışan bulunamadı.</p>`;
-        return;
-    }
-    
+    if (employees.length === 0) { timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bu hafta için planlanmış bir çekim veya görevli çalışan bulunamadı.</p>`; return; }
     const { data: savedTimesheetData } = await db.from('employee_timesheets').select('*').eq('week_identifier', weekIdentifier);
     const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
-    
     const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-    const weekDates = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(currentWeekStart);
-        d.setDate(d.getDate() + i);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    });
-    
+    const weekDates = Array.from({ length: 7 }, (_, i) => { const d = new Date(currentWeekStart); d.setDate(d.getDate() + i); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
     let tableHTML = `<table id="timesheet-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="sticky left-0 bg-gray-50 z-10 w-48 text-left">Çalışan</th>${weekDays.map(day => `<th class="text-left">${day}</th>`).join('')}<th class="text-left">Toplam Normal</th><th class="text-left">Toplam Mesai</th></tr></thead><tbody>`;
     employees.forEach(employee => {
         tableHTML += `<tr data-employee="${employee}"><td class="sticky left-0 bg-white font-medium text-gray-800 z-10">${employee}</td>`;
@@ -248,36 +250,26 @@ async function renderTimesheet() {
     timesheetContainer.innerHTML = tableHTML;
     calculateAllTotals();
 }
-
-// GÜNCELLENDİ: Hem "00:00" hatasını düzelten hem de yeni 45 saatlik mesai kuralını uygulayan yeni fonksiyon
 function calculateAllTotals() {
     const weeklyNormalMinutesLimit = WEEKLY_NORMAL_HOURS_LIMIT * 60;
-
     document.querySelectorAll('#timesheet-table tbody tr').forEach(row => {
         let weeklyTotalMinutes = 0;
-
         row.querySelectorAll('.start-time').forEach((startInput, index) => {
             const endInput = row.querySelectorAll('.end-time')[index];
             if (startInput.value && endInput.value) {
                 let duration = HHMMToMinutes(endInput.value) - HHMMToMinutes(startInput.value);
                 if (duration > 0) {
-                    // 5 saatten (300 dk) uzun çalışmalarda 1 saat (60 dk) mola düş
-                    if (duration > 300) {
-                        duration -= 60;
-                    }
+                    if (duration > 300) { duration -= 60; }
                     weeklyTotalMinutes += duration;
                 }
             }
         });
-
         const normalWorkMinutes = Math.min(weeklyTotalMinutes, weeklyNormalMinutesLimit);
         const overtimeMinutes = Math.max(0, weeklyTotalMinutes - weeklyNormalMinutesLimit);
-
         row.querySelector('.total-work').textContent = minutesToHHMM(normalWorkMinutes);
         row.querySelector('.total-overtime').textContent = minutesToHHMM(overtimeMinutes);
     });
 }
-
 async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheetBtn.textContent = 'Kaydediliyor...'; const weekIdentifier = getWeekIdentifier(currentTimesheetDate); const dataToUpsert = []; document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { const employeeName = row.dataset.employee; row.querySelectorAll('input.start-time').forEach(startInput => { const day = startInput.dataset.day; const endInput = row.querySelector(`input.end-time[data-day="${day}"]`); dataToUpsert.push({ week_identifier: weekIdentifier, employee_name: employeeName, day_of_week: day, start_time: startInput.value || null, end_time: endInput.value || null }); }); }); const { error } = await db.from('employee_timesheets').upsert(dataToUpsert, { onConflict: 'week_identifier, employee_name, day_of_week' }); if (error) { Swal.fire('Hata!', `Mesai kaydedilemedi: ${error.message}`, 'error'); } else { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesai Tablosu Kaydedildi', showConfirmButton: false, timer: 2000 }); } saveTimesheetBtn.disabled = false; saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet'; }
 
 // =================================================================================
