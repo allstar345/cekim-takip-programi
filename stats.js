@@ -66,6 +66,8 @@ const getMonthRange = (date = new Date()) => { const d = new Date(date); const s
 const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
 const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
+const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 
 // =================================================================================
 // BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
@@ -76,19 +78,17 @@ function renderGeneralStats() {
     let filteredShoots = allShootsData;
     let range;
 
-    // GÜNCELLENDİ: Sadece içinde bulunulan hafta/ay için verileri "bugüne kadar" sınırlar.
     if (currentStatsFilter === 'week') {
         range = getWeekRange(currentStatsDate);
-        
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
         const isCurrentWeek = today >= range.start && today <= range.end;
-        const filterEndDate = isCurrentWeek ? today : range.end;
+        
+        const startDateString = toYYYYMMDD(range.start);
+        const endDateString = isCurrentWeek ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
 
         filteredShoots = allShootsData.filter(s => {
             if (!s.date) return false;
-            const shootDate = new Date(s.date + 'T00:00:00');
-            return shootDate >= range.start && shootDate <= filterEndDate;
+            return s.date >= startDateString && s.date <= endDateString;
         });
         
         statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
@@ -96,16 +96,15 @@ function renderGeneralStats() {
 
     } else if (currentStatsFilter === 'month') {
         range = getMonthRange(currentStatsDate);
-        
         const today = new Date();
-        today.setHours(23, 59, 59, 999);
         const isCurrentMonth = today.getFullYear() === currentStatsDate.getFullYear() && today.getMonth() === currentStatsDate.getMonth();
-        const filterEndDate = isCurrentMonth ? today : range.end;
+
+        const startDateString = toYYYYMMDD(range.start);
+        const endDateString = isCurrentMonth ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
         
         filteredShoots = allShootsData.filter(s => {
             if (!s.date) return false;
-            const shootDate = new Date(s.date + 'T00:00:00');
-            return shootDate >= range.start && shootDate <= filterEndDate;
+            return s.date >= startDateString && s.date <= endDateString;
         });
 
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
@@ -140,6 +139,7 @@ function renderGeneralStats() {
     statsContent.classList.remove('hidden');
 }
 
+// ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
 
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
@@ -156,8 +156,6 @@ function setActiveStatsButton(filter) {
     }
     renderGeneralStats();
 }
-
-// ... (Kodun geri kalanı değişmeden aynı şekilde devam ediyor) ...
 
 function setupCollapsibleSections() {
     const reportHeader = document.getElementById('report-section-header');
@@ -283,7 +281,9 @@ async function initializePage() {
     applyReportFilters();
     await renderTimesheet();
     setupCollapsibleSections();
-    Object.keys(filterButtons).forEach(key => { filterButtons[key].addEventListener('click', () => setActiveStatsButton(key)); });
+    Object.keys(filterButtons).forEach(key => {
+        filterButtons[key].addEventListener('click', () => setActiveStatsButton(key));
+    });
     statsPrevPeriodBtn.addEventListener('click', () => {
         if (currentStatsFilter === 'week') { currentStatsDate.setDate(currentStatsDate.getDate() - 7); } 
         else if (currentStatsFilter === 'month') { currentStatsDate.setMonth(currentStatsDate.getMonth() - 1); }
