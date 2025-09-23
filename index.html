@@ -19,8 +19,11 @@
         .timetable th { padding: 12px 8px; background-color: #f9fafb; text-align: center; }
         .timetable .day-header { padding: 8px; font-weight: 600; text-align: center; min-width: 140px; }
         .timetable .timetable-cell { min-height: 120px; }
-        .timetable .shoot-entry { padding: 8px; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; }
+        .timetable .shoot-entry { padding: 8px; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; transition: opacity 0.3s; }
         .timetable .shoot-entry:last-child { border-bottom: none; }
+        /* YENİ: Geçmiş ve bugünkü çekimler için stiller */
+        .past-shoot { opacity: 0.6; }
+        .today-shoot { border-left: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -171,7 +174,7 @@
                     </select>
                 </div>
                 <div id="record-count" class="text-sm font-medium text-gray-600">
-                    Toplam 0 kayıt bulundu.
+                    Haftalık Toplam: 0 kayıt
                 </div>
             </div>
             <div class="flex justify-end mt-4">
@@ -209,6 +212,6 @@
         </div>
     </main>
     
-    <script src="index.js" defer></script>
+    <script src="index.js?v=2" defer></script>
 </body>
 </html>
