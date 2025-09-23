@@ -82,7 +82,6 @@ function renderGeneralStats() {
         range = getWeekRange(currentStatsDate);
         const today = new Date();
         const isCurrentWeek = today >= range.start && today <= range.end;
-        
         const startDateString = toYYYYMMDD(range.start);
         const endDateString = isCurrentWeek ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
 
@@ -98,7 +97,6 @@ function renderGeneralStats() {
         range = getMonthRange(currentStatsDate);
         const today = new Date();
         const isCurrentMonth = today.getFullYear() === currentStatsDate.getFullYear() && today.getMonth() === currentStatsDate.getMonth();
-
         const startDateString = toYYYYMMDD(range.start);
         const endDateString = isCurrentMonth ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
         
@@ -114,13 +112,35 @@ function renderGeneralStats() {
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
 
-    const teacherCounts = filteredShoots.reduce((acc, shoot) => { if (shoot.teacher) { acc[shoot.teacher] = (acc[shoot.teacher] || 0) + 1; } return acc; }, {});
+    // GÜNCELLENDİ: Öğretmen sayısı, her bir çekim yerine "çalışılan gün" üzerinden hesaplanıyor.
+    const teacherDaySet = new Set();
+    filteredShoots.forEach(shoot => {
+        if (shoot.teacher && shoot.date) {
+            teacherDaySet.add(`${shoot.teacher}-${shoot.date}`);
+        }
+    });
+
+    const teacherCounts = {};
+    teacherDaySet.forEach(entry => {
+        const teacherName = entry.substring(0, entry.lastIndexOf('-'));
+        teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
+    });
     
+    // GÜNCELLENDİ: Yönetmen sayısı, her bir çekim yerine "çalışılan gün" üzerinden hesaplanıyor.
     const directorCounts = {};
     ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
+
+    const directorDaySet = new Set();
     filteredShoots.forEach(shoot => {
-        if (shoot.director && directorCounts.hasOwnProperty(shoot.director)) {
-            directorCounts[shoot.director]++;
+        if (shoot.director && shoot.date) {
+            directorDaySet.add(`${shoot.director}-${shoot.date}`);
+        }
+    });
+
+    directorDaySet.forEach(entry => {
+        const directorName = entry.substring(0, entry.lastIndexOf('-'));
+        if (directorCounts.hasOwnProperty(directorName)) {
+            directorCounts[directorName]++;
         }
     });
     
@@ -139,8 +159,6 @@ function renderGeneralStats() {
     statsContent.classList.remove('hidden');
 }
 
-// ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
-
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
@@ -156,6 +174,8 @@ function setActiveStatsButton(filter) {
     }
     renderGeneralStats();
 }
+
+// ... (Kodun geri kalanı değişmeden aynı şekilde devam ediyor) ...
 
 function setupCollapsibleSections() {
     const reportHeader = document.getElementById('report-section-header');
