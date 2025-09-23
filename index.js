@@ -143,6 +143,7 @@ function getWeekDateRange(year, weekNo) {
     return { start: monday, end: sunday };
 }
 
+// DÜZELTİLDİ: Filtreleme fonksiyonu artık 'Çalışana Göre' seçeneğini doğru işliyor.
 async function processAndRenderData() {
     const selectedDay = filterDay.value;
     const selectedStudio = filterStudio.value;
@@ -194,6 +195,8 @@ async function processAndRenderData() {
         });
     }
 
+    recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
+
     groupedShoots = {};
     filteredShoots.forEach(shoot => {
         if (shoot.date) {
@@ -223,7 +226,6 @@ async function renderCurrentPage() {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
-        recordCount.textContent = 'Haftalık Toplam: 0 kayıt';
         return;
     }
     
@@ -249,15 +251,12 @@ async function renderCurrentPage() {
         noDataDiv.classList.remove('hidden');
         navControls.classList.add('hidden');
         dailyLeavesContainer.classList.add('hidden');
-        recordCount.textContent = 'Haftalık Toplam: 0 kayıt';
         return;
     }
     
     const [year, weekNo] = weekKey.split('-').map(Number);
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
-    
-    recordCount.textContent = `Haftalık Toplam: ${shootsForWeek.length} kayıt`;
     
     let { data: dailyTeams, error: teamError } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
     let { data: dailyLeaves, error: leaveError } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
@@ -303,10 +302,6 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
     const weekKey = sortedWeeks[currentPage];
 
-    // YENİ: Bugünün tarihini YYYY-AA-GG formatında al
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
     DAYS_OF_WEEK.forEach(day => {
         gridData[day] = {};
         STUDIOS.forEach(studio => {
@@ -315,8 +310,8 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     });
 
     shoots.forEach(shoot => {
-        if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][studio]) {
-            gridData[shoot.day][studio].push(shoot);
+        if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][shoot.studio]) {
+            gridData[shoot.day][shoot.studio].push(shoot);
         }
     });
 
@@ -357,16 +352,8 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     timeDisplay = shoot.time;
                 }
 
-                // YENİ: Çekimin tarihine göre stil sınıfı belirle
-                let entryClass = 'shoot-entry';
-                if (shoot.date < todayStr) {
-                    entryClass += ' past-shoot'; // Geçmiş günler için
-                } else if (shoot.date === todayStr) {
-                    entryClass += ' today-shoot'; // Bugün için
-                }
-
                 return `
-                <div class="${entryClass} text-left">
+                <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                     <p class="text-gray-600">${timeDisplay}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
