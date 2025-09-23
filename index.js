@@ -69,6 +69,10 @@ const dailyLeavesContainer = document.getElementById('daily-leaves-container');
 const dailyLeavesPlanner = document.getElementById('daily-leaves-planner');
 const filterEmployee = document.getElementById('filter-employee');
 const directorSelectForm = document.getElementById('director');
+// YENİ EKLENDİ
+const kameraman1SelectForm = document.getElementById('kameraman_1');
+const kameraman2SelectForm = document.getElementById('kameraman_2');
+
 
 // Sabit Listeler
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
@@ -76,6 +80,8 @@ const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"
 const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
 const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 const DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
+// YENİ EKLENDİ
+const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
@@ -100,6 +106,11 @@ function populateStaticDropdowns() {
 
     const employeeOptionsHTML = ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(e => `<option value="${e}">${e}</option>`).join('');
     filterEmployee.innerHTML += employeeOptionsHTML;
+
+    // YENİ EKLENDİ: Kameraman dropdown'larını doldurma
+    const cameramanOptionsHTML = CAMERAMEN.sort((a,b) => a.localeCompare(b)).map(c => `<option value="${c}">${c}</option>`).join('');
+    kameraman1SelectForm.innerHTML += cameramanOptionsHTML;
+    kameraman2SelectForm.innerHTML += cameramanOptionsHTML;
 }
 
 function getRowColorClass(day) {
@@ -195,7 +206,8 @@ async function processAndRenderData() {
         });
     }
 
-    recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
+    // DEĞİŞİKLİK: Bu satır kaldırıldı. Artık sayım renderCurrentPage içinde yapılacak.
+    // recordCount.textContent = `Toplam ${filteredShoots.length} kayıt bulundu.`;
 
     groupedShoots = {};
     filteredShoots.forEach(shoot => {
@@ -258,6 +270,9 @@ async function renderCurrentPage() {
     const dateRange = getWeekDateRange(year, weekNo);
     const shootsForWeek = groupedShoots[weekKey] || [];
     
+    // YENİ EKLENDİ: Kayıt sayısı gösterilen haftaya göre güncellendi.
+    recordCount.textContent = `Gösterilen hafta için ${shootsForWeek.length} kayıt bulundu.`;
+
     let { data: dailyTeams, error: teamError } = await db.from('daily_teams').select('*').eq('week_identifier', weekKey);
     let { data: dailyLeaves, error: leaveError } = await db.from('daily_leaves').select('*').eq('week_identifier', weekKey);
 
@@ -352,12 +367,14 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     timeDisplay = shoot.time;
                 }
 
+                // DEĞİŞİKLİK: Yönetmen ve kameraman bilgisi eklendi.
                 return `
                 <div class="shoot-entry text-left">
                     <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
                     <p class="text-gray-600">${timeDisplay}</p>
                     <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
-                    <p class="text-gray-500 text-xs italic mt-1">${shoot.director || ''}</p>
+                    <p class="text-gray-500 text-xs italic mt-1">Y: ${shoot.director || '-'}</p>
+                    <p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>
                     <div class="flex items-center justify-end space-x-1 mt-2">
                          <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
                          <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
@@ -410,6 +427,9 @@ function populateFormForEdit(shoot) {
     elements['start_time'].value = shoot.start_time || '';
     elements['end_time'].value = shoot.end_time || '';
     elements['director'].value = shoot.director || '';
+    // YENİ EKLENDİ
+    elements['kameraman_1'].value = shoot.kameraman_1 || '';
+    elements['kameraman_2'].value = shoot.kameraman_2 || '';
     elements['shoot_code'].value = shoot.shoot_code || '';
     elements['content'].value = shoot.content || '';
 
@@ -592,6 +612,7 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     
+    // DEĞİŞİKLİK: Kameraman alanları eklendi.
     const shootData = {
         studio: formData.get('studio'),
         teacher: formData.get('teacher'),
@@ -600,6 +621,8 @@ form.addEventListener('submit', async (e) => {
         start_time: formData.get('start_time'),
         end_time: formData.get('end_time'),
         director: formData.get('director'),
+        kameraman_1: formData.get('kameraman_1'),
+        kameraman_2: formData.get('kameraman_2'),
         shoot_code: formData.get('shoot_code'),
         content: formData.get('content'),
     };
