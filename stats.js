@@ -4,7 +4,7 @@
 
 // --- Yetkilendirme ve Supabase Bağlantısı ---
 const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
 const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
@@ -84,8 +84,7 @@ function updateTimesheetWeekDisplay() { const { start, end } = getWeekRange(curr
 async function renderTimesheet() {
     updateTimesheetWeekDisplay();
     timesheetContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Mesai verileri yükleniyor...</p>`;
-    
-    // Test kodu tamamen kaldırıldı. Hesaplama artık her zaman normal ve doğru şekilde çalışacak.
+
     const { start } = getWeekRange(currentTimesheetDate);
     const currentWeekStart = new Date(start);
     const weekIdentifier = getWeekIdentifier(currentWeekStart);
@@ -94,7 +93,6 @@ async function renderTimesheet() {
     const startDateStr = currentWeekStart.toISOString().split('T')[0];
     const endDateStr = currentWeekEnd.toISOString().split('T')[0];
 
-    // 'shoots' sorgusuna 'day' sütunu eklendi. Bu, ekibi günle eşleştirmek için kritik öneme sahip.
     const { data: shootsInWeek } = await db.from('shoots').select('date, day, director, start_time, end_time').gte('date', startDateStr).lte('date', endDateStr);
     const { data: teamsInWeek } = await db.from('daily_teams').select('*').eq('week_identifier', weekIdentifier);
 
@@ -116,13 +114,10 @@ async function renderTimesheet() {
     if (shootsInWeek) {
         shootsInWeek.forEach(shoot => {
             if (!shoot.date || !shoot.day || !shoot.start_time || !shoot.end_time) return;
-
             const peopleForThisShoot = new Set();
             if (shoot.director) peopleForThisShoot.add(shoot.director);
-            
             const teamForDay = teamSchedule.get(shoot.day) || [];
             teamForDay.forEach(member => peopleForThisShoot.add(member));
-
             peopleForThisShoot.forEach(person => {
                 const key = `${person}-${shoot.date}`;
                 if (!autoTimes[key]) {
@@ -145,7 +140,16 @@ async function renderTimesheet() {
     const savedTimesheetMap = new Map(savedTimesheetData?.map(d => [`${d.employee_name}-${d.day_of_week}`, d]));
     
     const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-    const weekDates = Array.from({ length: 7 }, (_, i) => { const d = new Date(currentWeekStart); d.setDate(d.getDate() + i); return d.toISOString().split('T')[0]; });
+    
+    // DÜZELTME: Saat dilimi (timezone) hatasını önlemek için tarih formatlama fonksiyonu değiştirildi.
+    const weekDates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() + i);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
     
     let tableHTML = `<table id="timesheet-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="sticky left-0 bg-gray-50 z-10 w-48 text-left">Çalışan</th>${weekDays.map(day => `<th class="text-left">${day}</th>`).join('')}<th class="text-left">Toplam Normal</th><th class="text-left">Toplam Mesai</th></tr></thead><tbody>`;
     employees.forEach(employee => {
