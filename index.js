@@ -71,18 +71,6 @@ const filterEmployee = document.getElementById('filter-employee');
 const directorSelectForm = document.getElementById('director');
 const kameraman1SelectForm = document.getElementById('kameraman_1');
 const kameraman2SelectForm = document.getElementById('kameraman_2');
-// --- YENİ EKLENEN BİLDİRİM DOM ELEMENTLERİ ---
-const notificationBell = document.getElementById('notification-bell');
-const notificationBadge = document.getElementById('notification-badge');
-const notificationDropdown = document.getElementById('notification-dropdown');
-let currentNotifications = [];
-// --- BİLDİRİM DOM ELEMENTLERİ BİTİŞ ---
-// --- BİLDİRİM DOM ELEMENTLERİ ---
-const notificationBell = document.getElementById('notification-bell');
-const notificationBadge = document.getElementById('notification-badge');
-const notificationDropdown = document.getElementById('notification-dropdown');
-let currentNotifications = [];
-// --- BİLDİRİM DOM ELEMENTLERİ BİTİŞ ---
 
 
 // Sabit Listeler
@@ -96,144 +84,6 @@ const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
 
-
-// --- BİLDİRİM SİSTEMİ FONKSİYONLARI ---
-
-async function fetchNotifications() {
-    const { data, error } = await db
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-    if (error) {
-        console.error('Bildirimler alınırken hata:', error);
-    } else {
-        currentNotifications = data;
-        renderNotifications();
-    }
-}
-
-function renderNotifications() {
-    const unreadCount = currentNotifications.filter(n => !n.is_read).length;
-
-    if (unreadCount > 0) {
-        notificationBadge.textContent = unreadCount;
-        notificationBadge.classList.remove('hidden');
-    } else {
-        notificationBadge.classList.add('hidden');
-    }
-
-    if (currentNotifications.length === 0) {
-        notificationDropdown.innerHTML = '<div class="notification-item"><p>Yeni bildirim yok.</p></div>';
-        return;
-    }
-
-    notificationDropdown.innerHTML = currentNotifications.map(notification => `
-        <div class="notification-item ${!notification.is_read ? 'unread' : ''}">
-            <p>${notification.message}</p>
-            <small>${new Date(notification.created_at).toLocaleString('tr-TR')}</small>
-        </div>
-    `).join('');
-}
-
-async function markNotificationsAsRead() {
-    const unreadIds = currentNotifications.filter(n => !n.is_read).map(n => n.id);
-    if (unreadIds.length === 0) return;
-
-    const { error } = await db
-        .from('notifications')
-        .update({ is_read: true })
-        .in('id', unreadIds);
-
-    if (error) {
-        console.error("Bildirimler okundu olarak işaretlenirken hata:", error);
-    } else {
-        currentNotifications.forEach(n => { if (unreadIds.includes(n.id)) n.is_read = true; });
-        renderNotifications();
-    }
-}
-
-notificationBell.addEventListener('click', () => {
-    const isHidden = notificationDropdown.style.display === 'none' || notificationDropdown.style.display === '';
-    if (isHidden) {
-        notificationDropdown.style.display = 'block';
-        markNotificationsAsRead();
-    } else {
-        notificationDropdown.style.display = 'none';
-    }
-});
-
-// --- BİLDİRİM SİSTEMİ FONKSİYONLARI BİTİŞ ---
-
-// --- BİLDİRİM SİSTEMİ FONKSİYONLARI ---
-
-async function fetchNotifications() {
-    const { data, error } = await db
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-    if (error) {
-        console.error('Bildirimler alınırken hata:', error);
-    } else {
-        currentNotifications = data;
-        renderNotifications();
-    }
-}
-
-function renderNotifications() {
-    const unreadCount = currentNotifications.filter(n => !n.is_read).length;
-
-    if (unreadCount > 0) {
-        notificationBadge.textContent = unreadCount;
-        notificationBadge.classList.remove('hidden');
-    } else {
-        notificationBadge.classList.add('hidden');
-    }
-
-    if (currentNotifications.length === 0) {
-        notificationDropdown.innerHTML = '<div class="notification-item"><p>Yeni bildirim yok.</p></div>';
-        return;
-    }
-
-    notificationDropdown.innerHTML = currentNotifications.map(notification => `
-        <div class="notification-item ${!notification.is_read ? 'unread' : ''}">
-            <p>${notification.message}</p>
-            <small>${new Date(notification.created_at).toLocaleString('tr-TR')}</small>
-        </div>
-    `).join('');
-}
-
-async function markNotificationsAsRead() {
-    const unreadIds = currentNotifications.filter(n => !n.is_read).map(n => n.id);
-    if (unreadIds.length === 0) return;
-
-    const { error } = await db
-        .from('notifications')
-        .update({ is_read: true })
-        .in('id', unreadIds);
-
-    if (error) {
-        console.error("Bildirimler okundu olarak işaretlenirken hata:", error);
-    } else {
-        currentNotifications.forEach(n => { if (unreadIds.includes(n.id)) n.is_read = true; });
-        renderNotifications();
-    }
-}
-
-notificationBell.addEventListener('click', () => {
-    const isHidden = notificationDropdown.style.display === 'none' || notificationDropdown.style.display === '';
-    if (isHidden) {
-        notificationDropdown.style.display = 'block';
-        markNotificationsAsRead();
-    } else {
-        notificationDropdown.style.display = 'none';
-    }
-});
-
-// --- BİLDİRİM SİSTEMİ FONKSİYONLARI BİTİŞ ---
 async function populateTeacherDropdowns() {
     const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
     
@@ -468,7 +318,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
 
     shoots.forEach(shoot => {
         if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][shoot.studio]) {
-            gridData[day][shoot.studio].push(shoot);
+            gridData[shoot.day][shoot.studio].push(shoot);
         }
     });
 
@@ -509,6 +359,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     timeDisplay = shoot.time;
                 }
 
+                // DEĞİŞİKLİK: Kameraman satırı sadece veri varsa gösterilecek
                 let cameramanDisplayHtml = '';
                 if (shoot.kameraman_1 || shoot.kameraman_2) {
                     cameramanDisplayHtml = `<p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>`;
@@ -522,8 +373,8 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     <p class="text-gray-500 text-xs italic mt-1">Y: ${shoot.director || '-'}</p>
                     ${cameramanDisplayHtml}
                     <div class="flex items-center justify-end space-x-1 mt-2">
-                        <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
-                        <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
+                         <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
+                         <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                     </div>
                 </div>
                 `;
@@ -536,7 +387,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     }).join('');
 
     return `
-        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div class="p-6 md:p-8 bg-gray-50 border-b border-gray-200">
                 <h2 class="text-xl font-bold text-gray-900">Çekim Planı</h2>
             </div>
@@ -631,12 +482,14 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
+// Ana container için tek bir click listener, tüm butonları yönetir
 document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
-    if (!weekKey) return;
+    if (!weekKey) return; // weekKey tanımsız ise işlem yapma
 
+    // GÜNLÜK EKİP DÜZENLEME BUTONU
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
         
@@ -645,17 +498,29 @@ document.querySelector('main').addEventListener('click', async (e) => {
 
         const { value: selectedMembers } = await Swal.fire({
             title: `${day} Günü Ekibini Seç`,
-            html: TEAM_MEMBERS.map(member => `<div class="flex items-center my-2 justify-center"><input type="checkbox" id="member-team-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}><label for="member-team-${member}" class="ml-2">${member}</label></div>`).join(''),
+            html: TEAM_MEMBERS.map(member => `
+                <div class="flex items-center my-2 justify-center">
+                    <input type="checkbox" id="member-team-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}>
+                    <label for="member-team-${member}" class="ml-2">${member}</label>
+                </div>
+            `).join(''),
             confirmButtonText: 'Kaydet',
             showCancelButton: true,
             cancelButtonText: 'İptal',
             preConfirm: () => {
-                return TEAM_MEMBERS.filter(member => document.getElementById(`member-team-${member}`).checked).map(member => document.getElementById(`member-team-${member}`).value);
+                return TEAM_MEMBERS
+                    .filter(member => document.getElementById(`member-team-${member}`).checked)
+                    .map(member => document.getElementById(`member-team-${member}`).value);
             }
         });
 
         if (typeof selectedMembers !== 'undefined') {
-            const { error } = await db.from('daily_teams').upsert({ week_identifier: weekKey, day_of_week: day, team_members: selectedMembers }, { onConflict: 'week_identifier, day_of_week' });
+            const { error } = await db.from('daily_teams').upsert({
+                week_identifier: weekKey,
+                day_of_week: day,
+                team_members: selectedMembers
+            }, { onConflict: 'week_identifier, day_of_week' });
+
             if (error) {
                 console.error('Ekip kaydedilirken hata oluştu:', error);
                 Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
@@ -665,6 +530,7 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
     
+    // GÜNLÜK İZİNLİ DÜZENLEME BUTONU
     if (target.classList.contains('daily-leave-edit-btn')) {
         const day = target.dataset.day;
 
@@ -673,18 +539,30 @@ document.querySelector('main').addEventListener('click', async (e) => {
 
         const { value: selectedOnLeave } = await Swal.fire({
             title: `${day} Günü İzinlilerini Seç`,
-            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `<div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto"><input type="checkbox" id="member-leave-${member.replace(/\s+/g, '-')}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}><label for="member-leave-${member.replace(/\s+/g, '-')}" class="ml-2">${member}</label></div>`).join(''),
+            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `
+                <div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto">
+                    <input type="checkbox" id="member-leave-${member.replace(/\s+/g, '-')}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}>
+                    <label for="member-leave-${member.replace(/\s+/g, '-')}" class="ml-2">${member}</label>
+                </div>
+            `).join(''),
             confirmButtonText: 'Kaydet',
             showCancelButton: true,
             cancelButtonText: 'İptal',
             width: '40em',
             preConfirm: () => {
-                return ON_LEAVE_MEMBERS.filter(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).checked).map(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).value);
+                return ON_LEAVE_MEMBERS
+                    .filter(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).checked)
+                    .map(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).value);
             }
         });
         
         if (typeof selectedOnLeave !== 'undefined') {
-            const { error } = await db.from('daily_leaves').upsert({ week_identifier: weekKey, day_of_week: day, on_leave_members: selectedOnLeave }, { onConflict: 'week_identifier, day_of_week' });
+            const { error } = await db.from('daily_leaves').upsert({
+                week_identifier: weekKey,
+                day_of_week: day,
+                on_leave_members: selectedOnLeave
+            }, { onConflict: 'week_identifier, day_of_week' });
+
             if (error) {
                 console.error('İzinliler kaydedilirken hata oluştu:', error);
                 Swal.fire('Hata!', 'İzinli listesi kaydedilirken bir hata oluştu.', 'error');
@@ -694,6 +572,7 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
 
+    // ÇEKİM SİLME VEYA DÜZENLEME BUTONU (TABLO İÇİ)
     const buttonInTable = e.target.closest('.shoot-entry button');
     if (buttonInTable) {
         if (buttonInTable.classList.contains('delete-btn')) {
@@ -723,6 +602,7 @@ document.querySelector('main').addEventListener('click', async (e) => {
     }
 });
 
+
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
@@ -748,6 +628,7 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
+    // YÖNETMEN İZİN KONTROLÜ
     const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
     const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
@@ -756,6 +637,7 @@ form.addEventListener('submit', async (e) => {
         Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir yönetmen seçin veya izin planını güncelleyin.`, 'error');
         return;
     }
+
 
     if (currentEditId === null) {
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
@@ -817,6 +699,7 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
+
 downloadPdfBtn.addEventListener('click', () => {
     const timetableElement = document.querySelector('#weekly-view-container .bg-white');
     if (!timetableElement) {
@@ -871,14 +754,14 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 async function fetchInitialData() {
-    loadingDiv.classList.remove('hidden');
+    loadingDiv.classList.remove('hidden'); // Yükleniyor'u hemen göster
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         console.error("Veri alınamadı:", error);
         loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
     } else {
         allShoots = data;
-        await processAndRenderData();
+        await processAndRenderData(); // processAndRenderData'nın bitmesini bekle
     }
 }
 
@@ -892,34 +775,11 @@ const shootsSubscription = db.channel('public:shoots')
         }
     )
     .subscribe();
-// --- YENİ BİLDİRİM DİNLEYİCİSİ ---
-const notificationsSubscription = db.channel('public:notifications')
-    .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-            console.log('Yeni bildirim algılandı!', payload);
-            fetchNotifications(); // Yeni bildirim geldiğinde listeyi yenile
-        }
-    )
-    .subscribe();
-// --- BİLDİRİM DİNLEYİCİSİ BİTİŞ ---
-const notificationsSubscription = db.channel('public:notifications')
-    .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
-            console.log('Yeni bildirim algılandı!', payload);
-            fetchNotifications();
-        }
-    )
-    .subscribe();
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateTeacherDropdowns();
     populateStaticDropdowns();
     await fetchInitialData();
-    await fetchNotifications();
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
