@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,20 +12,65 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        #form-wrapper { max-height: 1200px; overflow: hidden; transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; }
-        #form-wrapper.collapsed { max-height: 0; padding-top: 0 !important; padding-bottom: 0 !important; }
-        .timetable { border-collapse: collapse; width: 100%; }
-        .timetable th, .timetable td { border: 1px solid #d1d5db; padding: 0; vertical-align: top; }
-        .timetable th { padding: 12px 8px; background-color: #f9fafb; text-align: center; }
-        .timetable .day-header { padding: 8px; font-weight: 600; text-align: center; min-width: 140px; }
-        .timetable .timetable-cell { min-height: 120px; }
-        .timetable .shoot-entry { padding: 8px; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; }
-        .timetable .shoot-entry:last-child { border-bottom: none; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        #form-wrapper {
+            max-height: 1200px;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+
+        #form-wrapper.collapsed {
+            max-height: 0;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .timetable {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid #d1d5db;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .timetable th {
+            padding: 12px 8px;
+            background-color: #f9fafb;
+            text-align: center;
+        }
+
+        .timetable .day-header {
+            padding: 8px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 140px;
+        }
+
+        .timetable .timetable-cell {
+            min-height: 120px;
+        }
+
+        .timetable .shoot-entry {
+            padding: 8px;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .timetable .shoot-entry:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
+
 <body class="bg-gray-100">
-    
+
     <header class="bg-white shadow-sm sticky top-0 z-10">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
@@ -33,20 +79,30 @@
             </div>
             <div class="flex items-center space-x-2">
                 <p class="text-sm text-gray-500 hidden sm:block">Fatih Gülbudak tarafından oluşturulmuştur.</p>
-                <a href="dashboard.html" class="flex items-center justify-center text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg transition-colors duration-300">
+                <a href="dashboard.html"
+                    class="flex items-center justify-center text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg transition-colors duration-300">
                     Anasayfa'ya Dön
                 </a>
-                
-                <a href="hata-bildirim.html" class="flex items-center justify-center text-sm bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-lg transition-colors duration-300">
+                <a href="hata-bildirim.html"
+                    class="flex items-center justify-center text-sm bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-lg transition-colors duration-300">
                     Hata Bildirim
                 </a>
-                
-                <a id="stats-link" href="stats.html" class="flex items-center justify-center text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 transition-colors duration-300 shadow-sm">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" /></svg>
+                <a id="stats-link" href="stats.html"
+                    class="flex items-center justify-center text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 transition-colors duration-300 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                    </svg>
                     İstatistikler
                 </a>
-                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors duration-300 shadow-sm">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
+                <button id="logout-btn"
+                    class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors duration-300 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                    </svg>
                     Çıkış Yap
                 </button>
             </div>
@@ -57,8 +113,11 @@
         <div class="bg-white rounded-2xl shadow-lg mb-8">
             <div id="form-header-clickable" class="flex justify-between items-center p-6 md:p-8 cursor-pointer">
                 <h2 class="text-2xl font-bold text-gray-800">Yeni Çekim Ekle / Düzenle</h2>
-                <button id="toggle-form-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <svg id="toggle-icon" class="w-6 h-6 text-gray-600 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <button id="toggle-form-btn"
+                    class="p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <svg id="toggle-icon" class="w-6 h-6 text-gray-600 transition-transform duration-300"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                     </svg>
                 </button>
@@ -67,11 +126,13 @@
                 <form id="shoot-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                     <div>
                         <label for="date" class="block text-sm font-medium text-gray-700 mb-2">Tarih</label>
-                        <input type="date" id="date" name="date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <input type="date" id="date" name="date"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                     </div>
                     <div>
                         <label for="day" class="block text-sm font-medium text-gray-700 mb-2">Gün</label>
-                        <select id="day" name="day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <select id="day" name="day"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected disabled>Seçiniz</option>
                             <option value="Pazartesi">Pazartesi</option>
                             <option value="Salı">Salı</option>
@@ -84,77 +145,93 @@
                     </div>
                     <div>
                         <label for="studio" class="block text-sm font-medium text-gray-700 mb-2">Stüdyo Seçimi</label>
-                        <select id="studio" name="studio" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                             <option value="" selected disabled>Seçiniz</option>
-                             <option value="Stüdyo 1">Stüdyo 1</option>
-                             <option value="Stüdyo 2">Stüdyo 2</option>
-                             <option value="Stüdyo 4">Stüdyo 4</option>
-                             <option value="Stüdyo 7">Stüdyo 7</option>
-                             <option value="Stüdyo 8">Stüdyo 8</option>
+                        <select id="studio" name="studio"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                            <option value="" selected disabled>Seçiniz</option>
+                            <option value="Stüdyo 1">Stüdyo 1</option>
+                            <option value="Stüdyo 2">Stüdyo 2</option>
+                            <option value="Stüdyo 4">Stüdyo 4</option>
+                            <option value="Stüdyo 7">Stüdyo 7</option>
+                            <option value="Stüdyo 8">Stüdyo 8</option>
                         </select>
                     </div>
                     <div>
                         <label for="teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmen Adı</label>
-                        <select id="teacher" name="teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <select id="teacher" name="teacher"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected disabled>Seçiniz</option>
                         </select>
                     </div>
-                    
+
                     <div>
-                        <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">Başlangıç Saati</label>
-                        <input type="time" id="start_time" name="start_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">Başlangıç
+                            Saati</label>
+                        <input type="time" id="start_time" name="start_time" required
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                     </div>
                     <div>
                         <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">Bitiş Saati</label>
-                        <input type="time" id="end_time" name="end_time" required class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <input type="time" id="end_time" name="end_time" required
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                     </div>
 
                     <div class="lg:col-span-2">
                         <label for="director" class="block text-sm font-medium text-gray-700 mb-2">Yönetmen</label>
-                        <select id="director" name="director" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <select id="director" name="director"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected disabled>Seçiniz...</option>
                         </select>
                     </div>
-                    
+
                     <div class="lg:col-span-2">
                         <label for="kameraman_1" class="block text-sm font-medium text-gray-700 mb-2">Kameraman 1</label>
-                        <select id="kameraman_1" name="kameraman_1" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <select id="kameraman_1" name="kameraman_1"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected>Seçiniz...</option>
                         </select>
                     </div>
                     <div class="lg:col-span-2">
                         <label for="kameraman_2" class="block text-sm font-medium text-gray-700 mb-2">Kameraman 2</label>
-                        <select id="kameraman_2" name="kameraman_2" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <select id="kameraman_2" name="kameraman_2"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                             <option value="" selected>Seçiniz...</option>
                         </select>
                     </div>
 
                     <div class="col-span-full">
                         <label for="shoot_code" class="block text-sm font-medium text-gray-700 mb-2">Çekim Kodu</label>
-                        <textarea id="shoot_code" name="shoot_code" rows="3" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Çekime ait özel kodu veya uzun açıklamayı buraya girin..."></textarea>
+                        <textarea id="shoot_code" name="shoot_code" rows="3"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                            placeholder="Çekime ait özel kodu veya uzun açıklamayı buraya girin..."></textarea>
                     </div>
-                    
+
                     <div class="col-span-full">
                         <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Çekim İçeriği</label>
-                        <input type="text" id="content" name="content" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" placeholder="Örn: Konu Anlatımı, Soru Çözümü">
+                        <input type="text" id="content" name="content"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                            placeholder="Örn: Konu Anlatımı, Soru Çözümü">
                     </div>
                     <div class="col-span-full flex space-x-2">
-                         <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out">
-                             Çekim Ekle
-                         </button>
-                         <button type="button" id="cancel-edit-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-300 ease-in-out hidden">
-                             İptal
-                         </button>
+                        <button type="submit" id="submit-btn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 ease-in-out">
+                            Çekim Ekle
+                        </button>
+                        <button type="button" id="cancel-edit-btn"
+                            class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 transition duration-300 ease-in-out hidden">
+                            İptal
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-8">
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div>
-                    <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre Filtrele</label>
-                    <select id="filter-day" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                    <label for="filter-day" class="block text-sm font-medium text-gray-700 mb-2">Güne Göre
+                        Filtrele</label>
+                    <select id="filter-day"
+                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="">Tümü</option>
                         <option value="Pazartesi">Pazartesi</option>
                         <option value="Salı">Salı</option>
@@ -165,26 +242,32 @@
                         <option value="Pazar">Pazar</option>
                     </select>
                 </div>
-                 <div>
-                    <label for="filter-studio" class="block text-sm font-medium text-gray-700 mb-2">Stüdyoya Göre Filtrele</label>
-                    <select id="filter-studio" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
-                         <option value="">Tümü</option>
-                         <option value="Stüdyo 1">Stüdyo 1</option>
-                         <option value="Stüdyo 2">Stüdyo 2</option>
-                         <option value="Stüdyo 4">Stüdyo 4</option>
-                         <option value="Stüdyo 7">Stüdyo 7</option>
-                         <option value="Stüdyo 8">Stüdyo 8</option>
+                <div>
+                    <label for="filter-studio" class="block text-sm font-medium text-gray-700 mb-2">Stüdyoya Göre
+                        Filtrele</label>
+                    <select id="filter-studio"
+                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                        <option value="">Tümü</option>
+                        <option value="Stüdyo 1">Stüdyo 1</option>
+                        <option value="Stüdyo 2">Stüdyo 2</option>
+                        <option value="Stüdyo 4">Stüdyo 4</option>
+                        <option value="Stüdyo 7">Stüdyo 7</option>
+                        <option value="Stüdyo 8">Stüdyo 8</option>
                     </select>
                 </div>
                 <div>
-                    <label for="filter-teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmene Göre Filtrele</label>
-                    <select id="filter-teacher" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                    <label for="filter-teacher" class="block text-sm font-medium text-gray-700 mb-2">Öğretmene Göre
+                        Filtrele</label>
+                    <select id="filter-teacher"
+                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="">Tümü</option>
                     </select>
                 </div>
                 <div>
-                    <label for="filter-employee" class="block text-sm font-medium text-gray-700 mb-2">Çalışana Göre Filtrele</label>
-                    <select id="filter-employee" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+                    <label for="filter-employee" class="block text-sm font-medium text-gray-700 mb-2">Çalışana Göre
+                        Filtrele</label>
+                    <select id="filter-employee"
+                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="">Tümü</option>
                     </select>
                 </div>
@@ -193,40 +276,49 @@
                 </div>
             </div>
             <div class="flex justify-end mt-4">
-                <button id="download-pdf-btn" class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
-                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                <button id="download-pdf-btn"
+                    class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
                     PDF Olarak İndir
                 </button>
             </div>
         </div>
 
         <div class="space-y-8">
-            <div id="navigation-controls" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
-                <button id="prev-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <div id="navigation-controls"
+                class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
+                <button id="prev-week-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     &larr; Önceki Hafta
                 </button>
                 <div id="week-range-display" class="text-center text-base md:text-lg font-semibold text-gray-700"></div>
-                <button id="next-week-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <button id="next-week-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     Sonraki Hafta &rarr;
                 </button>
             </div>
-            
+
             <div id="daily-leaves-container" class="bg-white rounded-2xl shadow-lg p-6 md:p-8 hidden">
-                 <h2 class="text-xl font-bold text-gray-900 mb-4">Günlük İzinli Planlaması</h2>
-                 <div id="daily-leaves-planner" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                 </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Günlük İzinli Planlaması</h2>
+                <div id="daily-leaves-planner" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                </div>
             </div>
 
             <div id="weekly-view-container" class="space-y-8"></div>
-             <div id="loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
-                 <p class="text-gray-500">Veriler yükleniyor...</p>
-             </div>
-             <div id="no-data" class="text-center p-8 bg-white rounded-2xl shadow-lg hidden">
-                 <p class="text-gray-500">Gösterilecek çekim planı bulunmamaktadır.</p>
-             </div>
+            <div id="loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
+                <p class="text-gray-500">Veriler yükleniyor...</p>
+            </div>
+            <div id="no-data" class="text-center p-8 bg-white rounded-2xl shadow-lg hidden">
+                <p class="text-gray-500">Gösterilecek çekim planı bulunmamaktadır.</p>
+            </div>
         </div>
     </main>
-    
+
     <script src="index.js" defer></script>
 </body>
+
 </html>
