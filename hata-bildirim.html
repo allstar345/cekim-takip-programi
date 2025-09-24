@@ -71,18 +71,10 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kitap</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sayfa</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soru</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Açıklama</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bildiren</th>
+                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kitap</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sayfa</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soru</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Açıklama</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bildiren</th>
                     </tr>
                 </thead>
-                <tbody id="book-error-table-body" class="bg-white divide-y divide-gray-200">
-                    </tbody>
+                <tbody id="book-error-table-body" class="bg-white divide-y divide-gray-200"></tbody>
             </table>
         </div>
     </div>
@@ -93,129 +85,56 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Açıklama</th>
-                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bildiren</th>
+                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Açıklama</th><th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bildiren</th>
                     </tr>
                 </thead>
-                <tbody id="video-error-table-body" class="bg-white divide-y divide-gray-200">
-                    </tbody>
+                <tbody id="video-error-table-body" class="bg-white divide-y divide-gray-200"></tbody>
             </table>
         </div>
     </div>
 </main>
 
 <script>
-    // 1. ADIM: MEVCUT ANA PROJENİZİN SUPABASE BİLGİLERİ
-    // Bu bilgiler, Çekim Takip Programı'nın kullandığı projenin bilgileridir.
     const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-    
-    // Supabase client'ı bu bilgilerle oluşturuluyor
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // 2. ADIM: HTML ELEMENTLERİNİN TANIMLANMASI
-    // Sayfadaki form, tablolar ve diğer interaktif alanlar seçiliyor.
     const form = document.getElementById('error-form');
     const bookTableBody = document.getElementById('book-error-table-body');
     const videoTableBody = document.getElementById('video-error-table-body');
     const formTypeSelect = document.getElementById('hata_tipi');
     const bookSpecificDiv = document.getElementById('book-specific');
-
-    // 3. ADIM: FORM DAVRANIŞLARI (EVENT LISTENERS)
-
-    // "Hata Tipi" dropdown'ı değiştiğinde kitap'a özel alanları göster/gizle
     formTypeSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'kitap') {
-            bookSpecificDiv.classList.remove('hidden');
-        } else {
-            bookSpecificDiv.classList.add('hidden');
-        }
+        if (e.target.value === 'kitap') { bookSpecificDiv.classList.remove('hidden'); } else { bookSpecificDiv.classList.add('hidden'); }
     });
-
-    // Form "Gönder" butonuna basıldığında...
     form.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Sayfanın yeniden yüklenmesini engelle
+        e.preventDefault();
         const formData = new FormData(form);
         const hata_tipi = formData.get('hata_tipi');
-
-        // Formdaki ortak verileri bir obje olarak hazırla
-        let dataToInsert = {
-            ogretmen_adi: formData.get('ogretmen_adi'),
-            ders_adi: formData.get('ders_adi'),
-            hata_aciklamasi: formData.get('hata_aciklamasi'),
-            bildiren_kisi: formData.get('bildiren_kisi')
-        };
-
+        let dataToInsert = { ogretmen_adi: formData.get('ogretmen_adi'), ders_adi: formData.get('ders_adi'), hata_aciklamasi: formData.get('hata_aciklamasi'), bildiren_kisi: formData.get('bildiren_kisi') };
         let tableName = '';
-        // Eğer hata tipi "kitap" ise, kitaba özel verileri ekle ve tablo adını belirle
         if (hata_tipi === 'kitap') {
             tableName = 'kitap_hatalari';
             dataToInsert.kitap_adi = formData.get('kitap_adi');
             dataToInsert.sayfa_numarasi = formData.get('sayfa_numarasi');
             dataToInsert.soru_numarasi = formData.get('soru_numarasi');
-        } 
-        // Eğer hata tipi "video" ise, tablo adını belirle
-        else if (hata_tipi === 'video') {
-            tableName = 'video_hatalari';
-        }
-
-        // Veriyi Supabase'e gönder
+        } else if (hata_tipi === 'video') { tableName = 'video_hatalari'; }
         const { error } = await db.from(tableName).insert([dataToInsert]);
-
-        if (error) {
-            console.error('Hata:', error);
-            alert('Hata bildirilirken bir sorun oluştu. Lütfen tekrar deneyin.');
-        } else {
-            alert('Hata başarıyla bildirildi! Teşekkür ederiz.');
-            form.reset(); // Formu temizle
-            bookSpecificDiv.classList.add('hidden'); // Kitap alanlarını tekrar gizle
-            loadErrors(); // Tabloları en güncel haliyle yeniden yükle
-        }
+        if (error) { console.error('Hata:', error); alert('Hata bildirilirken bir sorun oluştu.'); } else { alert('Hata başarıyla bildirildi!'); form.reset(); bookSpecificDiv.classList.add('hidden'); loadErrors(); }
     });
-
-    // 4. ADIM: VERİLERİ YÜKLEME FONKSİYONU
-    // Bu fonksiyon, her iki tablodaki verileri Supabase'den çeker ve ekrana listeler.
     async function loadErrors() {
-        // Kitap Hatalarını Yükle (en yeniden eskiye doğru)
         const { data: bookErrors, error: bookError } = await db.from('kitap_hatalari').select('*').order('created_at', { ascending: false });
-        if (bookError) {
-            console.error('Kitap hataları yüklenemedi:', bookError);
-        } else {
-            bookTableBody.innerHTML = bookErrors.map(e => `
+        if (bookError) { console.error('Kitap hataları yüklenemedi:', bookError); } else { bookTableBody.innerHTML = bookErrors.map(e => `
                 <tr class="bg-white border-b hover:bg-gray-50">
-                    <td class="py-2 px-3">${new Date(e.created_at).toLocaleDateString('tr-TR')}</td>
-                    <td class="py-2 px-3">${e.ogretmen_adi || ''}</td>
-                    <td class="py-2 px-3">${e.ders_adi || ''}</td>
-                    <td class="py-2 px-3">${e.kitap_adi || ''}</td>
-                    <td class="py-2 px-3">${e.sayfa_numarasi || ''}</td>
-                    <td class="py-2 px-3">${e.soru_numarasi || ''}</td>
-                    <td class="py-2 px-3">${e.hata_aciklamasi || ''}</td>
-                    <td class="py-2 px-3">${e.bildiren_kisi || ''}</td>
-                </tr>
-            `).join('');
+                    <td class="py-2 px-3">${new Date(e.created_at).toLocaleDateString('tr-TR')}</td><td class="py-2 px-3">${e.ogretmen_adi || ''}</td><td class="py-2 px-3">${e.ders_adi || ''}</td><td class="py-2 px-3">${e.kitap_adi || ''}</td><td class="py-2 px-3">${e.sayfa_numarasi || ''}</td><td class="py-2 px-3">${e.soru_numarasi || ''}</td><td class="py-2 px-3">${e.hata_aciklamasi || ''}</td><td class="py-2 px-3">${e.bildiren_kisi || ''}</td>
+                </tr>`).join('');
         }
-
-        // Video Hatalarını Yükle (en yeniden eskiye doğru)
         const { data: videoErrors, error: videoError } = await db.from('video_hatalari').select('*').order('created_at', { ascending: false });
-        if (videoError) {
-            console.error('Video hataları yüklenemedi:', videoError);
-        } else {
-            videoTableBody.innerHTML = videoErrors.map(e => `
+        if (videoError) { console.error('Video hataları yüklenemedi:', videoError); } else { videoTableBody.innerHTML = videoErrors.map(e => `
                 <tr class="bg-white border-b hover:bg-gray-50">
-                    <td class="py-2 px-3">${new Date(e.created_at).toLocaleDateString('tr-TR')}</td>
-                    <td class="py-2 px-3">${e.ogretmen_adi || ''}</td>
-                    <td class="py-2 px-3">${e.ders_adi || ''}</td>
-                    <td class="py-2 px-3">${e.hata_aciklamasi || ''}</td>
-                    <td class="py-2 px-3">${e.bildiren_kisi || ''}</td>
-                </tr>
-            `).join('');
+                    <td class="py-2 px-3">${new Date(e.created_at).toLocaleDateString('tr-TR')}</td><td class="py-2 px-3">${e.ogretmen_adi || ''}</td><td class="py-2 px-3">${e.ders_adi || ''}</td><td class="py-2 px-3">${e.hata_aciklamasi || ''}</td><td class="py-2 px-3">${e.bildiren_kisi || ''}</td>
+                </tr>`).join('');
         }
     }
-
-    // 5. ADIM: SAYFA İLK AÇILDIĞINDA VERİLERİ YÜKLE
     document.addEventListener('DOMContentLoaded', loadErrors);
 </script>
 
