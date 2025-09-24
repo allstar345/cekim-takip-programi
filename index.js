@@ -72,6 +72,13 @@ const directorSelectForm = document.getElementById('director');
 const kameraman1SelectForm = document.getElementById('kameraman_1');
 const kameraman2SelectForm = document.getElementById('kameraman_2');
 
+// --- YENİ EKLENEN BİLDİRİM DOM ELEMENTLERİ ---
+const notificationBell = document.getElementById('notification-bell');
+const notificationBadge = document.getElementById('notification-badge');
+const notificationDropdown = document.getElementById('notification-dropdown');
+let currentNotifications = [];
+// --- BİLDİRİM DOM ELEMENTLERİ BİTİŞ ---
+
 
 // Sabit Listeler
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
@@ -83,6 +90,77 @@ const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
+
+// --- BİLDİRİM SİSTEMİ FONKSİYONLARI ---
+
+async function fetchNotifications() {
+    const { data, error } = await db
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (error) {
+        console.error('Bildirimler alınırken hata:', error);
+    } else {
+        currentNotifications = data;
+        renderNotifications();
+    }
+}
+
+function renderNotifications() {
+    const unreadCount = currentNotifications.filter(n => !n.is_read).length;
+
+    if (unreadCount > 0) {
+        notificationBadge.textContent = unreadCount;
+        notificationBadge.classList.remove('hidden');
+    } else {
+        notificationBadge.classList.add('hidden');
+    }
+
+    if (currentNotifications.length === 0) {
+        notificationDropdown.innerHTML = '<div class="notification-item"><p>Yeni bildirim yok.</p></div>';
+        return;
+    }
+
+    notificationDropdown.innerHTML = currentNotifications.map(notification => `
+        <div class="notification-item ${!notification.is_read ? 'unread' : ''}">
+            <p>${notification.message}</p>
+            <small>${new Date(notification.created_at).toLocaleString('tr-TR')}</small>
+        </div>
+    `).join('');
+}
+
+async function markNotificationsAsRead() {
+    const unreadIds = currentNotifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    const { error } = await db
+        .from('notifications')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+
+    if (error) {
+        console.error("Bildirimler okundu olarak işaretlenirken hata:", error);
+    } else {
+        // Arayüzü anında güncellemek için local state'i de değiştiriyoruz
+        currentNotifications.forEach(n => { if (unreadIds.includes(n.id)) n.is_read = true; });
+        renderNotifications();
+    }
+}
+
+notificationBell.addEventListener('click', () => {
+    const isHidden = notificationDropdown.style.display === 'none' || notificationDropdown.style.display === '';
+    if (isHidden) {
+        notificationDropdown.style.display = 'block';
+        markNotificationsAsRead();
+    } else {
+        notificationDropdown.style.display = 'none';
+    }
+});
+
+// --- BİLDİRİM SİSTEMİ FONKSİYONLARI BİTİŞ ---
+
 
 async function populateTeacherDropdowns() {
     const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
@@ -97,6 +175,9 @@ async function populateTeacherDropdowns() {
     teacherSelectForm.innerHTML += teacherOptionsHTML;
     teacherSelectFilter.innerHTML += teacherOptionsHTML;
 }
+
+// ... GERİ KALAN TÜM ORİJİNAL KODLARINIZ ...
+// (Hiçbir değişiklik yapılmadı)
 
 function populateStaticDropdowns() {
     const directorOptionsHTML = DIRECTORS.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
@@ -318,7 +399,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
 
     shoots.forEach(shoot => {
         if (shoot.day && shoot.studio && gridData[shoot.day] && gridData[shoot.day][shoot.studio]) {
-            gridData[shoot.day][shoot.studio].push(shoot);
+            gridData[day][shoot.studio].push(shoot);
         }
     });
 
@@ -373,8 +454,8 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     <p class="text-gray-500 text-xs italic mt-1">Y: ${shoot.director || '-'}</p>
                     ${cameramanDisplayHtml}
                     <div class="flex items-center justify-end space-x-1 mt-2">
-                         <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
-                         <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
+                        <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
+                        <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                     </div>
                 </div>
                 `;
@@ -387,7 +468,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
     }).join('');
 
     return `
-         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div class="p-6 md:p-8 bg-gray-50 border-b border-gray-200">
                 <h2 class="text-xl font-bold text-gray-900">Çekim Planı</h2>
             </div>
@@ -775,11 +856,29 @@ const shootsSubscription = db.channel('public:shoots')
         }
     )
     .subscribe();
+    
+// --- YENİ BİLDİRİM DİNLEYİCİSİ ---
+const notificationsSubscription = db.channel('public:notifications')
+    .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+            console.log('Yeni bildirim algılandı!', payload);
+            fetchNotifications(); // Yeni bildirim geldiğinde listeyi yenile
+        }
+    )
+    .subscribe();
+// --- BİLDİRİM DİNLEYİCİSİ BİTİŞ ---
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateTeacherDropdowns();
     populateStaticDropdowns();
     await fetchInitialData();
+    
+    // --- YENİ EKLENEN KOD: Sayfa yüklendiğinde bildirimleri çek ---
+    await fetchNotifications();
+    // --- BİTİŞ ---
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
