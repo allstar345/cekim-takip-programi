@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hata Bildirim Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100">
+
+    <main class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Hata Bildirim Sistemi</h1>
+
+        <div class="mb-4 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="kitap-tab-btn" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600">Kitap Hata Bildirimi</button>
+                <button id="video-tab-btn" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Video Hata Bildirimi</button>
+            </nav>
+        </div>
+
+        <div id="kitap-tab-content">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Yeni Kitap Hatası Bildir</h2>
+                <form id="kitap-error-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="kitap_ogretmen_adi" placeholder="Öğretmen Adı" class="p-2 border rounded" required>
+                    <input type="text" id="kitap_ders_adi" placeholder="Ders Adı" class="p-2 border rounded" required>
+                    <input type="text" id="kitap_adi" placeholder="Kitap Adı" class="p-2 border rounded" required>
+                    <input type="text" id="kitap_sayfa_numarasi" placeholder="Sayfa Numarası" class="p-2 border rounded">
+                    <input type="text" id="kitap_soru_numarasi" placeholder="Soru Numarası" class="p-2 border rounded">
+                    <input type="text" id="kitap_bildiren_kisi" placeholder="Bildiren Kişi" class="p-2 border rounded" required>
+                    <textarea id="kitap_hata_aciklamasi" placeholder="Hata Açıklaması..." class="md:col-span-2 p-2 border rounded" rows="3" required></textarea>
+                    <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Gönder</button>
+                </form>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Bildirilen Kitap Hataları</h2>
+                <div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="bg-gray-50"><th>Tarih</th><th>Öğretmen</th><th>Ders</th><th>Kitap</th><th>Sayfa</th><th>Soru</th><th>Açıklama</th><th>Bildiren</th></tr></thead><tbody id="book-error-table-body"></tbody></table></div>
+            </div>
+        </div>
+
+        <div id="video-tab-content" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Yeni Video Hatası Bildir</h2>
+                <form id="video-error-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="video_ogretmen_adi" placeholder="Öğretmen Adı" class="p-2 border rounded" required>
+                    <input type="text" id="video_ders_adi" placeholder="Ders Adı" class="p-2 border rounded" required>
+                    <input type="text" id="video_bildiren_kisi" placeholder="Bildiren Kişi" class="p-2 border rounded md:col-span-2" required>
+                    <textarea id="video_hata_aciklamasi" placeholder="Hata Açıklaması..." class="md:col-span-2 p-2 border rounded" rows="3" required></textarea>
+                    <button type="submit" class="md:col-span-2 w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Gönder</button>
+                </form>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Bildirilen Video Hataları</h2>
+                <div class="overflow-x-auto"><table class="min-w-full"><thead><tr class="bg-gray-50"><th>Tarih</th><th>Öğretmen</th><th>Ders</th><th>Açıklama</th><th>Bildiren</th></tr></thead><tbody id="video-error-table-body"></tbody></table></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="hata-bildirim.js" defer></script>
+</body>
+</html>
