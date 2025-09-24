@@ -8,9 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; }
         .filter-btn.active { background-color: #2563eb; color: white; }
@@ -52,20 +49,6 @@
                         <button id="filter-week" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg">Bu Hafta</button>
                         <button id="filter-month" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg active">Bu Ay</button>
                         <button id="filter-all" class="filter-btn text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-lg">Tüm Zamanlar</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gray-50 rounded-lg p-6 my-6 border border-gray-200">
-                <h3 class="text-xl font-bold text-gray-800 mb-6 text-center">Performans Grafikleri</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <div>
-                        <h4 class="text-lg font-semibold text-center text-gray-700 mb-4">Öğretmen Çekim Sayıları</h4>
-                        <canvas id="teacherChart"></canvas>
-                    </div>
-                    <div>
-                        <h4 class="text-lg font-semibold text-center text-gray-700 mb-4">Yönetmen Çekim Sayıları</h4>
-                        <canvas id="directorChart"></canvas>
                     </div>
                 </div>
             </div>
