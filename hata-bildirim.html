@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hata Bildirim Programı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
+        .form-input { width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 0.375rem; background-color: #fff; transition: border-color 0.2s; }
+        .form-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 1px #2563EB; }
+        .form-label { font-size: 0.875rem; font-weight: 500; color: #4B5563; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background-color: #2563EB; color: white; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; cursor: pointer; }
+        .card-header h2 { font-size: 1rem; font-weight: 600; }
+        .rotate-180 { transform: rotate(180deg); }
+        .transition-transform { transition: transform 0.3s ease-in-out; }
+        .pagination-btn { padding: 0.5rem 1rem; border: 1px solid #D1D5DB; background-color: white; color: #374151; font-weight: 500; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s; }
+        .pagination-btn:hover { background-color: #F3F4F6; }
+        .pagination-btn.active { background-color: #2563EB; color: white; border-color: #2563EB; }
+        .pagination-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 lg:p-8">
+
+    <header class="bg-white shadow-sm rounded-lg mb-6">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <img src="logo.png" alt="All Star Logo" class="h-16">
+                </div>
+                <div class="flex items-center">
+                    <button class="p-2 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <div class="ml-4 relative">
+                        <div>
+                            <button type="button" class="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                                <span class="sr-only">Kullanıcı menüsü</span>
+                                <img class="h-8 w-8 rounded-full" src="https://placehold.co/100x100/E2E8F0/4A5568?text=K" alt="Kullanıcı avatarı">
+                            </button>
+                        </div>
+                    </div>
+                     <span class="ml-3 font-medium text-gray-700 hidden sm:block">Kullanıcı</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-screen-2xl mx-auto mb-6 px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-lg shadow-sm p-2 flex space-x-2">
+            <a href="#" id="nav-video" onclick="showPage('video')" class="flex-1 text-center px-4 py-2 rounded-md font-medium transition-colors">
+                <i class="fas fa-video mr-1 sm:mr-2"></i>
+                <span>Video Hata Bildirimi</span>
+            </a>
+            <a href="#" id="nav-kitap" onclick="showPage('kitap')" class="flex-1 text-center px-4 py-2 rounded-md font-medium transition-colors">
+                <i class="fas fa-book mr-1 sm:mr-2"></i>
+                <span>Kitap Hata Bildirimi</span>
+            </a>
+        </div>
+    </div>
+
+    <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div id="video-page-container">
+            <div class="bg-white shadow rounded-lg mb-6">
+                <div class="card-header" onclick="toggleCard('videoGiris')">
+                    <h2><i class="fas fa-video mr-2"></i>Video Hata Bildirim Girişi</h2>
+                    <i id="videoGiris-icon" class="fas fa-chevron-down transition-transform"></i>
+                </div>
+                <div id="videoGiris-body" class="p-5 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+                        <input type="hidden" id="video-edit-index">
+                        <div>
+                            <label for="video-anlatim-turu" class="form-label">Anlatım Türü</label>
+                            <select id="video-anlatim-turu" class="form-input">
+                                <option value="">Seçiniz</option>
+                                <option>Tabletli Anlatım</option>
+                                <option>Özet Anlatım</option>
+                                <option>Eğlenceli Anlatım</option>
+                                <option>Soru Pratiği</option>
+                                <option>GGÇK</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-brans" class="form-label">Branş</label>
+                            <select id="video-brans" class="form-input">
+                                <option value="">Seçiniz</option>
+                                <option>LGS Türkçe</option>
+                                <option>LGS Matematik</option>
+                                <option>LGS Fen Bilimleri</option>
+                                <option>LGS İnkılap Tarihi ve Atatürkçülük</option>
+                                <option>LGS İngilizce</option>
+                                <option>LGS Din Kültürü</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-unite-adi-arama" class="form-label">Ünite Adı</label>
+                            <input type="text" id="video-unite-adi-arama" class="form-input mb-2" placeholder="Ünite ara...">
+                            <select id="video-unite-adi" class="form-input h-[42px]" size="1">
+                                 <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-ogretmen" class="form-label">Öğretmen</label>
+                             <select id="video-ogretmen" class="form-input">
+                                <option value="">Seçiniz</option>
+                                <option>Rüştü Bayındır</option>
+                                <option>Kadir Sefi</option>
+                                <option>Melih Akgündüz</option>
+                                <option>İbrahim Taş</option>
+                                <option>Yaşar Aslan</option>
+                                <option>Mehmet Özalp</option>
+                                <option>İlayda Gültekin</option>
+                                <option>Fatih Sefi</option>
+                                <option>Buğra Arslan</option>
+                                <option>Serkan Yeşilkan</option>
+                                <option>Cebrail Karaoğlan</option>
+                                <option>Enise Özdemir</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-bolum-no" class="form-label">Bölüm No</label>
+                            <select id="video-bolum-no" class="form-input">
+                                <option value="">Seçiniz</option>
+                                <option>1. Bölüm</option><option>2. Bölüm</option><option>3. Bölüm</option><option>4. Bölüm</option><option>5. Bölüm</option>
+                                <option>6. Bölüm</option><option>7. Bölüm</option><option>8. Bölüm</option><option>9. Bölüm</option><option>10. Bölüm</option>
+                                <option>11. Bölüm</option><option>12. Bölüm</option><option>13. Bölüm</option><option>14. Bölüm</option><option>15. Bölüm</option>
+                                <option>16. Bölüm</option><option>17. Bölüm</option><option>18. Bölüm</option><option>19. Bölüm</option><option>20. Bölüm</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-test-no-arama" class="form-label">Test No</label>
+                            <input type="text" id="video-test-no-arama" class="form-input mb-2" placeholder="Test ara...">
+                            <select id="video-test-no" class="form-input h-[42px]" size="1">
+                                 <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-ders-no" class="form-label">Ders No</label>
+                            <select id="video-ders-no" class="form-input">
+                                <option value="">Seçiniz</option>
+                                <option>1. Ders</option><option>2. Ders</option><option>3. Ders</option><option>4. Ders</option><option>5. Ders</option>
+                                <option>6. Ders</option><option>7. Ders</option><option>8. Ders</option><option>9. Ders</option><option>10. Ders</option>
+                                <option>11. Ders</option><option>12. Ders</option><option>13. Ders</option><option>14. Ders</option><option>15. Ders</option>
+                                <option>16. Ders</option><option>17. Ders</option><option>18. Ders</option><option>19. Ders</option><option>20. Ders</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-hata-bildiren" class="form-label">Hata Bildiren</label>
+                            <input type="text" id="video-hata-bildiren" class="form-input">
+                        </div>
+                        <div class="relative">
+                            <label for="video-tarih" class="form-label">Tarih</label>
+                            <input type="date" id="video-tarih" class="form-input">
+                            <i class="fas fa-calendar absolute right-3 top-9 text-gray-400"></i>
+                        </div>
+                        <div>
+                            <label for="video-durumu" class="form-label">Durumu</label>
+                            <select id="video-durumu" class="form-input">
+                                <option>Bildirildi</option><option>İnceleniyor</option><option>Düzeltildi</option><option>Reddedildi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="video-hata-suresi" class="form-label">Hata Süresi</label>
+                            <input type="text" id="video-hata-suresi" class="form-input" placeholder="Örn: 01:23-01:45">
+                        </div>
+                        <div>
+                            <label for="video-hata-alani" class="form-label">Hata Alanı</label>
+                            <select id="video-hata-alani" class="form-input">
+                                <option value="">Seçiniz</option><option>Akademik</option><option>Teknik</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label for="video-hata-icerigi" class="form-label">Hata İçeriği</label>
+                            <textarea id="video-hata-icerigi" rows="3" class="form-input" placeholder="Lütfen hatayı detaylı olarak açıklayınız..."></textarea>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label for="video-yorum-sonuc" class="form-label">Yorum-Sonuç</label>
+                            <textarea id="video-yorum-sonuc" rows="3" class="form-input" placeholder="Hata ile ilgili yorum veya çözüm notu..."></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-2">
+                        <button id="video-kaydet-btn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors mr-2">Kaydet</button>
+                        <button id="video-iptal-btn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors">İptal</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white shadow rounded-lg">
+                 <div class="card-header" onclick="toggleCard('videoDetay')">
+                    <h2><i class="fas fa-list-ul mr-2"></i>Video Hata Bildirim Listesi</h2>
+                    <i id="videoDetay-icon" class="fas fa-chevron-down transition-transform"></i>
+                </div>
+                <div id="videoDetay-body" class="p-5 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
+                        <div>
+                            <label for="video-filter-brans" class="form-label">Branşa Göre</label>
+                            <select id="video-filter-brans" class="form-input text-sm" onchange="filterVideoTable(true)">
+                                <option value="">Tümü</option><option>LGS Türkçe</option><option>LGS Matematik</option><option>LGS Fen Bilimleri</option><option>LGS İnkılap Tarihi ve Atatürkçülük</option><option>LGS İngilizce</option><option>LGS Din Kültürü</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label for="video-filter-anlatim-turu" class="form-label">Anlatım Türüne Göre</label>
+                             <select id="video-filter-anlatim-turu" class="form-input text-sm" onchange="filterVideoTable(true)">
+                                <option value="">Tümü</option><option>Tabletli Anlatım</option><option>Özet Anlatım</option><option>Eğlenceli Anlatım</option><option>Soru Pratiği</option><option>GGÇK</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label for="video-filter-hata-alani" class="form-label">Hata Alanına Göre</label>
+                             <select id="video-filter-hata-alani" class="form-input text-sm" onchange="filterVideoTable(true)">
+                                <option value="">Tümü</option><option>Akademik</option><option>Teknik</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label for="video-filter-durumu" class="form-label">Duruma Göre</label>
+                             <select id="video-filter-durumu" class="form-input text-sm" onchange="filterVideoTable(true)">
+                                <option value="">Tümü</option><option>Bildirildi</option><option>İnceleniyor</option><option>Düzeltildi</option><option>Reddedildi</option>
+                            </select>
+                        </div>
+                         <div class="lg:col-span-1">
+                            <label for="video-filter-genel-arama" class="form-label">Genel Arama</label>
+                            <input type="text" id="video-filter-genel-arama" class="form-input text-sm" placeholder="Listede ara..." onkeyup="filterVideoTable(true)">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branş</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ünite Adı</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğretmen</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bölüm No</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders No</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test No</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hata Süresi</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hata Alanı</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durumu</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="video-hataTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                      <div id="video-pagination-container" class="mt-4 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600">
+                        <span id="video-record-count" class="mb-2 sm:mb-0"></span>
+                        <div id="video-pagination-controls" class="flex items-center space-x-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="kitap-page-container" class="hidden">
+            <div class="bg-white shadow rounded-lg mb-6">
+                <div class="card-header" onclick="toggleCard('kitapGiris')">
+                    <h2><i class="fas fa-book mr-2"></i>Kitap Hata Bildirim Girişi</h2>
+                    <i id="kitapGiris-icon" class="fas fa-chevron-down transition-transform"></i>
+                </div>
+                <div id="kitapGiris-body" class="p-5 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                         <input type="hidden" id="kitap-edit-index">
+                        <div>
+                            <label for="kitap-brans" class="form-label">Branş</label>
+                            <select id="kitap-brans" class="form-input">
+                                <option value="">Seçiniz</option><option>LGS Türkçe</option><option>LGS Matematik</option><option>LGS Fen Bilimleri</option><option>LGS İnkılap Tarihi ve Atatürkçülük</option><option>LGS İngilizce</option><option>LGS Din Kültürü</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="kitap-no" class="form-label">Kitap No</label>
+                            <select id="kitap-no" class="form-input">
+                               <option value="">Seçiniz</option><option>1. Kitap</option><option>2. Kitap</option><option>3. Kitap</option><option>4. Kitap</option><option>5. Kitap</option><option>6. Kitap</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="kitap-turu" class="form-label">Kitap Türü</label>
+                            <select id="kitap-turu" class="form-input">
+                                <option value="">Seçiniz</option><option>Konu Anlatım Kitabı</option><option>Ödev Kitabı</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="kitap-sayfa-no" class="form-label">Sayfa No</label>
+                            <input type="text" id="kitap-sayfa-no" class="form-input">
+                        </div>
+                        <div>
+                            <label for="kitap-hata-bildiren" class="form-label">Hata Bildiren</label>
+                            <input type="text" id="kitap-hata-bildiren" class="form-input">
+                        </div>
+                        <div class="relative">
+                            <label for="kitap-tarih" class="form-label">Tarih</label>
+                            <input type="date" id="kitap-tarih" class="form-input">
+                            <i class="fas fa-calendar absolute right-3 top-9 text-gray-400"></i>
+                        </div>
+                        <div>
+                            <label for="kitap-durumu" class="form-label">Durumu</label>
+                            <select id="kitap-durumu" class="form-input">
+                                <option>Bildirildi</option><option>İnceleniyor</option><option>Düzeltildi</option><option>Reddedildi</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label for="kitap-hata-icerigi" class="form-label">Hata İçeriği</label>
+                            <textarea id="kitap-hata-icerigi" rows="3" class="form-input" placeholder="Lütfen hatayı detaylı olarak açıklayınız..."></textarea>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label for="kitap-yorum-sonuc" class="form-label">Yorum-Sonuç</label>
+                            <textarea id="kitap-yorum-sonuc" rows="3" class="form-input" placeholder="Hata ile ilgili yorum veya çözüm notu..."></textarea>
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="form-label">Görsel Ekle</label>
+                            <div class="mt-1 flex items-center">
+                                <label for="kitap-gorsel-input" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    <span>Görsel Seç</span>
+                                    <input id="kitap-gorsel-input" type="file" class="sr-only" accept="image/*">
+                                </label>
+                                <div id="kitap-gorsel-preview-container" class="ml-4 relative hidden">
+                                    <img id="kitap-gorsel-preview" src="" alt="Görsel Önizleme" class="h-20 w-20 object-cover rounded-md">
+                                    <button id="kitap-gorsel-kaldir-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs">&times;</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button id="kitap-kaydet-btn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors mr-2">Kaydet</button>
+                        <button id="kitap-iptal-btn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors">İptal</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white shadow rounded-lg">
+                <div class="card-header" onclick="toggleCard('kitapDetay')">
+                    <h2><i class="fas fa-list-ul mr-2"></i>Kitap Hata Bildirim Listesi</h2>
+                    <i id="kitapDetay-icon" class="fas fa-chevron-down transition-transform"></i>
+                </div>
+                <div id="kitapDetay-body" class="p-5 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 p-4 border rounded-lg bg-gray-50">
+                        <input type="text" id="kitap-filter-text" class="form-input" placeholder="Listede ara..." onkeyup="filterKitapTable(true)">
+                        <select id="kitap-filter-brans" class="form-input" onchange="filterKitapTable(true)">
+                            <option value="">Tüm Branşlar</option><option>LGS Türkçe</option><option>LGS Matematik</option><option>LGS Fen Bilimleri</option><option>LGS İnkılap Tarihi ve Atatürkçülük</option><option>LGS İngilizce</option><option>LGS Din Kültürü</option>
+                        </select>
+                        <select id="kitap-filter-kitap-turu" class="form-input" onchange="filterKitapTable(true)">
+                            <option value="">Tüm Kitap Türleri</option><option>Konu Anlatım Kitabı</option><option>Ödev Kitabı</option>
+                        </select>
+                        <select id="kitap-filter-durum" class="form-input" onchange="filterKitapTable(true)">
+                            <option value="">Tüm Durumlar</option><option>Bildirildi</option><option>İnceleniyor</option><option>Düzeltildi</option><option>Reddedildi</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Görsel</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branş</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kitap No</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kitap Türü</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hata Bildiren</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durumu</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kitap-hataTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <div id="kitap-pagination-container" class="mt-4 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600">
+                        <span id="kitap-record-count" class="mb-2 sm:mb-0"></span>
+                        <div id="kitap-pagination-controls" class="flex items-center space-x-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+        <div class="relative bg-white p-2 rounded-lg max-w-4xl max-h-[90vh]">
+            <button id="close-image-modal-btn" class="absolute -top-4 -right-4 bg-white rounded-full h-8 w-8 text-black text-2xl flex items-center justify-center">&times;</button>
+            <img id="modal-image" src="" alt="Büyük Görsel" class="max-w-full max-h-[85vh] object-contain">
+        </div>
+    </div>
+
+    <div id="notification" class="fixed bottom-5 right-5 text-white py-2 px-5 rounded-lg shadow-lg hidden transition-opacity duration-300 z-50">
+        <p id="notification-message"></p>
+    </div>
+
+    <script>
+        // --- Supabase İstemcisi ---
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://ualousnlajygoiibyjny.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhbG91c25sYWp5Z29paWJ5am55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1OTMyNjIsImV4cCI6MjA3MzE2OTI2Mn0.RpfYW26AqAnl9RdFVxK_cnc8ADmZmtvqiNw6-XEmsoM';
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        // --- Genel Değişkenler ---
+        let kitapHataData = [];
+        let videoHataData = [];
+        let secilenGorselDosyasi = null;
+        const itemsPerPage = 10;
+        let videoCurrentPage = 1;
+        let kitapCurrentPage = 1;
+
+        // --- Yardımcı Fonksiyonlar ---
+        function getBransRowColor(brans) {
+            const renkler = {
+                'LGS Türkçe': '#F8E8F6',
+                'LGS Matematik': '#E1F5FE',
+                'LGS Fen Bilimleri': '#E6FFEC',
+                'LGS İnkılap Tarihi ve Atatürkçülük': '#FFFDE7',
+                'LGS İngilizce': '#FFEAE3',
+                'LGS Din Kültürü': '#FFF8E1'
+            };
+            return renkler[brans] || ''; 
+        }
+        
+        function getPaginationNumbers(currentPage, totalPages) {
+            const pageNeighbours = 1; 
+            const totalNumbers = (pageNeighbours * 2) + 3;
+            const totalBlocks = totalNumbers + 2;
+            if (totalPages > totalBlocks) {
+                const startPage = Math.max(2, currentPage - pageNeighbours);
+                const endPage = Math.min(totalPages - 1, currentPage + pageNeighbours);
+                let pages = Array.from({ length: (endPage - startPage) + 1 }, (_, i) => startPage + i);
+                const hasLeftSpill = startPage > 2;
+                const hasRightSpill = (totalPages - endPage) > 1;
+                const spillOffset = totalNumbers - (pages.length + 1);
+                switch (true) {
+                    case (hasLeftSpill && !hasRightSpill): {
+                        const extraPages = Array.from({ length: spillOffset + 1 }, (_, i) => startPage - 1 - i).reverse();
+                        pages = [...extraPages, ...pages];
+                        break;
+                    }
+                    case (!hasLeftSpill && hasRightSpill): {
+                        const extraPages = Array.from({ length: spillOffset + 1 }, (_, i) => endPage + 1 + i);
+                        pages = [...pages, ...extraPages];
+                        break;
+                    }
+                }
+                let finalPages = [1];
+                if(hasLeftSpill) finalPages.push('...');
+                finalPages = [...finalPages, ...pages];
+                if(hasRightSpill) finalPages.push('...');
+                finalPages.push(totalPages);
+                return finalPages;
+            }
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        async function verileriYukle() {
+            const { data: videoData, error: videoError } = await supabaseClient.from('video_hatalari').select('*').order('id', { ascending: false });
+            if (videoError) console.error('Video verileri yüklenemedi:', videoError);
+            else videoHataData = videoData;
+
+            const { data: kitapData, error: kitapError } = await supabaseClient.from('kitap_hatalari').select('*').order('id', { ascending: false });
+            if (kitapError) console.error('Kitap verileri yüklenemedi:', kitapError);
+            else kitapHataData = kitapData;
+        }
+
+        function populateSelectWithOptions(selectElementId, optionsArray) {
+            const selectElement = document.getElementById(selectElementId);
+            if (selectElement.options.length <= 1) { 
+                optionsArray.forEach(optionText => {
+                    const option = document.createElement('option');
+                    option.value = optionText;
+                    option.textContent = optionText;
+                    selectElement.appendChild(option);
+                });
+            }
+        }
+        
+        window.onload = async function() {
+            await verileriYukle();
+            filterVideoTable();
+            filterKitapTable();
+            showPage('video');
+
+            const uniteAdlari = ["Sözcükte Anlam", "Cümlede Anlam", "Metinde Anlam", "Sözel Mantık", "Fiilimsiler", "Cümlenin Ögeleri", "Fiilde Çatı", "Cümle Türleri", "Anlatım Bozuklukları", "Yazım Kuralları", "Noktalama İşaretleri", "Çarpanlar ve Katlar", "Üslü İfadeler", "Kareköklü İfadeler", "Veri Analizi", "Olasılık", "Cebirsel İfadeler", "Denklemler", "Eşitsizlikler", "Üçgenler", "Benzerlik", "Dönüşüm Geometrisi", "Geometrik Cisimler", "Bir Kahraman Doğuyor", "Milli Uyanış", "Milli Bir Destan", "Atatürkçülük ve Çağdaşlaşan Türkiye", "Demokratikleşme Çabaları", "Atatürk Dönemi Dış Politika", "Atatürk'ün Ölümü ve Sonrası", "Mevsimler ve İklim", "Dna ve Genetik Kod", "Basınç", "Madde ve Endüstri", "Basit Makineler", "Enerji Dönüşümleri", "Elektrik Yükleri", "Kaza ve Kader İnancı", "Zekat ve Sadaka", "Din ve Hayat", "Hz. Muhammed'in Örnekliği", "Kur'an-ı Kerim ve Özellikleri", "Friendship", "Teen Life", "In The Kitchen", "On The Phone", "The Internet", "Adventures", "Tourism", "Chores", "Science", "Natural Forces"];
+            const testNolari = ["LGS TADINDA 1", "LGS TADINDA 2", "LGS TADINDA 3", "LGS TADINDA 4", "LGS TADINDA 5", "LGS TADINDA 6", "LGS TADINDA 7", "LGS TADINDA 8", "LGS TADINDA 9", "LGS TADINDA 10", "LGS TADINDA 1-A", "LGS TADINDA 1-B", "LGS TADINDA 1-C", "LGS TADINDA 1-D", "LGS TADINDA 2-A", "LGS TADINDA 2-B", "LGS TADINDA 2-C", "LGS TADINDA 2-D", "LGS TADINDA 3-A", "LGS TADINDA 3-B", "LGS TADINDA 3-C", "LGS TADINDA 3-D", "LGS TADINDA 4-A", "LGS TADINDA 4-B", "LGS TADINDA 4-C", "LGS TADINDA 4-D", "LGS TADINDA 5-A", "LGS TADINDA 5-B", "LGS TADINDA 5-C", "LGS TADINDA 5-D", "LGS TADINDA 6-A", "LGS TADINDA 6-B", "LGS TADINDA 6-C", "LGS TADINDA 6-D", "LGS TADINDA 7-A", "LGS TADINDA 7-B", "LGS TADINDA 7-C", "LGS TADINDA 7-D", "LGS TADINDA 8-A", "LGS TADINDA 8-B", "LGS TADINDA 8-C", "LGS TADINDA 8-D", "SINAV TADINDA 1", "SINAV TADINDA 1-A", "SINAV TADINDA 1-B", "SINAV TADINDA 2", "SINAV TADINDA 2-A", "SINAV TADINDA 2-B", "SINAV TADINDA 3", "SINAV TADINDA 3-A", "SINAV TADINDA 3-B", "SINAV TADINDA 3-C", "SINAV TADINDA 4", "SINAV TADINDA 4-A", "SINAV TADINDA 4-B", "SINAV TADINDA 5", "SINAV TADINDA 5-A", "SINAV TADINDA 5-B", "SINAV TADINDA 5-C", "SINAV TADINDA 6", "SINAV TADINDA 6-A", "SINAV TADINDA 6-B", "SINAV TADINDA 7", "SINAV TADINDA 7-A", "SINAV TADINDA 7-B", "SINAV TADINDA 8", "SINAV TADINDA 8-A", "SINAV TADINDA 8-B", "SINAV TADINDA 9", "SINAV TADINDA 9-A", "SINAV TADINDA 9-B", "SINAV TADINDA 10", "SINAV TADINDA 10-A", "SINAV TADINDA 10-B", "YENİ NESİL ISINDIRMA 1", "YENİ NESİL ISINDIRMA 1-A", "YENİ NESİL ISINDIRMA 1-B", "YENİ NESİL ISINDIRMA 1-C", "YENİ NESİL ISINDIRMA 1-D", "YENİ NESİL ISINDIRMA 1-E", "YENİ NESİL ISINDIRMA 2", "YENİ NESİL ISINDIRMA 2-A", "YENİ NESİL ISINDIRMA 2-B", "YENİ NESİL ISINDIRMA 2-C", "YENİ NESİL ISINDIRMA 2-D", "YENİ NESİL ISINDIRMA 2-E", "YENİ NESİL ISINDIRMA 3", "YENİ NESİL ISINDIRMA 3-A", "YENİ NESİL ISINDIRMA 3-B", "YENİ NESİL ISINDIRMA 3-C", "YENİ NESİL ISINDIRMA 3-D", "YENİ NESİL ISINDIRMA 3-E", "YENİ NESİL ISINDIRMA 4", "YENİ NESİL ISINDIRMA 4-A", "YENİ NESİL ISINDIRMA 4-B", "YENİ NESİL ISINDIRMA 4-C", "YENİ NESİL ISINDIRMA 4-D", "YENİ NESİL ISINDIRMA 4-E", "YENİ NESİL ISINDIRMA 5", "YENİ NESİL ISINDIRMA 5-A", "YENİ NESİL ISINDIRMA 5-B", "YENİ NESİL ISINDIRMA 5-C", "YENİ NESİL ISINDIRMA 5-D", "YENİ NESİL ISINDIRMA 5-E", "YENİ NESİL ISINDIRMA 6", "YENİ NESİL ISINDIRMA 6-A", "YENİ NESİL ISINDIRMA 6-B", "YENİ NESİL ISINDIRMA 6-C", "YENİ NESİL ISINDIRMA 7", "YENİ NESİL ISINDIRMA 7-A", "YENİ NESİL ISINDIRMA 7-B", "YENİ NESİL ISINDIRMA 8", "YENİ NESİL ISINDIRMA 8-A", "YENİ NESİL ISINDIRMA 8-B", "YENİ NESİL ISINDIRMA 9", "YENİ NESİL ISINDIRMA 9-A", "YENİ NESİL ISINDIRMA 9-B", "YENİ NESİL ISINDIRMA 10", "YENİ NESİL ISINDIRMA 10-A", "YENİ NESİL ISINDIRMA 10-B", "YENİ NESLE GEÇİŞ 1", "YENİ NESLE GEÇİŞ 1-A", "YENİ NESLE GEÇİŞ 1-B", "YENİ NESLE GEÇİŞ 1-C", "YENİ NESLE GEÇİŞ 1-D", "YENİ NESLE GEÇİŞ 1-E", "YENİ NESLE GEÇİŞ 2", "YENİ NESLE GEÇİŞ 2-A", "YENİ NESLE GEÇİŞ 2-B", "YENİ NESLE GEÇİŞ 2-C", "YENİ NESLE GEÇİŞ 2-D", "YENİ NESLE GEÇİŞ 2-E", "YENİ NESLE GEÇİŞ 3", "YENİ NESLE GEÇİŞ 3-A", "YENİ NESLE GEÇİŞ 3-B", "YENİ NESLE GEÇİŞ 3-C", "YENİ NESLE GEÇİŞ 3-D", "YENİ NESLE GEÇİŞ 3-E", "YENİ NESLE GEÇİŞ 4", "YENİ NESLE GEÇİŞ 4-A", "YENİ NESLE GEÇİŞ 4-B", "YENİ NESLE GEÇİŞ 4-C", "YENİ NESLE GEÇİŞ 4-D", "YENİ NESLE GEÇİŞ 4-E", "YENİ NESLE GEÇİŞ 5", "YENİ NESLE GEÇİŞ 5-A", "YENİ NESLE GEÇİŞ 5-B", "YENİ NESLE GEÇİŞ 5-C", "YENİ NESLE GEÇİŞ 5-D", "YENİ NESLE GEÇİŞ 5-E", "YENİ NESLE GEÇİŞ 6", "YENİ NESLE GEÇİŞ 6-A", "YENİ NESLE GEÇİŞ 6-B", "YENİ NESLE GEÇİŞ 6-C", "YENİ NESLE GEÇİŞ 7", "YENİ NESLE GEÇİŞ 7-A", "YENİ NESLE GEÇİŞ 7-B", "YENİ NESLE GEÇİŞ 8", "YENİ NESLE GEÇİŞ 8-A", "YENİ NESLE GEÇİŞ 8-B", "YENİ NESLE GEÇİŞ 9", "YENİ NESLE GEÇİŞ 9-A", "YENİ NESLE GEÇİŞ 9-B", "YENİ NESLE GEÇİŞ 10", "YENİ NESLE GEÇİŞ 10-A", "YENİ NESLE GEÇİŞ 10-B", "MODULE A", "MODULE B", "MODULAR CHECK 1", "MODULE C", "MODULE D", "MODULAR CHECK 2", "MODULE E", "MODULE F", "MODULAR CHECK 3", "MODULE G", "MODULE H", "LGS EXPLORER", "LGS EXPLORER 1", "LGS EXPLORER 2", "EXIT TEST 1", "EXIT TEST 2", "EXIT TEST 3", "LGS MASTER", "MODULE TEST 1", "MODULE TEST 2", "MODULE TEST 3", "MODULE TEST 4", "MODULE TEST 5", "MODULE TEST 6", "MODULE TEST 7", "MODULE TEST 8", "MODULE TEST 9", "MODULE TEST 10", "FINAL TEST", "KONU TESTİ 1", "KONU TESTİ 1-A", "KONU TESTİ 1-B", "KONU TESTİ 2", "KONU TESTİ 2-A", "KONU TESTİ 2-B", "KONU TESTİ 3", "KONU TESTİ 3-A", "KONU TESTİ 3-B", "KONU TESTİ 4", "KONU TESTİ 4-A", "KONU TESTİ 4-B", "KONU TESTİ 5", "KONU TESTİ 5-A", "KONU TESTİ 5-B", "KONU TESTİ 6", "KONU TESTİ 7", "KONU TESTİ 8", "KONU TESTİ 9", "KONU TESTİ 10", "KONU TOPARLAMA", "SEÇİCİ 1", "SEÇİCİ 2", "SEÇİCİ 3", "SEÇİCİ 4", "SEÇİCİ 5", "SEÇİCİ 6", "SEÇİCİ 7", "SEÇİCİ 8", "SEÇİCİ 9", "SEÇİCİ 10", "ÖDEV 1", "ÖDEV 2", "ÖDEV 3", "ÖDEV 4", "ÖDEV 5", "ÖDEV 6", "ÖDEV 7", "ÖDEV 8", "ÖDEV 9", "ÖDEV 10", "ÖDEV 1-A", "ÖDEV 1-B", "ÖDEV 1-C", "ÖDEV 1-D", "ÖDEV 2-A", "ÖDEV 2-B", "ÖDEV 2-C", "ÖDEV 2-D", "ÖDEV 3-A", "ÖDEV 3-B", "ÖDEV 3-C", "ÖDEV 3-D", "ÖDEV 4-A", "ÖDEV 4-B", "ÖDEV 4-C", "ÖDEV 4-D", "ÖDEV 5-A", "ÖDEV 5-B", "ÖDEV 5-C", "ÖDEV 5-D", "ÖDEV 6-A", "ÖDEV 6-B", "ÖDEV 6-C", "ÖDEV 6-D", "ÖDEV 7-A", "ÖDEV 7-B", "ÖDEV 7-C", "ÖDEV 7-D", "ÖDEV 8-A", "ÖDEV 8-B", "ÖDEV 8-C", "ÖDEV 8-D", "ÖDEV 9-A", "ÖDEV 9-B", "ÖDEV 9-C", "ÖDEV 9-D", "ÖDEV 10-A", "ÖDEV 10-B", "ÖDEV 10-C", "ÖDEV 10-D"];
+            
+            populateSelectWithOptions('video-unite-adi', uniteAdlari);
+            populateSelectWithOptions('video-test-no', testNolari);
+            document.getElementById('video-unite-adi-arama').addEventListener('keyup', () => filterSelectOptions('video-unite-adi-arama', 'video-unite-adi'));
+            document.getElementById('video-test-no-arama').addEventListener('keyup', () => filterSelectOptions('video-test-no-arama', 'video-test-no'));
+            
+            const videoFormInputs = {
+                anlatim_turu: document.getElementById('video-anlatim-turu'), brans: document.getElementById('video-brans'), unite_adi: document.getElementById('video-unite-adi'),
+                bolum_no: document.getElementById('video-bolum-no'), test_no: document.getElementById('video-test-no'), ders_no: document.getElementById('video-ders-no'),
+                ogretmen: document.getElementById('video-ogretmen'), hata_icerigi: document.getElementById('video-hata-icerigi'), hata_suresi: document.getElementById('video-hata-suresi'),
+                hata_alani: document.getElementById('video-hata-alani'), tarih: document.getElementById('video-tarih'), hata_bildiren: document.getElementById('video-hata-bildiren'),
+                durumu: document.getElementById('video-durumu'),
+                yorum_sonuc: document.getElementById('video-yorum-sonuc')
+            };
+            
+            function clearVideoForm() {
+                Object.values(videoFormInputs).forEach(input => input.value = '');
+                document.getElementById('video-unite-adi-arama').value = '';
+                document.getElementById('video-test-no-arama').value = '';
+                document.getElementById('video-edit-index').value = '';
+                videoFormInputs.durumu.value = 'Bildirildi';
+                filterSelectOptions('video-unite-adi-arama', 'video-unite-adi'); 
+                filterSelectOptions('video-test-no-arama', 'video-test-no');
+            }
+
+            document.getElementById('video-iptal-btn').addEventListener('click', clearVideoForm);
+            document.getElementById('video-kaydet-btn').addEventListener('click', async () => {
+                const editIndex = document.getElementById('video-edit-index').value;
+                let shouldResetPage = true; 
+                const newData = {};
+                for (const key in videoFormInputs) { newData[key] = videoFormInputs[key].value || null; }
+                
+                if (editIndex !== '') {
+                    shouldResetPage = false; 
+                    const itemToUpdate = videoHataData[editIndex];
+                    const { error } = await supabaseClient.from('video_hatalari').update(newData).eq('id', itemToUpdate.id);
+                    if (error) { console.error('Güncelleme hatası:', error); showNotification('Hata güncellenemedi!', true); }
+                    else { showNotification('Hata başarıyla güncellendi.'); }
+                } else {
+                    const { error } = await supabaseClient.from('video_hatalari').insert([newData]);
+                    if (error) { console.error('Ekleme hatası:', error); showNotification('Hata kaydedilemedi!', true); }
+                    else { showNotification('Hata başarıyla kaydedildi.'); }
+                }
+                
+                await verileriYukle();
+                filterVideoTable(shouldResetPage);
+                clearVideoForm();
+            });
+
+            const kitapFormInputs = {
+                brans: document.getElementById('kitap-brans'), kitap_no: document.getElementById('kitap-no'), kitap_turu: document.getElementById('kitap-turu'),
+                sayfa_no: document.getElementById('kitap-sayfa-no'), hata_icerigi: document.getElementById('kitap-hata-icerigi'), hata_bildiren: document.getElementById('kitap-hata-bildiren'),
+                tarih: document.getElementById('kitap-tarih'), durumu: document.getElementById('kitap-durumu'),
+                yorum_sonuc: document.getElementById('kitap-yorum-sonuc')
+            };
+
+            function clearKitapForm() {
+                Object.values(kitapFormInputs).forEach(input => input.value = '');
+                document.getElementById('kitap-edit-index').value = '';
+                kitapFormInputs.durumu.value = 'Bildirildi';
+                document.getElementById('kitap-gorsel-preview-container').classList.add('hidden');
+                document.getElementById('kitap-gorsel-preview').src = '';
+                document.getElementById('kitap-gorsel-input').value = '';
+                secilenGorselDosyasi = null;
+            }
+            document.getElementById('kitap-iptal-btn').addEventListener('click', clearKitapForm);
+            
+            document.getElementById('kitap-kaydet-btn').addEventListener('click', async () => {
+                let gorselUrl = null;
+                let shouldResetPage = true;
+
+                if (secilenGorselDosyasi) {
+                    const dosyaAdi = `${Date.now()}-${secilenGorselDosyasi.name}`;
+                    const { error: uploadError } = await supabaseClient.storage.from('gorseller').upload(dosyaAdi, secilenGorselDosyasi);
+
+                    if (uploadError) {
+                        console.error('Görsel Yükleme Hatası:', uploadError);
+                        showNotification('Görsel yüklenemedi!', true);
+                        return;
+                    }
+
+                    const { data: urlData } = supabaseClient.storage.from('gorseller').getPublicUrl(dosyaAdi);
+                    gorselUrl = urlData.publicUrl;
+                }
+
+                const editIndex = document.getElementById('kitap-edit-index').value;
+                const newData = { gorsel: gorselUrl };
+                for (const key in kitapFormInputs) { newData[key] = kitapFormInputs[key].value || null; }
+
+                if(editIndex !== ''){
+                    shouldResetPage = false;
+                    if (!gorselUrl) {
+                        newData.gorsel = kitapHataData[editIndex].gorsel;
+                    }
+                    const itemToUpdate = kitapHataData[editIndex];
+                    const { error } = await supabaseClient.from('kitap_hatalari').update(newData).eq('id', itemToUpdate.id);
+                     if (error) { console.error('Güncelleme hatası:', error); showNotification('Hata güncellenemedi!', true); }
+                    else { showNotification('Hata başarıyla güncellendi.'); }
+                } else {
+                    const { error } = await supabaseClient.from('kitap_hatalari').insert([newData]);
+                    if (error) { console.error('Ekleme hatası:', error); showNotification('Hata kaydedilemedi!', true); }
+                    else { showNotification('Hata başarıyla kaydedildi.'); }
+                }
+                
+                await verileriYukle();
+                filterKitapTable(shouldResetPage);
+                clearKitapForm();
+            });
+            
+            const kitapGorselInput = document.getElementById('kitap-gorsel-input');
+            const kitapGorselPreviewContainer = document.getElementById('kitap-gorsel-preview-container');
+            const kitapGorselPreview = document.getElementById('kitap-gorsel-preview');
+            const kitapGorselKaldirBtn = document.getElementById('kitap-gorsel-kaldir-btn');
+
+            kitapGorselInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    secilenGorselDosyasi = file;
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        kitapGorselPreview.src = event.target.result;
+                        kitapGorselPreviewContainer.classList.remove('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            kitapGorselKaldirBtn.addEventListener('click', () => {
+                kitapGorselPreview.src = '';
+                kitapGorselInput.value = '';
+                kitapGorselPreviewContainer.classList.add('hidden');
+                secilenGorselDosyasi = null;
+            });
+            
+            const imageModal = document.getElementById('image-modal');
+            const closeImageModalBtn = document.getElementById('close-image-modal-btn');
+            closeImageModalBtn.addEventListener('click', () => imageModal.classList.add('hidden'));
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) {
+                    imageModal.classList.add('hidden');
+                }
+            });
+        };
+
+        async function deleteVideoItem(index) {
+            const itemToDelete = videoHataData[index];
+            if (!itemToDelete) return;
+            if (!confirm('Bu video hatasını silmek istediğinizden emin misiniz?')) return;
+            
+            const { error } = await supabaseClient.from('video_hatalari').delete().eq('id', itemToDelete.id);
+            if (error) { console.error('Silme hatası:', error); showNotification('Hata silinemedi!', true); }
+            else { 
+                showNotification('Hata başarıyla silindi.');
+                await verileriYukle();
+                filterVideoTable(false);
+            }
+        }
+        async function deleteKitapItem(index) {
+            const itemToDelete = kitapHataData[index];
+            if (!itemToDelete) return;
+            if (!confirm('Bu kitap hatasını silmek istediğinizden emin misiniz?')) return;
+            
+            if (itemToDelete.gorsel) {
+                try {
+                    const dosyaYolu = new URL(itemToDelete.gorsel).pathname.split('/gorseller/')[1];
+                    if (dosyaYolu) {
+                         await supabaseClient.storage.from('gorseller').remove([dosyaYolu]);
+                    }
+                } catch(e) {
+                    console.error("Görsel URL'i parse edilemedi, storage'dan silme atlanıyor:", e);
+                }
+            }
+
+            const { error } = await supabaseClient.from('kitap_hatalari').delete().eq('id', itemToDelete.id);
+            if (error) { console.error('Silme hatası:', error); showNotification('Hata silinemedi!', true); }
+            else { 
+                showNotification('Hata başarıyla silindi.');
+                await verileriYukle();
+                filterKitapTable(false);
+            }
+        }
+        
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Bildirildi': return 'bg-purple-100 text-purple-800';
+                case 'İnceleniyor': return 'bg-yellow-100 text-yellow-800';
+                case 'Düzeltildi': return 'bg-green-100 text-green-800';
+                case 'Reddedildi': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+        function toggleCard(cardId) {
+            const body = document.getElementById(cardId + '-body');
+            const icon = document.getElementById(cardId + '-icon');
+            body.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+        function showPage(pageName) {
+            document.getElementById('video-page-container').classList.add('hidden');
+            document.getElementById('kitap-page-container').classList.add('hidden');
+            const navVideo = document.getElementById('nav-video');
+            const navKitap = document.getElementById('nav-kitap');
+            const activeClasses = ['bg-blue-600', 'text-white'];
+            const inactiveClasses = ['bg-gray-100', 'text-gray-600', 'hover:bg-gray-200'];
+            navVideo.classList.remove(...activeClasses);
+            navVideo.classList.add(...inactiveClasses);
+            navKitap.classList.remove(...activeClasses);
+            navKitap.classList.add(...inactiveClasses);
+            if (pageName === 'video') {
+                document.getElementById('video-page-container').classList.remove('hidden');
+                navVideo.classList.remove(...inactiveClasses);
+                navVideo.classList.add(...activeClasses);
+            } else if (pageName === 'kitap') {
+                document.getElementById('kitap-page-container').classList.remove('hidden');
+                navKitap.classList.remove(...inactiveClasses);
+                navKitap.classList.add(...activeClasses);
+            }
+        }
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            const messageP = document.getElementById('notification-message');
+            messageP.textContent = message;
+            notification.classList.remove('bg-green-500', 'bg-red-500', 'hidden');
+            notification.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+            setTimeout(() => { notification.classList.add('hidden'); }, 3000);
+        }
+        function showVideoDetails(index) {
+            const item = videoHataData[index];
+            if (!item) return;
+            document.getElementById('video-edit-index').value = index;
+            document.getElementById('video-anlatim-turu').value = item.anlatim_turu || '';
+            document.getElementById('video-brans').value = item.brans || '';
+            document.getElementById('video-unite-adi').value = item.unite_adi || '';
+            document.getElementById('video-ogretmen').value = item.ogretmen || '';
+            document.getElementById('video-bolum-no').value = item.bolum_no || '';
+            document.getElementById('video-test-no').value = item.test_no || '';
+            document.getElementById('video-ders-no').value = item.ders_no || '';
+            document.getElementById('video-hata-bildiren').value = item.hata_bildiren || '';
+            document.getElementById('video-tarih').value = item.tarih || '';
+            document.getElementById('video-durumu').value = item.durumu || '';
+            document.getElementById('video-hata-suresi').value = item.hata_suresi || '';
+            document.getElementById('video-hata-alani').value = item.hata_alani || '';
+            document.getElementById('video-hata-icerigi').value = item.hata_icerigi || '';
+            document.getElementById('video-yorum-sonuc').value = item.yorum_sonuc || '';
+            document.getElementById('video-unite-adi-arama').value = item.unite_adi || '';
+            document.getElementById('video-test-no-arama').value = item.test_no || '';
+            filterSelectOptions('video-unite-adi-arama', 'video-unite-adi');
+            filterSelectOptions('video-test-no-arama', 'video-test-no');
+            const cardBody = document.getElementById('videoGiris-body');
+            if (cardBody.classList.contains('hidden')) {
+                toggleCard('videoGiris');
+            }
+            cardBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        function filterVideoTable(resetPage = false) {
+            if (resetPage) videoCurrentPage = 1;
+            const bransFilter = document.getElementById('video-filter-brans').value;
+            const anlatimTuruFilter = document.getElementById('video-filter-anlatim-turu').value;
+            const hataAlaniFilter = document.getElementById('video-filter-hata-alani').value;
+            const durumuFilter = document.getElementById('video-filter-durumu').value;
+            const genelAramaFilter = document.getElementById('video-filter-genel-arama').value.toLowerCase();
+            const filteredData = videoHataData.filter(item => {
+                 const rowText = Object.values(item).join(' ').toLowerCase();
+                 return (bransFilter === '' || item.brans === bransFilter) &&
+                        (anlatimTuruFilter === '' || item.anlatim_turu === anlatimTuruFilter) &&
+                        (hataAlaniFilter === '' || item.hata_alani === hataAlaniFilter) &&
+                        (durumuFilter === '' || item.durumu === durumuFilter) &&
+                        (genelAramaFilter === '' || rowText.includes(genelAramaFilter));
+            });
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (videoCurrentPage > totalPages && totalPages > 0) {
+                videoCurrentPage = totalPages;
+            }
+            const startIndex = (videoCurrentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+            populateFilteredVideoTable(paginatedData);
+            renderVideoPagination(totalItems, totalPages);
+        }
+        function renderVideoPagination(totalItems, totalPages) {
+            document.getElementById('video-record-count').textContent = `Toplam ${totalItems} kayıt bulundu.`;
+            const controlsContainer = document.getElementById('video-pagination-controls');
+            controlsContainer.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const pages = getPaginationNumbers(videoCurrentPage, totalPages);
+
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = videoCurrentPage === 1;
+            prevButton.onclick = () => { changeVideoPage(videoCurrentPage - 1); };
+            controlsContainer.appendChild(prevButton);
+            
+            pages.forEach(page => {
+                if (page === '...') {
+                    const separator = document.createElement('span');
+                    separator.className = 'px-4 py-2';
+                    separator.textContent = '...';
+                    controlsContainer.appendChild(separator);
+                } else {
+                    const pageButton = document.createElement('button');
+                    pageButton.textContent = page;
+                    pageButton.className = 'pagination-btn' + (page === videoCurrentPage ? ' active' : '');
+                    pageButton.onclick = () => { changeVideoPage(page); };
+                    controlsContainer.appendChild(pageButton);
+                }
+            });
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = videoCurrentPage === totalPages;
+            nextButton.onclick = () => { changeVideoPage(videoCurrentPage + 1); };
+            controlsContainer.appendChild(nextButton);
+        }
+        function changeVideoPage(newPage) {
+            videoCurrentPage = newPage;
+            filterVideoTable();
+        }
+        function populateFilteredVideoTable(paginatedData) {
+            const tableBody = document.getElementById('video-hataTableBody');
+            tableBody.innerHTML = '';
+            if (paginatedData.length === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="11" class="px-6 py-12 text-center text-gray-500">${videoHataData.length > 0 ? 'Filtre ile eşleşen kayıt bulunamadı!' : 'Hiç kayıt bulunmamaktadır!'}</td></tr>`;
+                 return;
+            }
+            paginatedData.forEach(item => {
+                const originalIndex = videoHataData.findIndex(originalItem => originalItem.id === item.id);
+                const row = document.createElement('tr');
+                const rowColor = getBransRowColor(item.brans);
+                if (rowColor) {
+                    row.style.backgroundColor = rowColor;
+                }
+                let formattedDate = "Tarih Girilmemiş";
+                if(item.tarih) {
+                    const dateParts = item.tarih.split('-');
+                    if(dateParts.length === 3) {
+                       formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    } else {
+                        formattedDate = item.tarih;
+                    }
+                }
+                row.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-800 border-b border-r border-gray-200">${item.brans || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.unite_adi || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.ogretmen || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.bolum_no || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.ders_no || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.test_no || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.hata_suresi || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.hata_alani || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${formattedDate}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm border-b border-r border-gray-200"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(item.durumu)}">${item.durumu || ''}</span></td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm font-medium border-b border-gray-200">
+                        <button onclick="showVideoDetails(${originalIndex})" class="text-indigo-600 hover:text-indigo-900 mr-2">Detay</button>
+                        <button onclick="deleteVideoItem(${originalIndex})" class="text-red-600 hover:text-red-900">Sil</button>
+                    </td>`;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function filterSelectOptions(inputId, selectId) {
+            const filter = document.getElementById(inputId).value.toLowerCase();
+            const options = document.getElementById(selectId).getElementsByTagName('option');
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === "" || (options[i].textContent || options[i].innerText).toLowerCase().indexOf(filter) > -1) {
+                    options[i].style.display = "";
+                } else {
+                    options[i].style.display = "none";
+                }
+            }
+        }
+        function showKitapDetails(index) {
+            const item = kitapHataData[index];
+            if (!item) return;
+            document.getElementById('kitap-edit-index').value = index;
+            document.getElementById('kitap-brans').value = item.brans || '';
+            document.getElementById('kitap-no').value = item.kitap_no || '';
+            document.getElementById('kitap-turu').value = item.kitap_turu || '';
+            document.getElementById('kitap-sayfa-no').value = item.sayfa_no || '';
+            document.getElementById('kitap-hata-bildiren').value = item.hata_bildiren || '';
+            document.getElementById('kitap-tarih').value = item.tarih || '';
+            document.getElementById('kitap-durumu').value = item.durumu || '';
+            document.getElementById('kitap-hata-icerigi').value = item.hata_icerigi || '';
+            document.getElementById('kitap-yorum-sonuc').value = item.yorum_sonuc || '';
+            const previewContainer = document.getElementById('kitap-gorsel-preview-container');
+            const previewImage = document.getElementById('kitap-gorsel-preview');
+            if (item.gorsel) {
+                previewImage.src = item.gorsel;
+                previewContainer.classList.remove('hidden');
+            } else {
+                previewContainer.classList.add('hidden');
+                previewImage.src = '';
+            }
+            const cardBody = document.getElementById('kitapGiris-body');
+            if (cardBody.classList.contains('hidden')) {
+                toggleCard('kitapGiris');
+            }
+            cardBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        function filterKitapTable(resetPage = false) {
+            if(resetPage) kitapCurrentPage = 1;
+            const filterText = document.getElementById('kitap-filter-text').value.toLowerCase();
+            const filterBrans = document.getElementById('kitap-filter-brans').value;
+            const filterKitapTuru = document.getElementById('kitap-filter-kitap-turu').value;
+            const filterDurum = document.getElementById('kitap-filter-durum').value;
+            const filteredData = kitapHataData.filter(item => {
+                const rowText = Object.values(item).join(' ').toLowerCase();
+                return rowText.includes(filterText) &&
+                       (filterBrans === '' || item.brans === filterBrans) &&
+                       (filterKitapTuru === '' || item.kitap_turu === filterKitapTuru) &&
+                       (filterDurum === '' || item.durumu === filterDurum);
+            });
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+             if (kitapCurrentPage > totalPages && totalPages > 0) {
+                kitapCurrentPage = totalPages;
+            }
+            const startIndex = (kitapCurrentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+            populateFilteredKitapTable(paginatedData);
+            renderKitapPagination(totalItems, totalPages);
+        }
+        function renderKitapPagination(totalItems, totalPages) {
+             document.getElementById('kitap-record-count').textContent = `Toplam ${totalItems} kayıt bulundu.`;
+            const controlsContainer = document.getElementById('kitap-pagination-controls');
+            controlsContainer.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const pages = getPaginationNumbers(kitapCurrentPage, totalPages);
+            
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&laquo;';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = kitapCurrentPage === 1;
+            prevButton.onclick = () => { changeKitapPage(kitapCurrentPage - 1); };
+            controlsContainer.appendChild(prevButton);
+            
+            pages.forEach(page => {
+                 if (page === '...') {
+                    const separator = document.createElement('span');
+                    separator.className = 'px-4 py-2';
+                    separator.textContent = '...';
+                    controlsContainer.appendChild(separator);
+                } else {
+                    const pageButton = document.createElement('button');
+                    pageButton.textContent = page;
+                    pageButton.className = 'pagination-btn' + (page === kitapCurrentPage ? ' active' : '');
+                    pageButton.onclick = () => { changeKitapPage(page); };
+                    controlsContainer.appendChild(pageButton);
+                }
+            });
+            
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&raquo;';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = kitapCurrentPage === totalPages;
+            nextButton.onclick = () => { changeKitapPage(kitapCurrentPage + 1); };
+            controlsContainer.appendChild(nextButton);
+        }
+        function changeKitapPage(newPage) {
+            kitapCurrentPage = newPage;
+            filterKitapTable();
+        }
+        function openImageModal(src) {
+            document.getElementById('modal-image').src = src;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+        function populateFilteredKitapTable(paginatedData) {
+            const tableBody = document.getElementById('kitap-hataTableBody');
+            tableBody.innerHTML = '';
+            if (paginatedData.length === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-12 text-center text-gray-500">${kitapHataData.length > 0 ? 'Filtre ile eşleşen kayıt bulunamadı!' : 'Hiç kayıt bulunmamaktadır!'}</td></tr>`;
+                return;
+            }
+            paginatedData.forEach(item => {
+                const originalIndex = kitapHataData.findIndex(originalItem => originalItem.id === item.id);
+                const row = document.createElement('tr');
+                const rowColor = getBransRowColor(item.brans);
+                if (rowColor) {
+                    row.style.backgroundColor = rowColor;
+                }
+                let formattedDate = item.tarih ? `${item.tarih.split('-')[2]}-${item.tarih.split('-')[1]}-${item.tarih.split('-')[0]}` : "Tarih Girilmemiş";
+                let gorselCell = '<td class="px-2 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">-</td>';
+                if(item.gorsel){
+                    gorselCell = `<td class="px-2 py-2 border-b border-r border-gray-200"><img src="${item.gorsel}" alt="hata görseli" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('${item.gorsel}')"></td>`;
+                }
+                row.innerHTML = `
+                    ${gorselCell}
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-800 border-b border-r border-gray-200">${item.brans || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.kitap_no || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${item.kitap_turu || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-800 border-b border-r border-gray-200">${item.hata_bildiren || ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm text-gray-500 border-b border-r border-gray-200">${formattedDate}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-xs md:text-sm border-b border-r border-gray-200"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(item.durumu)}">${item.durumu || ''}</span></td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm font-medium border-b border-gray-200">
+                        <button onclick="showKitapDetails(${originalIndex})" class="text-indigo-600 hover:text-indigo-900 mr-2">Detay</button>
+                        <button onclick="deleteKitapItem(${originalIndex})" class="text-red-600 hover:text-red-900">Sil</button>
+                    </td>`;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
