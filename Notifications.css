@@ -1,0 +1,63 @@
+.notification-container {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-bell {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  padding: 8px;
+  color: #333;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 6px;
+  border-radius: 50%;
+  background-color: #d9534f; /* Kırmızı renk */
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 350px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item p {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+
+.notification-item small {
+  font-size: 12px;
+  color: #888;
+}
+
+.notification-item.unread {
+  background-color: #f7faff; /* Hafif mavi arka plan */
+  font-weight: 500;
+}
