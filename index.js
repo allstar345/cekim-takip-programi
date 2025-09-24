@@ -72,7 +72,7 @@ const directorSelectForm = document.getElementById('director');
 const kameraman1SelectForm = document.getElementById('kameraman_1');
 const kameraman2SelectForm = document.getElementById('kameraman_2');
 
-// --- YENİ EKLENEN BİLDİRİM DOM ELEMENTLERİ ---
+// --- BİLDİRİM DOM ELEMENTLERİ ---
 const notificationBell = document.getElementById('notification-bell');
 const notificationBadge = document.getElementById('notification-badge');
 const notificationDropdown = document.getElementById('notification-dropdown');
@@ -90,6 +90,7 @@ const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 
 const teacherSelectForm = document.getElementById('teacher');
 const teacherSelectFilter = document.getElementById('filter-teacher');
+
 
 // --- BİLDİRİM SİSTEMİ FONKSİYONLARI ---
 
@@ -143,7 +144,6 @@ async function markNotificationsAsRead() {
     if (error) {
         console.error("Bildirimler okundu olarak işaretlenirken hata:", error);
     } else {
-        // Arayüzü anında güncellemek için local state'i de değiştiriyoruz
         currentNotifications.forEach(n => { if (unreadIds.includes(n.id)) n.is_read = true; });
         renderNotifications();
     }
@@ -175,9 +175,6 @@ async function populateTeacherDropdowns() {
     teacherSelectForm.innerHTML += teacherOptionsHTML;
     teacherSelectFilter.innerHTML += teacherOptionsHTML;
 }
-
-// ... GERİ KALAN TÜM ORİJİNAL KODLARINIZ ...
-// (Hiçbir değişiklik yapılmadı)
 
 function populateStaticDropdowns() {
     const directorOptionsHTML = DIRECTORS.sort((a,b) => a.localeCompare(b)).map(d => `<option value="${d}">${d}</option>`).join('');
@@ -440,7 +437,6 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     timeDisplay = shoot.time;
                 }
 
-                // DEĞİŞİKLİK: Kameraman satırı sadece veri varsa gösterilecek
                 let cameramanDisplayHtml = '';
                 if (shoot.kameraman_1 || shoot.kameraman_2) {
                     cameramanDisplayHtml = `<p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>`;
@@ -563,14 +559,12 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// Ana container için tek bir click listener, tüm butonları yönetir
 document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
-    if (!weekKey) return; // weekKey tanımsız ise işlem yapma
+    if (!weekKey) return;
 
-    // GÜNLÜK EKİP DÜZENLEME BUTONU
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
         
@@ -579,29 +573,17 @@ document.querySelector('main').addEventListener('click', async (e) => {
 
         const { value: selectedMembers } = await Swal.fire({
             title: `${day} Günü Ekibini Seç`,
-            html: TEAM_MEMBERS.map(member => `
-                <div class="flex items-center my-2 justify-center">
-                    <input type="checkbox" id="member-team-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}>
-                    <label for="member-team-${member}" class="ml-2">${member}</label>
-                </div>
-            `).join(''),
+            html: TEAM_MEMBERS.map(member => `<div class="flex items-center my-2 justify-center"><input type="checkbox" id="member-team-${member}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlySelected.includes(member) ? 'checked' : ''}><label for="member-team-${member}" class="ml-2">${member}</label></div>`).join(''),
             confirmButtonText: 'Kaydet',
             showCancelButton: true,
             cancelButtonText: 'İptal',
             preConfirm: () => {
-                return TEAM_MEMBERS
-                    .filter(member => document.getElementById(`member-team-${member}`).checked)
-                    .map(member => document.getElementById(`member-team-${member}`).value);
+                return TEAM_MEMBERS.filter(member => document.getElementById(`member-team-${member}`).checked).map(member => document.getElementById(`member-team-${member}`).value);
             }
         });
 
         if (typeof selectedMembers !== 'undefined') {
-            const { error } = await db.from('daily_teams').upsert({
-                week_identifier: weekKey,
-                day_of_week: day,
-                team_members: selectedMembers
-            }, { onConflict: 'week_identifier, day_of_week' });
-
+            const { error } = await db.from('daily_teams').upsert({ week_identifier: weekKey, day_of_week: day, team_members: selectedMembers }, { onConflict: 'week_identifier, day_of_week' });
             if (error) {
                 console.error('Ekip kaydedilirken hata oluştu:', error);
                 Swal.fire('Hata!', 'Ekip planı kaydedilirken bir hata oluştu.', 'error');
@@ -611,7 +593,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
     
-    // GÜNLÜK İZİNLİ DÜZENLEME BUTONU
     if (target.classList.contains('daily-leave-edit-btn')) {
         const day = target.dataset.day;
 
@@ -620,30 +601,18 @@ document.querySelector('main').addEventListener('click', async (e) => {
 
         const { value: selectedOnLeave } = await Swal.fire({
             title: `${day} Günü İzinlilerini Seç`,
-            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `
-                <div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto">
-                    <input type="checkbox" id="member-leave-${member.replace(/\s+/g, '-')}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}>
-                    <label for="member-leave-${member.replace(/\s+/g, '-')}" class="ml-2">${member}</label>
-                </div>
-            `).join(''),
+            html: ON_LEAVE_MEMBERS.sort((a,b) => a.localeCompare(b)).map(member => `<div class="flex items-center my-2 justify-start text-left w-1/2 mx-auto"><input type="checkbox" id="member-leave-${member.replace(/\s+/g, '-')}" value="${member}" class="swal2-checkbox h-5 w-5" ${currentlyOnLeave.includes(member) ? 'checked' : ''}><label for="member-leave-${member.replace(/\s+/g, '-')}" class="ml-2">${member}</label></div>`).join(''),
             confirmButtonText: 'Kaydet',
             showCancelButton: true,
             cancelButtonText: 'İptal',
             width: '40em',
             preConfirm: () => {
-                return ON_LEAVE_MEMBERS
-                    .filter(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).checked)
-                    .map(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).value);
+                return ON_LEAVE_MEMBERS.filter(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).checked).map(member => document.getElementById(`member-leave-${member.replace(/\s+/g, '-')}`).value);
             }
         });
         
         if (typeof selectedOnLeave !== 'undefined') {
-            const { error } = await db.from('daily_leaves').upsert({
-                week_identifier: weekKey,
-                day_of_week: day,
-                on_leave_members: selectedOnLeave
-            }, { onConflict: 'week_identifier, day_of_week' });
-
+            const { error } = await db.from('daily_leaves').upsert({ week_identifier: weekKey, day_of_week: day, on_leave_members: selectedOnLeave }, { onConflict: 'week_identifier, day_of_week' });
             if (error) {
                 console.error('İzinliler kaydedilirken hata oluştu:', error);
                 Swal.fire('Hata!', 'İzinli listesi kaydedilirken bir hata oluştu.', 'error');
@@ -653,7 +622,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
 
-    // ÇEKİM SİLME VEYA DÜZENLEME BUTONU (TABLO İÇİ)
     const buttonInTable = e.target.closest('.shoot-entry button');
     if (buttonInTable) {
         if (buttonInTable.classList.contains('delete-btn')) {
@@ -683,7 +651,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
     }
 });
 
-
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
@@ -709,7 +676,6 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
-    // YÖNETMEN İZİN KONTROLÜ
     const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
     const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
@@ -718,7 +684,6 @@ form.addEventListener('submit', async (e) => {
         Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir yönetmen seçin veya izin planını güncelleyin.`, 'error');
         return;
     }
-
 
     if (currentEditId === null) {
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
@@ -780,7 +745,6 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
-
 downloadPdfBtn.addEventListener('click', () => {
     const timetableElement = document.querySelector('#weekly-view-container .bg-white');
     if (!timetableElement) {
@@ -835,14 +799,14 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 async function fetchInitialData() {
-    loadingDiv.classList.remove('hidden'); // Yükleniyor'u hemen göster
+    loadingDiv.classList.remove('hidden');
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         console.error("Veri alınamadı:", error);
         loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
     } else {
         allShoots = data;
-        await processAndRenderData(); // processAndRenderData'nın bitmesini bekle
+        await processAndRenderData();
     }
 }
 
@@ -856,29 +820,23 @@ const shootsSubscription = db.channel('public:shoots')
         }
     )
     .subscribe();
-    
-// --- YENİ BİLDİRİM DİNLEYİCİSİ ---
+
 const notificationsSubscription = db.channel('public:notifications')
     .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
             console.log('Yeni bildirim algılandı!', payload);
-            fetchNotifications(); // Yeni bildirim geldiğinde listeyi yenile
+            fetchNotifications();
         }
     )
     .subscribe();
-// --- BİLDİRİM DİNLEYİCİSİ BİTİŞ ---
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     populateTeacherDropdowns();
     populateStaticDropdowns();
     await fetchInitialData();
-    
-    // --- YENİ EKLENEN KOD: Sayfa yüklendiğinde bildirimleri çek ---
     await fetchNotifications();
-    // --- BİTİŞ ---
     
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
