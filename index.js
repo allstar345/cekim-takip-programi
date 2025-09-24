@@ -71,7 +71,12 @@ const filterEmployee = document.getElementById('filter-employee');
 const directorSelectForm = document.getElementById('director');
 const kameraman1SelectForm = document.getElementById('kameraman_1');
 const kameraman2SelectForm = document.getElementById('kameraman_2');
-
+// --- YENİ EKLENEN BİLDİRİM DOM ELEMENTLERİ ---
+const notificationBell = document.getElementById('notification-bell');
+const notificationBadge = document.getElementById('notification-badge');
+const notificationDropdown = document.getElementById('notification-dropdown');
+let currentNotifications = [];
+// --- BİLDİRİM DOM ELEMENTLERİ BİTİŞ ---
 // --- BİLDİRİM DOM ELEMENTLERİ ---
 const notificationBell = document.getElementById('notification-bell');
 const notificationBadge = document.getElementById('notification-badge');
@@ -161,7 +166,74 @@ notificationBell.addEventListener('click', () => {
 
 // --- BİLDİRİM SİSTEMİ FONKSİYONLARI BİTİŞ ---
 
+// --- BİLDİRİM SİSTEMİ FONKSİYONLARI ---
 
+async function fetchNotifications() {
+    const { data, error } = await db
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (error) {
+        console.error('Bildirimler alınırken hata:', error);
+    } else {
+        currentNotifications = data;
+        renderNotifications();
+    }
+}
+
+function renderNotifications() {
+    const unreadCount = currentNotifications.filter(n => !n.is_read).length;
+
+    if (unreadCount > 0) {
+        notificationBadge.textContent = unreadCount;
+        notificationBadge.classList.remove('hidden');
+    } else {
+        notificationBadge.classList.add('hidden');
+    }
+
+    if (currentNotifications.length === 0) {
+        notificationDropdown.innerHTML = '<div class="notification-item"><p>Yeni bildirim yok.</p></div>';
+        return;
+    }
+
+    notificationDropdown.innerHTML = currentNotifications.map(notification => `
+        <div class="notification-item ${!notification.is_read ? 'unread' : ''}">
+            <p>${notification.message}</p>
+            <small>${new Date(notification.created_at).toLocaleString('tr-TR')}</small>
+        </div>
+    `).join('');
+}
+
+async function markNotificationsAsRead() {
+    const unreadIds = currentNotifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    const { error } = await db
+        .from('notifications')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+
+    if (error) {
+        console.error("Bildirimler okundu olarak işaretlenirken hata:", error);
+    } else {
+        currentNotifications.forEach(n => { if (unreadIds.includes(n.id)) n.is_read = true; });
+        renderNotifications();
+    }
+}
+
+notificationBell.addEventListener('click', () => {
+    const isHidden = notificationDropdown.style.display === 'none' || notificationDropdown.style.display === '';
+    if (isHidden) {
+        notificationDropdown.style.display = 'block';
+        markNotificationsAsRead();
+    } else {
+        notificationDropdown.style.display = 'none';
+    }
+});
+
+// --- BİLDİRİM SİSTEMİ FONKSİYONLARI BİTİŞ ---
 async function populateTeacherDropdowns() {
     const { data: teachers, error } = await db.from('teachers').select('name').order('name', { ascending: true });
     
@@ -820,7 +892,18 @@ const shootsSubscription = db.channel('public:shoots')
         }
     )
     .subscribe();
-
+// --- YENİ BİLDİRİM DİNLEYİCİSİ ---
+const notificationsSubscription = db.channel('public:notifications')
+    .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+            console.log('Yeni bildirim algılandı!', payload);
+            fetchNotifications(); // Yeni bildirim geldiğinde listeyi yenile
+        }
+    )
+    .subscribe();
+// --- BİLDİRİM DİNLEYİCİSİ BİTİŞ ---
 const notificationsSubscription = db.channel('public:notifications')
     .on(
         'postgres_changes',
