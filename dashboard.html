@@ -3,55 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anasayfa - Çekim Takip Programı</title>
+    <title>Kontrol Paneli</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <header class="bg-white shadow-sm">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <img src="logo.png" alt="Logo" class="h-12 w-auto">
-                <h1 class="text-xl font-bold text-gray-800">Anasayfa</h1>
+                <h1 class="text-xl font-bold text-gray-800">Kontrol Paneli</h1>
             </div>
-            <div class="flex items-center space-x-2">
-                <p class="text-sm text-gray-500 hidden sm:block">Fatih Gülbudak tarafından oluşturulmuştur.</p>
-                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg"><svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>Çıkış Yap</button>
+            <div class="flex items-center space-x-4">
+                <p id="user-email" class="text-sm text-gray-600 font-medium"></p>
+                <button id="logout-btn" class="flex items-center justify-center text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg focus:outline-none focus:ring-4 focus:ring-red-300 transition-colors duration-300 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
+                    Çıkış Yap
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto p-4 md:p-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <main class="container mx-auto p-8 md:p-12">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900">Hoş Geldiniz</h2>
+            <p class="mt-4 text-lg text-gray-600">Lütfen erişmek istediğiniz programı seçin.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            <a id="cekim-takip-link" href="index.html" class="block bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-blue-100 p-3 rounded-full"><svg class="w-6 h-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg></div>
-                    <div><h2 class="text-lg font-bold text-gray-800">Çekim Takip Programı</h2><p class="text-sm text-gray-500">Haftalık çekim planlarını yönetin.</p></div>
-                </div>
+            <a href="index.html" class="block bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <h3 class="text-2xl font-bold text-gray-800 mb-3">Çekim Takip Programı</h3>
+                <p class="text-gray-500">Haftalık çekim planlarını görüntüleyin, yeni çekimler ekleyin ve mevcut planları düzenleyin.</p>
             </a>
 
-            <a id="monitoring-link" href="monitoring.html" class="block bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-green-100 p-3 rounded-full"><svg class="w-6 h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg></div>
-                    <div><h2 class="text-lg font-bold text-gray-800">Akademik İzleme Giriş-Çıkış</h2><p class="text-sm text-gray-500">Personel devam ve yemek durumunu yönetin.</p></div>
-                </div>
+            <a href="hata-bildirim.html" class="block bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <h3 class="text-2xl font-bold text-orange-600 mb-3">Hata Bildirim Sistemi</h3>
+                <p class="text-gray-500">Video veya kitap içeriklerindeki hataları hızlı ve kolay bir şekilde bildirin.</p>
             </a>
 
-            <a id="payment-link" href="payment.html" class="block bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-yellow-100 p-3 rounded-full"><svg class="w-6 h-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.75A.75.75 0 013 4.5h.75m0 0h.75A.75.75 0 015.25 6v.75m0 0v.75A.75.75 0 014.5 8.25h-.75m0 0h-.75A.75.75 0 012.25 7.5v-.75M3 3h12M6.75 3v1.5M16.5 3v1.5m0 0v4.5m0 0v4.5m0 0l3-3m-3 3l-3-3m-3-6v6.75m6-3.75v3.75m-3-3.75l-3 3m3-3l3 3" /></svg></div>
-                    <div><h2 class="text-lg font-bold text-gray-800">Akademik İzleme Ödeme</h2><p class="text-sm text-gray-500">Ödeme takibi yapın.</p></div>
-                </div>
+            <a href="stats.html" class="block bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <h3 class="text-2xl font-bold text-gray-800 mb-3">İstatistikler</h3>
+                <p class="text-gray-500">Çekim sayıları ve yönetmen performansları hakkında detaylı istatistikleri inceleyin.</p>
             </a>
+            
         </div>
     </main>
-    
-    <script src="dashboard.js" defer></script>
+
+    <script>
+        const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+
+        const mainStorageAdapter = {
+            getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+            setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
+            removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+        };
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { storage: mainStorageAdapter }
+        });
+
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+            } else {
+                document.getElementById('user-email').textContent = session.user.email;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSession();
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        });
+    </script>
+
 </body>
 </html>
