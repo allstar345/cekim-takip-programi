@@ -700,43 +700,46 @@ form.addEventListener('submit', async (e) => {
 });
 
 
-downloadPdfBtn.addEventListener('click', () => {
-    const timetableElement = document.querySelector('#weekly-view-container .bg-white');
-    if (!timetableElement) {
-        alert("İndirilecek bir tablo bulunamadı.");
-        return;
-    }
+const downloadPdfBtn = document.getElementById('download-pdf-btn');
+if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', () => {
+        const timetableElement = document.querySelector('#weekly-view-container .bg-white');
+        if (!timetableElement) {
+            alert("İndirilecek bir tablo bulunamadı.");
+            return;
+        }
 
-    const originalBtnText = downloadPdfBtn.innerHTML;
-    downloadPdfBtn.disabled = true;
-    downloadPdfBtn.innerHTML = 'İndiriliyor...';
+        const originalBtnText = downloadPdfBtn.innerHTML;
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.innerHTML = 'İndiriliyor...';
 
-    html2canvas(timetableElement, { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        
-        const pdfWidth = canvas.width;
-        const pdfHeight = canvas.height;
-        const orientation = pdfWidth > pdfHeight ? 'l' : 'p';
+        html2canvas(timetableElement, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            
+            const pdfWidth = canvas.width;
+            const pdfHeight = canvas.height;
+            const orientation = pdfWidth > pdfHeight ? 'l' : 'p';
 
-        const pdf = new jsPDF({
-            orientation: orientation,
-            unit: 'px',
-            format: [pdfWidth, pdfHeight]
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'px',
+                format: [pdfWidth, pdfHeight]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            const weekText = weekRangeDisplay.textContent.replace('Gösterilen Hafta: ', '');
+            pdf.save(`cekim_plani_${weekText}.pdf`);
+        }).catch(err => {
+            console.error("PDF oluşturma hatası:", err);
+            alert("PDF oluşturulurken bir hata oluştu. Lütfen konsolu kontrol edin.");
+        }).finally(() => {
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.innerHTML = originalBtnText;
         });
-
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-        const weekText = weekRangeDisplay.textContent.replace('Gösterilen Hafta: ', '');
-        pdf.save(`cekim_plani_${weekText}.pdf`);
-    }).catch(err => {
-        console.error("PDF oluşturma hatası:", err);
-        alert("PDF oluşturulurken bir hata oluştu. Lütfen konsolu kontrol edin.");
-    }).finally(() => {
-        downloadPdfBtn.disabled = false;
-        downloadPdfBtn.innerHTML = originalBtnText;
     });
-});
+}
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = {
