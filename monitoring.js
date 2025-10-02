@@ -1,12 +1,8 @@
-//
-// monitoring.html'in çalışması için gereken tüm JavaScript kodları buraya taşındı.
-//
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // --- Yetki Kontrolü ---
-const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 async function checkAuthAndPermissions() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -27,7 +23,7 @@ checkAuthAndPermissions();
 
 
 // --- Sayfa İşlevselliği ---
-const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH);
+const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
 const form = document.getElementById('monitoring-form');
 const submitBtn = document.getElementById('submit-btn');
 const cancelBtn = document.getElementById('cancel-btn');
@@ -75,7 +71,6 @@ function renderTablePage(page = 1) { currentPage = page; logsTableContainer.inne
 function renderPagination() { const totalItems = filteredLogs.length; const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE); paginationContainer.innerHTML = ''; const summary = document.createElement('div'); summary.className = 'text-sm text-gray-700'; summary.textContent = `Toplam ${totalItems} kayıt bulundu.`; paginationContainer.appendChild(summary); if (totalPages <= 1) return; const buttonsDiv = document.createElement('div'); buttonsDiv.className = 'flex items-center'; const prevButton = document.createElement('button'); prevButton.innerHTML = '&laquo;'; prevButton.className = 'pagination-btn'; prevButton.disabled = currentPage === 1; prevButton.addEventListener('click', () => renderTablePage(currentPage - 1)); buttonsDiv.appendChild(prevButton); let pages = []; if (totalPages <= 7) { for (let i = 1; i <= totalPages; i++) pages.push(i); } else { pages.push(1); if (currentPage > 4) pages.push('...'); let startPage = Math.max(2, currentPage - 2); let endPage = Math.min(totalPages - 1, currentPage + 2); for(let i = startPage; i <= endPage; i++) pages.push(i); if (currentPage < totalPages - 3) pages.push('...'); pages.push(totalPages); } pages = [...new Set(pages)]; pages.forEach(p => { const pageButton = document.createElement('button'); pageButton.textContent = p; if (p === '...') { pageButton.className = 'pagination-btn'; pageButton.disabled = true; } else { pageButton.className = `pagination-btn ${p === currentPage ? 'active' : ''}`; pageButton.addEventListener('click', () => renderTablePage(p)); } buttonsDiv.appendChild(pageButton); }); const nextButton = document.createElement('button'); nextButton.innerHTML = '&raquo;'; nextButton.className = 'pagination-btn'; nextButton.disabled = currentPage === totalPages; nextButton.addEventListener('click', () => renderTablePage(currentPage + 1)); buttonsDiv.appendChild(nextButton); paginationContainer.appendChild(buttonsDiv); }
 async function fetchAndRenderLogs() { loadingDiv.style.display = 'block'; logsTableContainer.innerHTML = ''; paginationContainer.innerHTML = ''; const { data, error } = await db.from('monitoring_logs').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }); if (error) { logsTableContainer.innerHTML = `<p class="text-red-500">Veriler yüklenirken bir hata oluştu.</p>`; console.error(error); } else { originalLogs = data; if (originalLogs.length === 0) { logsTableContainer.innerHTML = `<p class="text-gray-500 text-center">Gösterilecek kayıt bulunmamaktadır.</p>`; } else { applyFilters(); } } loadingDiv.style.display = 'none'; }
 
-// DEĞİŞİKLİK: Form gönderme fonksiyonu güncellendi
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -91,14 +86,12 @@ form.addEventListener('submit', async (e) => {
 
     if (error) {
         console.error("Veri kaydetme hatası:", error);
-        // Hata durumunda kullanıcıya güzel bir mesaj göster
         Swal.fire({
             icon: 'error',
             title: 'Hata!',
             text: 'Kayıt eklenirken/güncellenirken bir hata oluştu. Lütfen tekrar deneyin.'
         });
     } else {
-        // Başarı durumunda kullanıcıya güzel bir mesaj göster
         Swal.fire({
             toast: true,
             position: 'top-end',
@@ -115,7 +108,6 @@ form.addEventListener('submit', async (e) => {
 function resetForm() { form.reset(); currentEditId = null; submitBtn.textContent = 'Kaydı Ekle'; cancelBtn.classList.add('hidden'); durationDisplay.textContent = '0 Saat 0 Dakika'; }
 cancelBtn.addEventListener('click', resetForm);
 
-// DEĞİŞİKLİK: Silme fonksiyonu, daha güzel bir onay kutusu kullanacak şekilde güncellendi
 logsTableContainer.addEventListener('click', async (e) => {
     const target = e.target;
     const id = target.dataset.id;
@@ -133,10 +125,7 @@ logsTableContainer.addEventListener('click', async (e) => {
             cancelButtonText: 'İptal'
         }).then(async (result) => {
             if (result.isConfirmed) {
-                // Kullanıcı silmeyi onaylarsa veritabanından sil
                 await db.from('monitoring_logs').delete().eq('id', id);
-                // Not: Başarı mesajına gerek yok çünkü sayfa zaten anlık olarak güncellenip
-                // silinen satırı listeden kaldıracaktır. Bu, en iyi geri bildirimdir.
             }
         });
     } else if (target.classList.contains('edit-btn')) {
@@ -159,7 +148,7 @@ logsTableContainer.addEventListener('click', async (e) => {
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
-    const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
+    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: mainStorageAdapter } });
     await supabase_logout.auth.signOut();
     localStorage.clear();
     sessionStorage.clear();
