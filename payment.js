@@ -1,12 +1,8 @@
-//
-// payment.html'in çalışması için gereken tüm JavaScript kodları buraya taşındı.
-//
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // --- Yetki Kontrolü ---
-const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 async function checkAuthAndPermissions() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -27,7 +23,7 @@ checkAuthAndPermissions();
 
 
 // --- Sayfa İşlevselliği ---
-const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH);
+const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
 const loadingDiv = document.getElementById('loading');
 const tableContainer = document.getElementById('payment-table-container');
 const prevMonthBtn = document.getElementById('prev-month-btn');
@@ -41,7 +37,6 @@ const logoutBtn = document.getElementById('logout-btn');
 const HOURLY_RATE = 500;
 let currentDate = new Date();
 let teacherPaymentData = [];
-// YENİ: Dinamik olarak güncellenecek toplam tutarı saklamak için değişken
 let currentGrandTotalAmount = 0;
 
 function toYYYYMMDD(date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
@@ -78,7 +73,6 @@ async function fetchAndRenderData() {
     teacherPaymentData = [];
     let totalTeacherCount = sortedTeachers.length;
     let grandTotalMinutes = 0;
-    // GÜNCELLENDİ: "İşlemler" için yeni başlık eklendi.
     let tableHTML = `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Öğretmen</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IBAN</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Süre</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Toplam Tutar</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlemler</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
 
     if (sortedTeachers.length === 0) { tableHTML += `<tr><td colspan="6" class="text-center p-4 text-gray-500">Bu dönem için kayıt bulunamadı.</td></tr>`; }
@@ -96,19 +90,12 @@ async function fetchAndRenderData() {
         data.paidRecords.forEach(record => { statusHTML += `<div class="flex items-center justify-between p-1 bg-green-100 rounded-md"><span class="text-sm font-semibold text-green-800">Ödendi (${minutesToHHMM(record.minutes)})</span><button class="cancel-payment-btn text-red-600 hover:text-red-900 text-xs font-bold ml-2 p-1" data-payment-id="${record.id}">İptal Et</button></div>`; });
         if (dueMinutes > 0) { const dueAmount = (dueMinutes / 60) * HOURLY_RATE; statusHTML += `<div class="flex items-center justify-between p-1 bg-red-100 rounded-md"><span class="text-sm font-semibold text-red-800">${paidTotalMinutes > 0 ? 'Ek Ödeme' : 'Ödenmedi'} (${minutesToHHMM(dueMinutes)})</span><select class="payment-status-select bg-red-200 text-red-800 rounded-lg p-1 border-red-300 text-xs ml-2" data-teacher-name="${name}" data-due-minutes="${dueMinutes}" data-due-amount="${dueAmount}"><option value="unpaid" selected>Öde</option><option value="paid">Onayla</option></select></div>`; }
         statusHTML += '</div>';
-
-        // YENİ: Dahil etme butonu için HTML oluşturuldu.
         const actionHTML = `<button class="exclude-btn bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold py-1 px-2 rounded-lg transition-colors" data-amount="${totalAmount}">Dahil Etme</button>`;
-
-        // GÜNCELLENDİ: Yeni "İşlemler" sütunu (actionHTML) satıra eklendi.
         tableHTML += `<tr><td class="px-6 py-4 font-medium">${name}</td><td class="px-6 py-4 text-sm text-gray-600">${iban}</td><td class="px-6 py-4">${totalDurationHHMM}</td><td class="px-6 py-4">${totalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</td><td class="px-6 py-4">${statusHTML}</td><td class="px-6 py-4">${actionHTML}</td></tr>`;
     });
 
     const grandTotalAmount = (grandTotalMinutes / 60) * HOURLY_RATE;
-    // YENİ: Dinamik toplam tutar değişkeni, ilk hesaplanan değerle güncellendi.
     currentGrandTotalAmount = grandTotalAmount;
-
-    // GÜNCELLENDİ: Altbilgideki colspan değeri artırıldı ve toplam tutar alanı bir span içine alındı.
     tableHTML += `</tbody><tfoot class="bg-gray-100 font-bold"><tr class="border-t-2 border-gray-300"><td class="px-6 py-3 text-right" colspan="4">Toplam Kayıt: ${totalTeacherCount} Öğretmen</td><td class="px-6 py-3" colspan="2">Toplam Tutar: <span id="grand-total-amount">${grandTotalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</span></td></tr></tfoot></table>`;
     tableContainer.innerHTML = tableHTML;
     loadingDiv.style.display = 'none';
@@ -153,24 +140,18 @@ async function markAllAsUnpaid() { const period = getPaymentPeriod(currentDate);
 async function handlePayment(teacherName, dueMinutes, dueAmount) { const period = getPaymentPeriod(currentDate); const { error } = await db.from('payment_records').insert([{ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: dueMinutes, paid_amount: dueAmount }]); if (error) { alert('Ödeme kaydedilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 async function handleCancelPayment(paymentId) { if (!confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) return; const { error } = await db.from('payment_records').delete().eq('id', paymentId); if (error) { alert('Ödeme iptal edilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 
-// GÜNCELLENDİ: Event listener, yeni "Dahil Etme" butonu için de işlem yapacak şekilde genişletildi.
 tableContainer.addEventListener('click', (e) => {
-    // Mevcut ödeme iptal butonu işlevi
     if (e.target.classList.contains('cancel-payment-btn')) {
         const paymentId = e.target.dataset.paymentId;
         handleCancelPayment(paymentId);
     }
-
-    // YENİ: Dahil etme/çıkarma butonunun işlevselliği
     if (e.target.classList.contains('exclude-btn')) {
         const button = e.target;
         const row = button.closest('tr');
         const amount = parseFloat(button.dataset.amount);
         const grandTotalSpan = document.getElementById('grand-total-amount');
 
-        // Satırın mevcut durumunu kontrol et
         if (row.classList.contains('excluded')) {
-            // Eğer satır dışarıda bırakılmışsa, tekrar dahil et
             currentGrandTotalAmount += amount;
             row.classList.remove('excluded');
             row.style.textDecoration = '';
@@ -179,7 +160,6 @@ tableContainer.addEventListener('click', (e) => {
             button.classList.replace('bg-green-500', 'bg-yellow-500');
             button.classList.replace('hover:bg-green-600', 'hover:bg-yellow-600');
         } else {
-            // Eğer satır dahil edilmişse, dışarıda bırak
             currentGrandTotalAmount -= amount;
             row.classList.add('excluded');
             row.style.textDecoration = 'line-through';
@@ -188,8 +168,6 @@ tableContainer.addEventListener('click', (e) => {
             button.classList.replace('bg-yellow-500', 'bg-green-500');
             button.classList.replace('hover:bg-yellow-600', 'hover:bg-green-600');
         }
-
-        // Görünen toplam tutarı güncelle
         grandTotalSpan.textContent = currentGrandTotalAmount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
     }
 });
@@ -204,7 +182,7 @@ markAllUnpaidBtn.addEventListener('click', markAllAsUnpaid);
 
 logoutBtn.addEventListener('click', async () => {
     const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
-    const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: mainStorageAdapter } });
+    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: mainStorageAdapter } });
     await supabase_logout.auth.signOut();
     localStorage.clear();
     sessionStorage.clear();
