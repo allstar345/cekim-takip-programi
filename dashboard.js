@@ -1,12 +1,8 @@
-//
-// dashboard.html'in çalışması için gereken tüm JavaScript kodları buraya taşındı.
-//
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // --- Yetki Kontrolü ve Anasayfa Linklerinin Yönetimi ---
-const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 async function checkAuthAndApplyPermissions() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -55,7 +51,7 @@ logoutBtn.addEventListener('click', async () => {
         setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
         removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
     };
-    const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, {
         auth: { storage: mainStorageAdapter }
     });
     await supabase_logout.auth.signOut();
