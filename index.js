@@ -1,12 +1,8 @@
-//
-// index.html'in çalışması için gereken tüm JavaScript kodları buraya taşındı.
-//
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // --- Yetki Kontrolü ---
-const SUPABASE_URL_AUTH = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, { auth: { storage: authStorageAdapter } });
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 async function checkAuthAndPermissions() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
@@ -33,7 +29,7 @@ const mainStorageAdapter = {
     removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
 };
 
-const db = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+const db = supabase.createClient(supabaseUrl, supabaseAnonKey, {
     auth: { storage: mainStorageAdapter }
 });
 
@@ -358,8 +354,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                 } else if (shoot.time) { 
                     timeDisplay = shoot.time;
                 }
-
-                // DEĞİŞİKLİK: Kameraman satırı sadece veri varsa gösterilecek
+                
                 let cameramanDisplayHtml = '';
                 if (shoot.kameraman_1 || shoot.kameraman_2) {
                     cameramanDisplayHtml = `<p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>`;
@@ -482,14 +477,12 @@ nextBtn.addEventListener('click', () => {
     }
 });
 
-// Ana container için tek bir click listener, tüm butonları yönetir
 document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
-    if (!weekKey) return; // weekKey tanımsız ise işlem yapma
+    if (!weekKey) return; 
 
-    // GÜNLÜK EKİP DÜZENLEME BUTONU
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
         
@@ -530,7 +523,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
     
-    // GÜNLÜK İZİNLİ DÜZENLEME BUTONU
     if (target.classList.contains('daily-leave-edit-btn')) {
         const day = target.dataset.day;
 
@@ -572,7 +564,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
 
-    // ÇEKİM SİLME VEYA DÜZENLEME BUTONU (TABLO İÇİ)
     const buttonInTable = e.target.closest('.shoot-entry button');
     if (buttonInTable) {
         if (buttonInTable.classList.contains('delete-btn')) {
@@ -628,7 +619,6 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
-    // YÖNETMEN İZİN KONTROLÜ
     const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
     const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
@@ -744,7 +734,7 @@ logoutBtn.addEventListener('click', async () => {
         setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
         removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
     };
-    const supabase_logout = supabase.createClient(SUPABASE_URL_AUTH, SUPABASE_ANON_KEY_AUTH, {
+    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, {
         auth: { storage: mainStorageAdapter }
     });
     await supabase_logout.auth.signOut();
@@ -754,14 +744,14 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 async function fetchInitialData() {
-    loadingDiv.classList.remove('hidden'); // Yükleniyor'u hemen göster
+    loadingDiv.classList.remove('hidden'); 
     const { data, error } = await db.from('shoots').select('*');
     if (error) {
         console.error("Veri alınamadı:", error);
         loadingDiv.innerText = "Veriler alınırken bir hata oluştu.";
     } else {
         allShoots = data;
-        await processAndRenderData(); // processAndRenderData'nın bitmesini bekle
+        await processAndRenderData(); 
     }
 }
 
