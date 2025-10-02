@@ -1,7 +1,24 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// Her sayfada kullanılacak genel bir Supabase client oluşturalım.
-const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+// --- DÜZELTME BURADA ---
+// Supabase client'ını, kullanıcının oturumunu (session) doğru bulabilmesi için
+// hem localStorage hem de sessionStorage'a bakacak şekilde yapılandırıyoruz.
+const authStorageAdapter = { 
+    getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+    setItem: (key, value) => { 
+        // Bu dosya sadece okuma yaptığı için setItem ve removeItem'ın içi boş kalabilir
+        // ama Supabase'in beklemesi nedeniyle tanımlı olmaları gerekir.
+        try { localStorage.setItem(key, value); } catch (e) {}
+    },
+    removeItem: (key) => { 
+        localStorage.removeItem(key); 
+        sessionStorage.removeItem(key);
+    }
+};
+
+const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey, { 
+    auth: { storage: authStorageAdapter } 
+});
 
 // Bu fonksiyon, bildirimleri sunucudan çeker ve arayüzü günceller.
 async function fetchNotifications() {
@@ -9,18 +26,14 @@ async function fetchNotifications() {
     const notificationDot = document.getElementById('notification-dot');
 
     if (!notificationList || !notificationDot) {
-        // Eğer sayfada bildirim elementleri yoksa (login sayfası gibi) işlemi durdur.
         return;
     }
 
-    // Aktif kullanıcıyı al
+    // Aktif kullanıcıyı al (Artık doğru şekilde bulacak)
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // Kullanıcı giriş yapmamışsa devam etme
+    if (!user) return;
 
-    // YENİ EKLENEN TEST KODU BURADA
-    console.log("Uygulamanın Gördüğü Aktif Kullanıcı ID:", user.id);
-
-    // Kullanıcıya ait okunmamış bildirimleri veritabanından çek (DÜZELTİLMİŞ HALİ)
+    // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
     const { data: notifications, error } = await supabase
         .from('notifications')
         .select('*')
@@ -34,11 +47,10 @@ async function fetchNotifications() {
         return;
     }
 
-    // Bildirim listesini temizle
     notificationList.innerHTML = ''; 
 
     if (notifications && notifications.length > 0) {
-        notificationDot.classList.remove('hidden'); // Kırmızı noktayı göster
+        notificationDot.classList.remove('hidden'); 
 
         notifications.forEach(notif => {
             const notifElement = document.createElement('a');
@@ -48,7 +60,7 @@ async function fetchNotifications() {
             notificationList.appendChild(notifElement);
         });
     } else {
-        notificationDot.classList.add('hidden'); // Kırmızı noktayı gizle
+        notificationDot.classList.add('hidden');
         notificationList.innerHTML = '<p class="text-gray-500 text-sm text-center p-4">Yeni bildirim yok.</p>';
     }
 }
@@ -60,18 +72,15 @@ function setupNotificationInteraction() {
 
     if (!notificationBell || !notificationDropdown) return;
 
-    // Zile tıklandığında menüyü aç/kapat
     notificationBell.addEventListener('click', (e) => {
-        e.stopPropagation(); // Olayın diğer elementlere yayılmasını engelle
+        e.stopPropagation();
         notificationDropdown.classList.toggle('hidden');
     });
 
-    // Menünün kendisine tıklandığında kapanmasını engelle
     notificationDropdown.addEventListener('click', (e) => {
         e.stopPropagation();
     });
 
-    // Sayfanın herhangi bir yerine tıklandığında menüyü kapat
     document.addEventListener('click', () => {
         if (!notificationDropdown.classList.contains('hidden')) {
             notificationDropdown.classList.add('hidden');
