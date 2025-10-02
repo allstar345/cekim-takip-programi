@@ -1,8 +1,7 @@
-// Bu kod, çalışmaya başlamadan önce tüm HTML sayfasının yüklenmesini bekler.
+import { supabaseUrl, supabaseAnonKey } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
     const { createClient } = supabase;
 
     const loginForm = document.getElementById('login-form');
@@ -15,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
             setItem: () => {}, removeItem: () => {}
         };
-        const tempSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
+        const tempSupabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
         const { data: { session } } = await tempSupabase.auth.getSession();
         if (session) {
             window.location.href = 'dashboard.html';
@@ -26,13 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // --- DEĞİŞİKLİK BURADA ---
-        // Artık kullanıcıdan gelen girdiyi doğrudan e-posta olarak kabul ediyoruz.
-        // "@sistem.local" eklemesi kaldırıldı.
         const email = loginForm.username.value;
         const password = loginForm.password.value;
-        // --- DEĞİŞİKLİK SONU ---
-
+     
         errorMessage.classList.add('hidden');
 
         const storage = rememberMeCheckbox.checked ? localStorage : sessionStorage;
@@ -42,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             removeItem: (key) => storage.removeItem(key),
         };
 
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        const db = createClient(supabaseUrl, supabaseAnonKey, {
             auth: { storage: customStorageAdapter, },
         });
 
@@ -59,5 +54,4 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'dashboard.html';
         }
     });
-
 });
