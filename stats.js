@@ -1,14 +1,13 @@
+import { supabaseUrl, supabaseAnonKey } from './config.js';
+
 // =================================================================================
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
 // --- Yetkilendirme ve Supabase Bağlantısı ---
-const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
-
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
+const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
@@ -100,7 +99,6 @@ function renderGeneralStats() {
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
 
-    // DÜZELTME: Öğretmen ismi hatalı görünüyordu, düzeltildi.
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
         if (shoot.teacher && shoot.date) {
@@ -109,11 +107,10 @@ function renderGeneralStats() {
     });
     const teacherCounts = {};
     teacherDaySet.forEach(entry => {
-        const teacherName = entry.substring(0, entry.length - 11); // İsim "-YYYY-AA-GG" formatından doğru ayrıştırılıyor.
+        const teacherName = entry.substring(0, entry.length - 11);
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
     
-    // DÜZELTME: Yönetmen sayımı "0" gösteriyordu. Orijinal, çalışan haline geri döndürüldü.
     const directorCounts = {};
     ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
     filteredShoots.forEach(shoot => {
@@ -136,8 +133,6 @@ function renderGeneralStats() {
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
 }
-
-// ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
 
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
