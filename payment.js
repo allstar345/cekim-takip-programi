@@ -41,7 +41,14 @@ let currentGrandTotalAmount = 0;
 
 function toYYYYMMDD(date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
 function getPaymentPeriod(date) { let year = date.getFullYear(); let month = date.getMonth(); let endBoundary, start; if (date.getDate() >= 10) { endBoundary = new Date(year, month + 1, 10); } else { endBoundary = new Date(year, month, 10); } start = new Date(endBoundary.getFullYear(), endBoundary.getMonth() - 1, 10); let inclusiveEnd = new Date(endBoundary); inclusiveEnd.setDate(inclusiveEnd.getDate() - 1); return { start: toYYYYMMDD(start), end: toYYYYMMDD(inclusiveEnd) }; }
-function HHMMToMinutes(timeStr) { if (!timeStr || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; }
+function HHMMToMinutes(timeStr) {
+    // GÜVENLİK GÜNCELLEMESİ: Gelen verinin bir metin (string) olup olmadığını kontrol et
+    if (typeof timeStr !== 'string' || !timeStr.includes(':')) {
+        return 0; // Eğer metin değilse veya ':' içermiyorsa, hata vermeden 0 döndür.
+    }
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return (hours * 60) + minutes;
+}
 function minutesToHHMM(totalMinutes) { if (totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = totalMinutes % 60; return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; }
 
 async function fetchAndRenderData() {
