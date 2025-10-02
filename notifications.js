@@ -15,13 +15,12 @@ async function fetchNotifications() {
 
     // Aktif kullanıcıyı al
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; //  // YENİ EKLENECEK TEST KODU BURAYA
+    if (!user) return; // Kullanıcı giriş yapmamışsa devam etme
+
+    // YENİ EKLENEN TEST KODU BURADA
     console.log("Uygulamanın Gördüğü Aktif Kullanıcı ID:", user.id);
 
-    const { data: notifications, error } = await supabase
-        .from('notifications')
-
-    // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
+    // Kullanıcıya ait okunmamış bildirimleri veritabanından çek (DÜZELTİLMİŞ HALİ)
     const { data: notifications, error } = await supabase
         .from('notifications')
         .select('*')
@@ -79,7 +78,6 @@ function setupNotificationInteraction() {
         }
     });
 }
-
 
 // Sayfa tamamen yüklendiğinde bu fonksiyonları çalıştır
 document.addEventListener('DOMContentLoaded', () => {
