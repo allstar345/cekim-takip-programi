@@ -67,11 +67,6 @@ const filterEmployee = document.getElementById('filter-employee');
 const directorSelectForm = document.getElementById('director');
 const kameraman1SelectForm = document.getElementById('kameraman_1');
 const kameraman2SelectForm = document.getElementById('kameraman_2');
-// HATA AYIKLAMA KODU: Hangi elementin bulunamadığını tespit etmek için.
-console.log("directorSelectForm:", directorSelectForm);
-console.log("kameraman1SelectForm:", kameraman1SelectForm);
-console.log("kameraman2SelectForm:", kameraman2SelectForm);
-console.log("filterEmployee:", filterEmployee);
 
 
 // Sabit Listeler
