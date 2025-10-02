@@ -16,7 +16,19 @@ async function fetchNotifications() {
     // Aktif kullanıcıyı al
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return; // Kullanıcı giriş yapmamışsa devam etme
+async function fetchNotifications() {
+    const notificationList = document.getElementById('notification-list');
+    const notificationDot = document.getElementById('notification-dot');
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // YENİ EKLENECEK TEST KODU BURAYA
+    console.log("Uygulamanın Gördüğü Aktif Kullanıcı ID:", user.id);
+
+    const { data: notifications, error } = await supabase
+        .from('notifications')
+        // ... (fonksiyonun geri kalanı aynı)
     // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
     const { data: notifications, error } = await supabase
         .from('notifications')
