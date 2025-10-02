@@ -8,9 +8,14 @@ async function fetchNotifications() {
     const notificationList = document.getElementById('notification-list');
     const notificationDot = document.getElementById('notification-dot');
 
+    if (!notificationList || !notificationDot) {
+        // Eğer sayfada bildirim elementleri yoksa (login sayfası gibi) işlemi durdur.
+        return;
+    }
+
     // Aktif kullanıcıyı al
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // Kullanıcı yoksa devam etme
+    if (!user) return; // Kullanıcı giriş yapmamışsa devam etme
 
     // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
     const { data: notifications, error } = await supabase
