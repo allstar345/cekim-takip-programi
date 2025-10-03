@@ -73,7 +73,7 @@ const kameraman2SelectForm = document.getElementById('kameraman_2');
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
-const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batuhan Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
+const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 const DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 
@@ -593,7 +593,6 @@ document.querySelector('main').addEventListener('click', async (e) => {
     }
 });
 
-
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
@@ -614,30 +613,63 @@ form.addEventListener('submit', async (e) => {
         content: formData.get('content'),
     };
 
+    if (!shootData.date || !shootData.start_time || !shootData.end_time) {
+        Swal.fire('Eksik Bilgi!', 'Lütfen tarih, başlangıç ve bitiş saatlerini girin.', 'warning');
+        return;
+    }
+
     if (shootData.start_time >= shootData.end_time) {
         Swal.fire('Hata!', 'Bitiş saati, başlangıç saatinden sonra olmalıdır.', 'error');
         return;
     }
 
-    // YÖNETMEN VE ÖĞRETMEN İZİN KONTROLÜ
+    // --- KONTROL 1: İZİN GÜNÜ KONTROLÜ ---
     const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
     const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
 
-    // Yönetmen kontrolü
     if (shootData.director && onLeaveToday.includes(shootData.director)) {
-        Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir yönetmen seçin veya izin planını güncelleyin.`, 'error');
+        Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş.`, 'error');
         return;
     }
 
-    // Öğretmen kontrolü
     if (shootData.teacher && onLeaveToday.includes(shootData.teacher)) {
-        Swal.fire('Hata!', `Seçtiğiniz öğretmen (${shootData.teacher}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir öğretmen seçin veya izin planını güncelleyin.`, 'error');
+        Swal.fire('Hata!', `Seçtiğiniz öğretmen (${shootData.teacher}) bu gün için izinli olarak işaretlenmiş.`, 'error');
         return;
     }
 
+    // --- KONTROL 2: PERSONEL BAZLI ÇAKIŞMA KONTROLÜ ---
+    const personnelToCheck = [shootData.director, shootData.teacher].filter(Boolean);
+    if (personnelToCheck.length > 0) {
+        const { data: personnelShoots, error: personnelError } = await db.from('shoots')
+            .select('start_time, end_time, teacher, director, studio')
+            .eq('date', shootData.date)
+            .or(`director.in.(${personnelToCheck.map(p => `"${p}"`).join(',')}),teacher.in.(${personnelToCheck.map(p => `"${p}"`).join(',')})`)
+            .not('start_time', 'is', null)
+            .not('end_time', 'is', null)
+            .neq('id', currentEditId || 0);
 
-    if (currentEditId === null) {
+        if (personnelError) {
+            console.error('Personel çakışma kontrolü sırasında hata:', personnelError);
+            Swal.fire('Hata!', 'Veritabanı kontrolü sırasında bir hata oluştu.', 'error');
+            return;
+        }
+
+        for (const pShoot of personnelShoots) {
+            if (shootData.start_time < pShoot.end_time && shootData.end_time > pShoot.start_time) {
+                const conflictingPerson = personnelToCheck.find(p => p === pShoot.director || p === pShoot.teacher);
+                Swal.fire(
+                    'Personel Çakışması!',
+                    `${conflictingPerson} isimli personel, saat ${pShoot.start_time.substring(0,5)}-${pShoot.end_time.substring(0,5)} aralığında ${pShoot.studio} için zaten planlanmış.`,
+                    'error'
+                );
+                return;
+            }
+        }
+    }
+
+    // --- KONTROL 3: STÜDYO BAZLI ÇAKIŞMA KONTROLÜ ---
+    if (currentEditId === null) { 
         const { data: existingShoots, error: fetchError } = await db.from('shoots')
             .select('start_time, end_time, teacher')
             .eq('date', shootData.date)
@@ -646,29 +678,24 @@ form.addEventListener('submit', async (e) => {
             .not('end_time', 'is', null);
 
         if (fetchError) {
-            console.error('Çakışma kontrolü sırasında hata:', fetchError);
+            console.error('Stüdyo çakışma kontrolü sırasında hata:', fetchError);
             Swal.fire('Hata!', 'Veritabanı kontrolü sırasında bir hata oluştu.', 'error');
             return;
         }
 
-        let isConflict = false;
         for (const existing of existingShoots) {
             if (shootData.start_time < existing.end_time && shootData.end_time > existing.start_time) {
-                isConflict = true;
                 Swal.fire({
                     icon: 'error',
-                    title: 'Çakışma Var!',
+                    title: 'Stüdyo Çakışması!',
                     text: `Bu stüdyo seçtiğiniz tarih ve saat aralığında (${existing.start_time.substring(0,5)} - ${existing.end_time.substring(0,5)}) ${existing.teacher} tarafından zaten rezerve edilmiş.`,
                 });
-                break;
+                return;
             }
-        }
-
-        if (isConflict) {
-            return;
         }
     }
 
+    // --- VERİTABANI İŞLEMİ ---
     let error;
     if (currentEditId) {
         ({ error } = await db.from('shoots').update(shootData).eq('id', currentEditId));
@@ -696,7 +723,6 @@ form.addEventListener('submit', async (e) => {
         resetFormState();
     }
 });
-
 
 downloadPdfBtn.addEventListener('click', () => {
     const timetableElement = document.querySelector('#weekly-view-container .bg-white');
