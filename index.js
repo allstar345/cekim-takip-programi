@@ -354,7 +354,7 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                 } else if (shoot.time) { 
                     timeDisplay = shoot.time;
                 }
-                
+
                 let cameramanDisplayHtml = '';
                 if (shoot.kameraman_1 || shoot.kameraman_2) {
                     cameramanDisplayHtml = `<p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>`;
@@ -481,7 +481,7 @@ document.querySelector('main').addEventListener('click', async (e) => {
     const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
-    if (!weekKey) return; 
+    if (!weekKey) return;
 
     if (target.classList.contains('daily-team-edit-btn')) {
         const day = target.dataset.day;
@@ -619,12 +619,20 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
+    // YÖNETMEN VE ÖĞRETMEN İZİN KONTROLÜ
     const weekKeyForSubmit = getWeekIdentifier(new Date(shootData.date + 'T12:00:00'));
     const { data: leaveData } = await db.from('daily_leaves').select('on_leave_members').eq('week_identifier', weekKeyForSubmit).eq('day_of_week', shootData.day).single();
     const onLeaveToday = leaveData ? leaveData.on_leave_members : [];
 
-    if (onLeaveToday.includes(shootData.director)) {
+    // Yönetmen kontrolü
+    if (shootData.director && onLeaveToday.includes(shootData.director)) {
         Swal.fire('Hata!', `Seçtiğiniz yönetmen (${shootData.director}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir yönetmen seçin veya izin planını güncelleyin.`, 'error');
+        return;
+    }
+
+    // Öğretmen kontrolü
+    if (shootData.teacher && onLeaveToday.includes(shootData.teacher)) {
+        Swal.fire('Hata!', `Seçtiğiniz öğretmen (${shootData.teacher}) bu gün için izinli olarak işaretlenmiş. Lütfen farklı bir öğretmen seçin veya izin planını güncelleyin.`, 'error');
         return;
     }
 
