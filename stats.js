@@ -1,13 +1,14 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // =================================================================================
-// BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
+// BÖLÜM 1: TEMEL KURULUM VE DEĞİŞKENLER
 // =================================================================================
 
-// --- Yetkilendirme ve Supabase Bağlantısı ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
-const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
+// --- Supabase Bağlantısı ---
+// Tüm işlemler için tek ve doğru yapılandırılmış bir client kullanalım
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
+const db = supabaseClient; // db değişkeni de bu client'ı kullansın
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
@@ -47,6 +48,9 @@ let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
+// Grafik instance'larını saklamak için global değişkenler
+let studioChartInstance;
+let personnelChartInstance;
 
 // --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
@@ -63,20 +67,122 @@ const getWeekRange = (date = new Date()) => {
 };
 const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
 const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
-const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
+const HHMMToMinutes = (timeStr) => { if (typeof timeStr !== 'string' || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 
 // =================================================================================
-// BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
+// BÖLÜM 2: YENİ GRAFİK OLUŞTURMA FONKSİYONLARI
 // =================================================================================
+
+function renderCharts(filteredShoots) {
+    // --- GRAFİK 1: STÜDYO DOLULUK (ÇİZGİ GRAFİĞİ) ---
+    const studioData = {}; // Örn: { "Stüdyo 1": 1200, "Stüdyo 2": 950 } (toplam dakika)
+    filteredShoots.forEach(shoot => {
+        if (shoot.studio && shoot.start_time && shoot.end_time) {
+            const duration = HHMMToMinutes(shoot.end_time) - HHMMToMinutes(shoot.start_time);
+            if (duration > 0) {
+                studioData[shoot.studio] = (studioData[shoot.studio] || 0) + duration;
+            }
+        }
+    });
+
+    const sortedStudios = Object.entries(studioData).sort(([, a], [, b]) => b - a);
+    const studioLabels = sortedStudios.map(([name]) => name);
+    const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1)); // Dakikayı saate çevir
+
+    const studioCtx = document.getElementById('studioOccupancyChart').getContext('2d');
+    if (studioChartInstance) {
+        studioChartInstance.destroy(); // Önceki grafiği temizle
+    }
+    studioChartInstance = new Chart(studioCtx, {
+        type: 'bar', // Çizgi yerine bar daha okunaklı olabilir
+        data: {
+            labels: studioLabels,
+            datasets: [{
+                label: 'Toplam Çekim Saati',
+                data: studioHoursData,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return value + ' sa'; }
+                    }
+                }
+            }
+        }
+    });
+    
+    // --- GRAFİK 2: PERSONEL PERFORMANSI (YATAY BAR GRAFİĞİ) ---
+    const personnelCounts = {};
+    const personnelDayCounter = new Set(); // Bir personelin bir günde birden fazla çekimini tek saymak için
+    filteredShoots.forEach(shoot => {
+        if (shoot.teacher && shoot.date) personnelDayCounter.add(`${shoot.teacher}-${shoot.date}`);
+        if (shoot.director && shoot.date) personnelDayCounter.add(`${shoot.director}-${shoot.date}`);
+    });
+    personnelDayCounter.forEach(entry => {
+        const personName = entry.substring(0, entry.lastIndexOf('-'));
+        personnelCounts[personName] = (personnelCounts[personName] || 0) + 1;
+    });
+
+    const sortedPersonnel = Object.entries(personnelCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10); // En çok çekim yapan 10 kişiyi göster
+
+    const personnelLabels = sortedPersonnel.map(([name]) => name);
+    const personnelData = sortedPersonnel.map(([, count]) => count);
+
+    const personnelCtx = document.getElementById('personnelPerformanceChart').getContext('2d');
+    if (personnelChartInstance) {
+        personnelChartInstance.destroy(); // Önceki grafiği temizle
+    }
+    personnelChartInstance = new Chart(personnelCtx, {
+        type: 'bar',
+        data: {
+            labels: personnelLabels,
+            datasets: [{
+                label: 'Çalışılan Gün Sayısı',
+                data: personnelData,
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Grafiği yatay yap
+            scales: {
+                x: { 
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1 // Gün sayısı tam sayı olmalı
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // Tek dataset olduğu için legend'ı gizleyebiliriz
+                }
+            }
+        }
+    });
+}
+
+
+// =================================================================================
+// BÖLÜM 3: MEVCUT FONKSİYONLAR
+// =================================================================================
+
 function renderGeneralStats() {
     if (!statsContent) return;
-
     let filteredShoots = allShootsData;
     let range;
-
     if (currentStatsFilter === 'week') {
         range = getWeekRange(currentStatsDate);
         const today = new Date();
@@ -96,9 +202,10 @@ function renderGeneralStats() {
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
         statsSubtitle.textContent = isCurrentMonth ? 'Bu ayın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen ayın verileri gösterilmektedir.';
     } else {
+        filteredShoots = allShootsData; // Tüm zamanlar seçildiğinde tüm veriyi kullan
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
-
+    
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
         if (shoot.teacher && shoot.date) {
@@ -107,7 +214,7 @@ function renderGeneralStats() {
     });
     const teacherCounts = {};
     teacherDaySet.forEach(entry => {
-        const teacherName = entry.substring(0, entry.length - 11);
+        const teacherName = entry.substring(0, entry.lastIndexOf('-'));
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
     
@@ -132,6 +239,8 @@ function renderGeneralStats() {
     
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
+
+    renderCharts(filteredShoots); // Grafikleri çiz
 }
 
 function setActiveStatsButton(filter) {
@@ -160,10 +269,10 @@ function setupCollapsibleSections() {
         const isHidden = content.classList.toggle('hidden');
         icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
     };
-    reportIcon.style.transform = 'rotate(0deg)';
-    timesheetIcon.style.transform = 'rotate(0deg)';
-    reportHeader.addEventListener('click', () => toggleSection(reportContent, reportIcon));
-    timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon));
+    if(reportIcon) reportIcon.style.transform = 'rotate(0deg)';
+    if(timesheetIcon) timesheetIcon.style.transform = 'rotate(0deg)';
+    if(reportHeader) reportHeader.addEventListener('click', () => toggleSection(reportContent, reportIcon));
+    if(timesheetHeader) timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon));
 }
 
 function renderTeacherReport() { if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
@@ -262,8 +371,9 @@ function calculateAllTotals() {
     });
 }
 async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheetBtn.textContent = 'Kaydediliyor...'; const weekIdentifier = getWeekIdentifier(currentTimesheetDate); const dataToUpsert = []; document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { const employeeName = row.dataset.employee; row.querySelectorAll('input.start-time').forEach(startInput => { const day = startInput.dataset.day; const endInput = row.querySelector(`input.end-time[data-day="${day}"]`); dataToUpsert.push({ week_identifier: weekIdentifier, employee_name: employeeName, day_of_week: day, start_time: startInput.value || null, end_time: endInput.value || null }); }); }); const { error } = await db.from('employee_timesheets').upsert(dataToUpsert, { onConflict: 'week_identifier, employee_name, day_of_week' }); if (error) { Swal.fire('Hata!', `Mesai kaydedilemedi: ${error.message}`, 'error'); } else { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesai Tablosu Kaydedildi', showConfirmButton: false, timer: 2000 }); } saveTimesheetBtn.disabled = false; saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet'; }
+
 async function initializePage() {
-    const { data: { session } } = await supabaseAuth.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     const { data, error } = await db.from('shoots').select('*');
     if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; }
@@ -303,6 +413,7 @@ async function initializePage() {
             endInput.classList.add('text-red-600', 'font-semibold');
         } 
     }); 
-    logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; });
+    logoutBtn.addEventListener('click', async () => { await supabaseClient.auth.signOut(); window.location.href = 'login.html'; });
 }
 document.addEventListener('DOMContentLoaded', initializePage);
+bana tam ver bu kodu
