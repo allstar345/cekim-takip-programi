@@ -4,7 +4,6 @@ import { supabaseUrl, supabaseAnonKey } from './config.js';
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
-// --- Yetkilendirme ve Supabase Bağlantısı ---
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
@@ -46,8 +45,8 @@ let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45;
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
+const START_DATE_LIMIT = '2025-09-15'; // Tüm zamanlar filtresi için başlangıç tarihi
 
-// Grafik instance'larını saklamak için global değişkenler
 let studioChartInstance;
 let personnelChartInstance;
 
@@ -71,15 +70,14 @@ const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinute
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 // =================================================================================
-// BÖLÜM 2: YENİ GRAFİK OLUŞTURMA FONKSİYONU
+// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU (DÜZELTİLMİŞ)
 // =================================================================================
 function renderCharts(filteredShoots) {
     const studioCtx = document.getElementById('studioOccupancyChart')?.getContext('2d');
     const personnelCtx = document.getElementById('personnelPerformanceChart')?.getContext('2d');
-
     if (!studioCtx || !personnelCtx) return;
 
-    // --- GRAFİK 1: STÜDYO DOLULUK (BAR GRAFİĞİ) ---
+    // --- Stüdyo Doluluk Grafiği ---
     const studioData = {};
     filteredShoots.forEach(shoot => {
         if (shoot.studio && shoot.start_time && shoot.end_time) {
@@ -89,94 +87,68 @@ function renderCharts(filteredShoots) {
             }
         }
     });
-
     const sortedStudios = Object.entries(studioData).sort(([, a], [, b]) => b - a);
     const studioLabels = sortedStudios.map(([name]) => name);
     const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
-
-    if (studioChartInstance) {
-        studioChartInstance.destroy();
-    }
+    if (studioChartInstance) { studioChartInstance.destroy(); }
     studioChartInstance = new Chart(studioCtx, {
         type: 'bar',
         data: {
             labels: studioLabels,
             datasets: [{
-                label: 'Toplam Çekim Saati',
-                data: studioHoursData,
-                backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
+                label: 'Toplam Çekim Saati', data: studioHoursData,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
             }]
         },
         options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { callback: function(value) { return value + ' sa'; } }
-                }
-            },
+            scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + ' sa'; } } } },
             plugins: { legend: { display: false } }
         }
     });
 
-    // --- GRAFİK 2: YÖNETMEN PERFORMANSI (YATAY BAR GRAFİĞİ) ---
-    const directorDayCounts = {};
-    const directorDaySet = new Set();
+    // --- YÖNETMEN PERFORMANS GRAFİĞİ (DÜZELTİLMİŞ) ---
+    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz.
+    const directorShootCounts = {};
     filteredShoots.forEach(shoot => {
-        if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
-            directorDaySet.add(`${shoot.director}-${shoot.date}`);
+        if (shoot.director && ALL_DIRECTORS.includes(shoot.director)) {
+            directorShootCounts[shoot.director] = (directorShootCounts[shoot.director] || 0) + 1;
         }
     });
-    directorDaySet.forEach(entry => {
-        const directorName = entry.substring(0, entry.lastIndexOf('-'));
-        directorDayCounts[directorName] = (directorDayCounts[directorName] || 0) + 1;
-    });
 
-    const sortedDirectors = Object.entries(directorDayCounts)
+    const sortedDirectors = Object.entries(directorShootCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 10);
-
     const directorLabels = sortedDirectors.map(([name]) => name);
     const directorData = sortedDirectors.map(([, count]) => count);
 
-    if (personnelChartInstance) {
-        personnelChartInstance.destroy();
-    }
+    if (personnelChartInstance) { personnelChartInstance.destroy(); }
     personnelChartInstance = new Chart(personnelCtx, {
         type: 'bar',
         data: {
             labels: directorLabels,
             datasets: [{
-                label: 'Çalışılan Gün Sayısı',
+                label: 'Toplam Çekim Sayısı', // Etiket de güncellendi
                 data: directorData,
-                backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                borderColor: 'rgba(59, 130, 246, 1)',
-                borderWidth: 1
+                backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
             }]
         },
         options: {
             indexAxis: 'y',
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
             plugins: { legend: { display: false } }
         }
     });
 }
 
-
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLARIN DOĞRU VE TAM HALLERİ
+// BÖLÜM 3: MEVCUT FONKSİYONLAR (DÜZELTİLMİŞ)
 // =================================================================================
 
 function renderGeneralStats() {
     if (!statsContent) return;
-    let filteredShoots = allShootsData;
+    let filteredShoots = [];
 
+    // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
         const range = getWeekRange(currentStatsDate);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
@@ -185,27 +157,25 @@ function renderGeneralStats() {
         const range = getMonthRange(currentStatsDate);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-    } else {
-        filteredShoots = allShootsData;
+    } else { // "Tüm Zamanlar" için yeni filtre
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
     
-    const teacherDaySet = new Set();
+    // --- ÖĞRETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
+    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz
+    const teacherCounts = {};
     filteredShoots.forEach(shoot => {
-        if (shoot.teacher && shoot.date) {
-            teacherDaySet.add(`${shoot.teacher}-${shoot.date}`);
+        if (shoot.teacher) {
+            teacherCounts[shoot.teacher] = (teacherCounts[shoot.teacher] || 0) + 1;
         }
     });
-    const teacherCounts = {};
-    teacherDaySet.forEach(entry => {
-        const teacherName = entry.substring(0, entry.lastIndexOf('-'));
-        teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
-    });
 
+    // --- YÖNETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
+    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz
     const directorCounts = {};
-    ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
     filteredShoots.forEach(shoot => {
-        if (shoot.director && directorCounts.hasOwnProperty(shoot.director)) {
-            directorCounts[shoot.director]++;
+        if (shoot.director && ALL_DIRECTORS.includes(shoot.director)) {
+            directorCounts[shoot.director] = (directorCounts[shoot.director] || 0) + 1;
         }
     });
 
