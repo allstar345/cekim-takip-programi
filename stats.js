@@ -4,7 +4,8 @@ import { supabaseUrl, supabaseAnonKey } from './config.js';
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
+// --- Yetkilendirme ve Supabase Bağlantısı ---
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
 
@@ -43,7 +44,7 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45;
+const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const START_DATE_LIMIT = '2025-09-15';
 
@@ -92,10 +93,14 @@ function renderCharts(filteredShoots) {
     const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
     if (studioChartInstance) { studioChartInstance.destroy(); }
     studioChartInstance = new Chart(studioCtx, {
-        type: 'bar', data: { labels: studioLabels, datasets: [{
-            label: 'Toplam Çekim Saati', data: studioHoursData,
-            backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
-        }]},
+        type: 'bar',
+        data: {
+            labels: studioLabels,
+            datasets: [{
+                label: 'Toplam Çekim Saati', data: studioHoursData,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
+            }]
+        },
         options: { scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + ' sa'; } } } }, plugins: { legend: { display: false } } }
     });
 
@@ -118,10 +123,14 @@ function renderCharts(filteredShoots) {
 
     if (personnelChartInstance) { personnelChartInstance.destroy(); }
     personnelChartInstance = new Chart(personnelCtx, {
-        type: 'bar', data: { labels: directorLabels, datasets: [{
-            label: 'Farklı Gün Sayısı', data: directorData,
-            backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
-        }]},
+        type: 'bar',
+        data: {
+            labels: directorLabels,
+            datasets: [{
+                label: 'Farklı Gün Sayısı', data: directorData,
+                backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
+            }]
+        },
         options: { indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
     });
 }
@@ -135,22 +144,17 @@ function renderGeneralStats() {
     let filteredShoots = [];
     const today_str = toYYYYMMDD(new Date());
 
-    // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
-        const range = getWeekRange(currentStatsDate);
-        // Bitiş tarihi olarak bugünü veya haftanın sonunu al (hangisi daha erkense)
-        const endDateString = toYYYYMMDD(range.end) > today_str ? today_str : toYYYYMMDD(range.end);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
+        const range = getWeekRange(new Date());
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= today_str);
     } else if (currentStatsFilter === 'month') {
-        const range = getMonthRange(currentStatsDate);
-        // Bitiş tarihi olarak bugünü veya ayın sonunu al (hangisi daha erkense)
-        const endDateString = toYYYYMMDD(range.end) > today_str ? today_str : toYYYYMMDD(range.end);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
-    } else { 
+        const range = getMonthRange(new Date());
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= today_str);
+    } else {
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
     
-    // --- ÖĞRETMEN SAYIM LOGIĞI (Farklı Gün Sayımı) ---
+    // --- ÖĞRETMEN SAYIMI (Farklı Gün Sayımı) ---
     const teacherCounts = {};
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -163,10 +167,10 @@ function renderGeneralStats() {
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
 
-    // --- YÖNETMEN SAYIM LOGIĞI (Farklı Gün Sayımı) ---
+    // --- YÖNETMEN SAYIMI (Farklı Gün Sayımı) ---
     const directorCounts = {};
     const directorDaySet = new Set();
-    filteredShoots.forEach(shoot => {
+     filteredShoots.forEach(shoot => {
         if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
             directorDaySet.add(`${shoot.director}-${shoot.date}`);
         }
@@ -198,19 +202,12 @@ function setActiveStatsButton(filter) {
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
     if(filterButtons[filter]) filterButtons[filter].classList.add('active');
     
-    // Tarih aralığı yazısını temizle, artık kullanmıyoruz
-    if(statsPeriodDisplay) statsPeriodDisplay.textContent = '';
-    
-    if (filter === 'week' || filter === 'month') {
-        statsPeriodNavigator.classList.add('hidden'); // Navigasyon butonlarını da gizleyelim
-    } else {
-        statsPeriodNavigator.classList.add('hidden');
-    }
+    // Tarih navigasyonunu tamamen gizle, artık kullanılmıyor
+    statsPeriodNavigator.classList.add('hidden');
+    statsPeriodDisplay.textContent = ''; // Tarih yazısını temizle
+
     renderGeneralStats();
 }
-
-// ... (KODUN GERİ KALANI DEĞİŞMEDEN AYNI ŞEKİLDE DEVAM EDİYOR) ...
-// ... (setupCollapsibleSections, renderTeacherReport, vs. hepsi tam ve doğru) ...
 
 function setupCollapsibleSections() {
     const reportHeader = document.getElementById('report-section-header');
@@ -334,7 +331,8 @@ async function initializePage() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     
-    const { data, error } = await db.from('shoots').select('*');
+    // Veriyi çekerken de başlangıç tarihine göre filtrele
+    const { data, error } = await db.from('shoots').select('*').gte('date', START_DATE_LIMIT);
     if (error) { 
         if(teacherReportContainer) teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; 
         return; 
@@ -354,16 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.keys(filterButtons).forEach(key => {
         if(filterButtons[key]) filterButtons[key].addEventListener('click', () => setActiveStatsButton(key));
     });
-    if(statsPrevPeriodBtn) statsPrevPeriodBtn.addEventListener('click', () => {
-        if (currentStatsFilter === 'week') { currentStatsDate.setDate(currentStatsDate.getDate() - 7); } 
-        else if (currentStatsFilter === 'month') { currentStatsDate.setMonth(currentStatsDate.getMonth() - 1); }
-        renderGeneralStats();
-    });
-    if(statsNextPeriodBtn) statsNextPeriodBtn.addEventListener('click', () => {
-        if (currentStatsFilter === 'week') { currentStatsDate.setDate(currentStatsDate.getDate() + 7); } 
-        else if (currentStatsFilter === 'month') { currentStatsDate.setMonth(currentStatsDate.getMonth() + 1); }
-        renderGeneralStats();
-    });
+    // Navigasyon butonları artık kullanılmıyor, event listener'larını kaldırabiliriz veya bırakabiliriz.
+    // if(statsPrevPeriodBtn) statsPrevPeriodBtn.addEventListener('click', () => { ... });
+    // if(statsNextPeriodBtn) statsNextPeriodBtn.addEventListener('click', () => { ... });
+    
     if(teacherStatsFilter) teacherStatsFilter.addEventListener('input', renderGeneralStats);
     if(directorStatsFilter) directorStatsFilter.addEventListener('input', renderGeneralStats);
     
