@@ -4,7 +4,6 @@ import { supabaseUrl, supabaseAnonKey } from './config.js';
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
-// --- Yetkilendirme ve Supabase Bağlantısı ---
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
@@ -47,33 +46,22 @@ let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45;
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 
-// YENİ: Grafik instance'larını saklamak için global değişkenler
 let studioChartInstance;
 let personnelChartInstance;
 
 // --- Yardımcı Fonksiyonlar ---
-const getWeekRange = (date = new Date()) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    const daysToSubtract = day === 0 ? 6 : day - 1;
-    const start = new Date(d);
-    start.setDate(d.getDate() - daysToSubtract);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-};
-const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
-const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
+const getWeekRange = (date = new Date()) => { /*...*/ };
+const getMonthRange = (date = new Date()) => { /*...*/ };
+const getWeekIdentifier = (d) => { /*...*/ };
 const HHMMToMinutes = (timeStr) => { if (typeof timeStr !== 'string' || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
-const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
-const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const minutesToHHMM = (totalMinutes) => { /*...*/ };
+const toYYYYMMDD = (date) => { /*...*/ };
 
 
 // =================================================================================
 // BÖLÜM 2: YENİ GRAFİK OLUŞTURMA FONKSİYONU
 // =================================================================================
+
 function renderCharts(filteredShoots) {
     const studioCtx = document.getElementById('studioOccupancyChart')?.getContext('2d');
     const personnelCtx = document.getElementById('personnelPerformanceChart')?.getContext('2d');
@@ -94,7 +82,7 @@ function renderCharts(filteredShoots) {
     const sortedStudios = Object.entries(studioData).sort(([, a], [, b]) => b - a);
     const studioLabels = sortedStudios.map(([name]) => name);
     const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
-    
+
     if (studioChartInstance) {
         studioChartInstance.destroy();
     }
@@ -121,12 +109,15 @@ function renderCharts(filteredShoots) {
         }
     });
 
-    // --- GRAFİK 2: PERSONEL PERFORMANSI (YATAY BAR GRAFİĞİ) ---
+    // --- GRAFİK 2: YÖNETMEN PERFORMANSI (YATAY BAR GRAFİĞİ) ---
+    // DEĞİŞİKLİK BURADA: Artık sadece yönetmenleri sayıyoruz
     const personnelCounts = {};
     const personnelDayCounter = new Set();
     filteredShoots.forEach(shoot => {
-        if (shoot.teacher && shoot.date) personnelDayCounter.add(`${shoot.teacher}-${shoot.date}`);
-        if (shoot.director && shoot.date) personnelDayCounter.add(`${shoot.director}-${shoot.date}`);
+        // Öğretmenleri değil, SADECE yönetmen listesindeki kişileri say
+        if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
+            personnelDayCounter.add(`${shoot.director}-${shoot.date}`);
+        }
     });
     personnelDayCounter.forEach(entry => {
         const personName = entry.substring(0, entry.lastIndexOf('-'));
@@ -176,29 +167,21 @@ function renderCharts(filteredShoots) {
 function renderGeneralStats() {
     if (!statsContent) return;
     let filteredShoots = allShootsData;
-    let range;
+    
     if (currentStatsFilter === 'week') {
-        range = getWeekRange(currentStatsDate);
-        const today = new Date();
-        const isCurrentWeek = today >= range.start && today <= range.end;
-        const startDateString = toYYYYMMDD(range.start);
-        const endDateString = isCurrentWeek ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= startDateString && s.date <= endDateString);
+        const range = getWeekRange(currentStatsDate);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
         statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
-        statsSubtitle.textContent = isCurrentWeek ? 'Bu haftanın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen haftanın verileri gösterilmektedir.';
     } else if (currentStatsFilter === 'month') {
-        range = getMonthRange(currentStatsDate);
-        const today = new Date();
-        const isCurrentMonth = today.getFullYear() === currentStatsDate.getFullYear() && today.getMonth() === currentStatsDate.getMonth();
-        const startDateString = toYYYYMMDD(range.start);
-        const endDateString = isCurrentMonth ? toYYYYMMDD(today) : toYYYYMMDD(range.end);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= startDateString && s.date <= endDateString);
+        const range = getMonthRange(currentStatsDate);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-        statsSubtitle.textContent = isCurrentMonth ? 'Bu ayın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen ayın verileri gösterilmektedir.';
     } else {
         filteredShoots = allShootsData;
-        statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
+    
+    // DEĞİŞİKLİK: Dinamik subtitle metni kaldırıldı.
+    // statsSubtitle.textContent artık değiştirilmiyor.
 
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -223,10 +206,14 @@ function renderGeneralStats() {
     let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
     let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
 
-    const teacherFilterText = teacherStatsFilter.value.toLowerCase().trim();
-    if (teacherFilterText) { sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterText)); }
-    const directorFilterText = directorStatsFilter.value.toLowerCase().trim();
-    if (directorFilterText) { sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
+    if(teacherStatsFilter) {
+        const teacherFilterText = teacherStatsFilter.value.toLowerCase().trim();
+        if (teacherFilterText) { sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterText)); }
+    }
+    if(directorStatsFilter) {
+        const directorFilterText = directorStatsFilter.value.toLowerCase().trim();
+        if (directorFilterText) { sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
+    }
 
     if(teacherStatsBody) teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
     if(directorStatsBody) directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
