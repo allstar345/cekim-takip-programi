@@ -107,7 +107,7 @@ function renderCharts(filteredShoots) {
         }
     });
 
-    // --- YÖNETMEN PERFORMANS GRAFİĞİ (İsteğine göre düzeltildi) ---
+    // --- YÖNETMEN PERFORMANS GRAFİĞİ (Farklı gün sayımı) ---
     const directorDayCounts = {};
     const directorDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -143,26 +143,28 @@ function renderCharts(filteredShoots) {
     });
 }
 
-
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLARIN DOĞRU VE TAM HALLERİ
+// BÖLÜM 3: MEVCUT FONKSİYONLAR (NİHAİ DÜZELTİLMİŞ HALLERİ)
 // =================================================================================
 
 function renderGeneralStats() {
     if (!statsContent) return;
     let filteredShoots = [];
 
+    // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
         const range = getWeekRange(currentStatsDate);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
+        statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
     } else if (currentStatsFilter === 'month') {
         const range = getMonthRange(currentStatsDate);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
+        statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
     } else { 
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
     
-    // --- ÖĞRETMEN SAYIM LOGIĞI (İsteğine göre düzeltildi -> Farklı Gün Sayımı) ---
+    // --- ÖĞRETMEN SAYIM LOGIĞI (Farklı Gün Sayımı) ---
     const teacherCounts = {};
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -175,13 +177,17 @@ function renderGeneralStats() {
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
 
-    // --- YÖNETMEN SAYIM LOGIĞI (İsteğine göre düzeltildi -> Toplam Çekim Sayısı) ---
+    // --- YÖNETMEN SAYIM LOGIĞI (Farklı Gün Sayımı) ---
     const directorCounts = {};
-    ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
-    filteredShoots.forEach(shoot => {
-        if (shoot.director && directorCounts.hasOwnProperty(shoot.director)) {
-            directorCounts[shoot.director]++;
+    const directorDaySet = new Set();
+     filteredShoots.forEach(shoot => {
+        if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
+            directorDaySet.add(`${shoot.director}-${shoot.date}`);
         }
+    });
+    directorDaySet.forEach(entry => {
+        const directorName = entry.substring(0, entry.lastIndexOf('-'));
+        directorCounts[directorName] = (directorCounts[directorName] || 0) + 1;
     });
 
     let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
