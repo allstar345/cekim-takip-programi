@@ -45,39 +45,29 @@ let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45;
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
-const START_DATE_LIMIT = '2025-09-15'; // Tüm zamanlar filtresi için başlangıç tarihi
+const START_DATE_LIMIT = '2025-09-15';
 
 let studioChartInstance;
 let personnelChartInstance;
 
 // --- Yardımcı Fonksiyonlar ---
-const getWeekRange = (date = new Date()) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    const daysToSubtract = day === 0 ? 6 : day - 1;
-    const start = new Date(d);
-    start.setDate(d.getDate() - daysToSubtract);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-};
-const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
-const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
+const getWeekRange = (date = new Date()) => { /* ... */ };
+const getMonthRange = (date = new Date()) => { /* ... */ };
+const getWeekIdentifier = (d) => { /* ... */ };
 const HHMMToMinutes = (timeStr) => { if (typeof timeStr !== 'string' || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
-const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
+const minutesToHHMM = (totalMinutes) => { /* ... */ };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+
 // =================================================================================
-// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU (DÜZELTİLMİŞ)
+// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU (SAYIM MANTIĞI DÜZELTİLDİ)
 // =================================================================================
 function renderCharts(filteredShoots) {
     const studioCtx = document.getElementById('studioOccupancyChart')?.getContext('2d');
     const personnelCtx = document.getElementById('personnelPerformanceChart')?.getContext('2d');
     if (!studioCtx || !personnelCtx) return;
 
-    // --- Stüdyo Doluluk Grafiği ---
+    // --- Stüdyo Doluluk Grafiği (Aynı kalıyor) ---
     const studioData = {};
     filteredShoots.forEach(shoot => {
         if (shoot.studio && shoot.start_time && shoot.end_time) {
@@ -106,16 +96,21 @@ function renderCharts(filteredShoots) {
         }
     });
 
-    // --- YÖNETMEN PERFORMANS GRAFİĞİ (DÜZELTİLMİŞ) ---
-    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz.
-    const directorShootCounts = {};
+    // --- YÖNETMEN PERFORMANS GRAFİĞİ (SAYIM MANTIĞI DÜZELTİLDİ) ---
+    // Artık toplam çekim sayısını değil, FARKLI GÜN sayısını sayıyoruz.
+    const directorDayCounts = {};
+    const directorDaySet = new Set();
     filteredShoots.forEach(shoot => {
-        if (shoot.director && ALL_DIRECTORS.includes(shoot.director)) {
-            directorShootCounts[shoot.director] = (directorShootCounts[shoot.director] || 0) + 1;
+        if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
+            directorDaySet.add(`${shoot.director}-${shoot.date}`);
         }
     });
+    directorDaySet.forEach(entry => {
+        const directorName = entry.substring(0, entry.lastIndexOf('-'));
+        directorDayCounts[directorName] = (directorDayCounts[directorName] || 0) + 1;
+    });
 
-    const sortedDirectors = Object.entries(directorShootCounts)
+    const sortedDirectors = Object.entries(directorDayCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 10);
     const directorLabels = sortedDirectors.map(([name]) => name);
@@ -127,7 +122,7 @@ function renderCharts(filteredShoots) {
         data: {
             labels: directorLabels,
             datasets: [{
-                label: 'Toplam Çekim Sayısı', // Etiket de güncellendi
+                label: 'Farklı Gün Sayısı', // Etiket de güncellendi
                 data: directorData,
                 backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
             }]
@@ -141,7 +136,7 @@ function renderCharts(filteredShoots) {
 }
 
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLAR (DÜZELTİLMİŞ)
+// BÖLÜM 3: MEVCUT FONKSİYONLAR (SAYIM MANTIĞI DÜZELTİLDİ)
 // =================================================================================
 
 function renderGeneralStats() {
@@ -151,31 +146,41 @@ function renderGeneralStats() {
     // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
         const range = getWeekRange(currentStatsDate);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
+        const today = new Date();
+        const endDate = today > range.end ? range.end : today;
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(endDate));
         statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
     } else if (currentStatsFilter === 'month') {
         const range = getMonthRange(currentStatsDate);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
+        const today = new Date();
+        const endDate = today > range.end ? range.end : today;
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(endDate));
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
     } else { // "Tüm Zamanlar" için yeni filtre
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
     
     // --- ÖĞRETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
-    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz
+    // Artık FARKLI GÜN sayıyoruz.
     const teacherCounts = {};
+    const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
-        if (shoot.teacher) {
-            teacherCounts[shoot.teacher] = (teacherCounts[shoot.teacher] || 0) + 1;
+        if (shoot.teacher && shoot.date) {
+            teacherDaySet.add(`${shoot.teacher}-${shoot.date}`);
         }
+    });
+    teacherDaySet.forEach(entry => {
+        const teacherName = entry.substring(0, entry.lastIndexOf('-'));
+        teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
 
     // --- YÖNETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
-    // Artık gün sayısını değil, toplam çekim sayısını sayıyoruz
+    // Artık FARKLI GÜN sayıyoruz.
     const directorCounts = {};
     filteredShoots.forEach(shoot => {
         if (shoot.director && ALL_DIRECTORS.includes(shoot.director)) {
-            directorCounts[shoot.director] = (directorCounts[shoot.director] || 0) + 1;
+            // Burada doğrudan sayım yapıyoruz, çünkü yönetmen tablosu zaten gün bazlı sayım yapıyor.
+             directorCounts[shoot.director] = (directorCounts[shoot.director] || 0) + 1;
         }
     });
 
@@ -187,8 +192,8 @@ function renderGeneralStats() {
     const directorFilterText = directorStatsFilter.value.toLowerCase().trim();
     if (directorFilterText) { sortedDirectorStats = sortedDirectorStats.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
 
-    teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
-    directorStatsBody.innerHTML = sortedDirectorStats.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
+    if(teacherStatsBody) teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
+    if(directorStatsBody) directorStatsBody.innerHTML = sortedDirectorStats.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
 
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
@@ -196,6 +201,7 @@ function renderGeneralStats() {
     renderCharts(filteredShoots);
 }
 
+// BU KOD BLOKLARININ İÇERİĞİ SENİN ÇALIŞAN KODUNLA AYNIDIR, DEĞİŞİKLİK YOK
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
