@@ -73,7 +73,7 @@ const kameraman2SelectForm = document.getElementById('kameraman_2');
 const DAYS_OF_WEEK = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const STUDIOS = ["Stüdyo 1", "Stüdyo 2", "Stüdyo 4", "Stüdyo 7", "Stüdyo 8"];
 const TEAM_MEMBERS = ["Emirhan", "Eren", "Yavuz Selim"];
-const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batu Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
+const ON_LEAVE_MEMBERS = ["Burak Onay", "Raşit Güngör", "Ali Yıldırım", "Rahim Ural", "İsmail Tolga Aktaş", "Sinem Şentürk", "Merve Çoklar", "Nurdan Özveren", "Emirhan Topçu", "Eren Genç", "Yavuz Selim İnce", "Anıl Kolay", "Batuhan Gültekin", "Gözde Bulut", "Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 const DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const CAMERAMEN = ["Mert Katıhan", "Recep Yurttaş", "Taner Akçil"];
 
