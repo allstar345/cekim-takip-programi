@@ -8,7 +8,6 @@ const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sess
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
 
-// --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
 const statsLoading = document.getElementById('stats-loading');
 const statsContent = document.getElementById('stats-content');
@@ -35,7 +34,6 @@ const statsPrevPeriodBtn = document.getElementById('stats-prev-period');
 const statsNextPeriodBtn = document.getElementById('stats-next-period');
 const statsPeriodDisplay = document.getElementById('stats-period-display');
 
-// --- Global Değişkenler ---
 let allShootsData = [];
 let filteredReportData = [];
 let reportCurrentPage = 1;
@@ -43,14 +41,10 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
+const WEEKLY_NORMAL_HOURS_LIMIT = 45;
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const START_DATE_LIMIT = '2025-09-15';
 
-let studioChartInstance;
-let personnelChartInstance;
-
-// --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -70,74 +64,8 @@ const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinute
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 // =================================================================================
-// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU
+// BÖLÜM 2: GENEL İSTATİSTİKLER (TÜM İSTEKLERİNLE DÜZELTİLDİ)
 // =================================================================================
-function renderCharts(filteredShoots) {
-    const studioCtx = document.getElementById('studioOccupancyChart')?.getContext('2d');
-    const personnelCtx = document.getElementById('personnelPerformanceChart')?.getContext('2d');
-    if (!studioCtx || !personnelCtx) return;
-
-    // --- Stüdyo Doluluk Grafiği ---
-    const studioData = {};
-    filteredShoots.forEach(shoot => {
-        if (shoot.studio && shoot.start_time && shoot.end_time) {
-            const duration = HHMMToMinutes(shoot.end_time) - HHMMToMinutes(shoot.start_time);
-            if (duration > 0) {
-                studioData[shoot.studio] = (studioData[shoot.studio] || 0) + duration;
-            }
-        }
-    });
-    const sortedStudios = Object.entries(studioData).sort(([, a], [, b]) => b - a);
-    const studioLabels = sortedStudios.map(([name]) => name);
-    const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
-    if (studioChartInstance) { studioChartInstance.destroy(); }
-    studioChartInstance = new Chart(studioCtx, {
-        type: 'bar',
-        data: {
-            labels: studioLabels,
-            datasets: [{
-                label: 'Toplam Çekim Saati', data: studioHoursData,
-                backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
-            }]
-        },
-        options: { scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + ' sa'; } } } }, plugins: { legend: { display: false } } }
-    });
-
-    // --- Yönetmen Performans Grafiği (Farklı gün sayımı) ---
-    const directorDayCounts = {};
-    const directorDaySet = new Set();
-    filteredShoots.forEach(shoot => {
-        if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
-            directorDaySet.add(`${shoot.director}-${shoot.date}`);
-        }
-    });
-    directorDaySet.forEach(entry => {
-        const directorName = entry.substring(0, entry.lastIndexOf('-'));
-        directorDayCounts[directorName] = (directorDayCounts[directorName] || 0) + 1;
-    });
-
-    const sortedDirectors = Object.entries(directorDayCounts).sort(([, a], [, b]) => b - a).slice(0, 10);
-    const directorLabels = sortedDirectors.map(([name]) => name);
-    const directorData = sortedDirectors.map(([, count]) => count);
-
-    if (personnelChartInstance) { personnelChartInstance.destroy(); }
-    personnelChartInstance = new Chart(personnelCtx, {
-        type: 'bar',
-        data: {
-            labels: directorLabels,
-            datasets: [{
-                label: 'Farklı Gün Sayısı', data: directorData,
-                backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
-            }]
-        },
-        options: { indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
-    });
-}
-
-// =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLARIN NİHAİ DÜZELTİLMİŞ HALLERİ
-// =================================================================================
-
 function renderGeneralStats() {
     if (!statsContent) return;
     let filteredShoots = [];
@@ -149,57 +77,58 @@ function renderGeneralStats() {
         const endDateString = isCurrentWeek ? today_str : toYYYYMMDD(range.end);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
         statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
+        statsSubtitle.textContent = isCurrentWeek ? 'Bu haftanın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen haftanın verileri gösterilmektedir.';
     } else if (currentStatsFilter === 'month') {
         const range = getMonthRange(currentStatsDate);
         const isCurrentMonth = new Date().getMonth() === currentStatsDate.getMonth() && new Date().getFullYear() === currentStatsDate.getFullYear();
         const endDateString = isCurrentMonth ? today_str : toYYYYMMDD(range.end);
         filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+        statsSubtitle.textContent = isCurrentMonth ? 'Bu ayın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen ayın verileri gösterilmektedir.';
     } else {
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
+        statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
-    
+
     // --- ÖĞRETMEN SAYIMI (Farklı Gün Sayımı) ---
-    const teacherCounts = {};
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
         if (shoot.teacher && shoot.date) {
             teacherDaySet.add(`${shoot.teacher}-${shoot.date}`);
         }
     });
+    const teacherCounts = {};
     teacherDaySet.forEach(entry => {
         const teacherName = entry.substring(0, entry.lastIndexOf('-'));
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
 
     // --- YÖNETMEN SAYIMI (Farklı Gün Sayımı) ---
-    const directorCounts = {};
     const directorDaySet = new Set();
-     filteredShoots.forEach(shoot => {
+    filteredShoots.forEach(shoot => {
         if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
             directorDaySet.add(`${shoot.director}-${shoot.date}`);
         }
     });
+    const directorCounts = {};
     directorDaySet.forEach(entry => {
         const directorName = entry.substring(0, entry.lastIndexOf('-'));
         directorCounts[directorName] = (directorCounts[directorName] || 0) + 1;
     });
 
     let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
-    let sortedDirectorStats = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
+    let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
 
     const teacherFilterText = teacherStatsFilter.value.toLowerCase().trim();
     if (teacherFilterText) { sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterText)); }
     const directorFilterText = directorStatsFilter.value.toLowerCase().trim();
-    if (directorFilterText) { sortedDirectorStats = sortedDirectorStats.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
+    if (directorFilterText) { sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
 
     if(teacherStatsBody) teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
-    if(directorStatsBody) directorStatsBody.innerHTML = sortedDirectorStats.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
+    if(directorStatsBody) directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
 
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
-
-    renderCharts(filteredShoots);
 }
 
 function setActiveStatsButton(filter) {
@@ -213,6 +142,7 @@ function setActiveStatsButton(filter) {
         currentStatsDate = new Date();
     } else {
         statsPeriodNavigator.classList.add('hidden');
+        statsPeriodNavigator.classList.remove('flex');
     }
     renderGeneralStats();
 }
@@ -336,7 +266,7 @@ function calculateAllTotals() {
 async function saveTimesheet() { if(!saveTimesheetBtn) return; saveTimesheetBtn.disabled = true; saveTimesheetBtn.textContent = 'Kaydediliyor...'; const weekIdentifier = getWeekIdentifier(currentTimesheetDate); const dataToUpsert = []; document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { const employeeName = row.dataset.employee; row.querySelectorAll('input.start-time').forEach(startInput => { const day = startInput.dataset.day; const endInput = row.querySelector(`input.end-time[data-day="${day}"]`); dataToUpsert.push({ week_identifier: weekIdentifier, employee_name: employeeName, day_of_week: day, start_time: startInput.value || null, end_time: endInput.value || null }); }); }); const { error } = await db.from('employee_timesheets').upsert(dataToUpsert, { onConflict: 'week_identifier, employee_name, day_of_week' }); if (error) { Swal.fire('Hata!', `Mesai kaydedilemedi: ${error.message}`, 'error'); } else { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesai Tablosu Kaydedildi', showConfirmButton: false, timer: 2000 }); } saveTimesheetBtn.disabled = false; saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet'; }
 
 async function initializePage() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { session } } = await supabaseAuth.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     
     const { data, error } = await db.from('shoots').select('*');
@@ -392,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }); 
     
     logoutBtn.addEventListener('click', async () => { 
-        await supabaseClient.auth.signOut(); 
+        await supabaseAuth.auth.signOut(); 
         window.location.href = 'login.html'; 
     });
 });
