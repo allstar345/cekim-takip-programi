@@ -1,15 +1,13 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // =================================================================================
-// BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
+// BÖLÜM 1: TEMEL KURULUM VE DEĞİŞKENLER
 // =================================================================================
 
-// --- Yetkilendirme ve Supabase Bağlantısı ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
 
-// --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
 const statsLoading = document.getElementById('stats-loading');
 const statsContent = document.getElementById('stats-content');
@@ -36,7 +34,6 @@ const statsPrevPeriodBtn = document.getElementById('stats-prev-period');
 const statsNextPeriodBtn = document.getElementById('stats-next-period');
 const statsPeriodDisplay = document.getElementById('stats-period-display');
 
-// --- Global Değişkenler ---
 let allShootsData = [];
 let filteredReportData = [];
 let reportCurrentPage = 1;
@@ -44,14 +41,13 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
+const WEEKLY_NORMAL_HOURS_LIMIT = 45;
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const START_DATE_LIMIT = '2025-09-15';
 
 let studioChartInstance;
 let personnelChartInstance;
 
-// --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -145,11 +141,17 @@ function renderGeneralStats() {
     const today_str = toYYYYMMDD(new Date());
 
     if (currentStatsFilter === 'week') {
-        const range = getWeekRange(new Date());
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= today_str);
+        const range = getWeekRange(currentStatsDate);
+        const isCurrentWeek = getWeekIdentifier(new Date()) === getWeekIdentifier(currentStatsDate);
+        const endDateString = isCurrentWeek ? today_str : toYYYYMMDD(range.end);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
+        statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
     } else if (currentStatsFilter === 'month') {
-        const range = getMonthRange(new Date());
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= today_str);
+        const range = getMonthRange(currentStatsDate);
+        const isCurrentMonth = new Date().getMonth() === currentStatsDate.getMonth() && new Date().getFullYear() === currentStatsDate.getFullYear();
+        const endDateString = isCurrentMonth ? today_str : toYYYYMMDD(range.end);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
+        statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
     } else {
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
@@ -202,10 +204,13 @@ function setActiveStatsButton(filter) {
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
     if(filterButtons[filter]) filterButtons[filter].classList.add('active');
     
-    // Tarih navigasyonunu tamamen gizle, artık kullanılmıyor
-    statsPeriodNavigator.classList.add('hidden');
-    statsPeriodDisplay.textContent = ''; // Tarih yazısını temizle
-
+    if (filter === 'week' || filter === 'month') {
+        statsPeriodNavigator.classList.remove('hidden'); // Düzeltme: Navigasyon tekrar görünür yapıldı
+        statsPeriodNavigator.classList.add('flex');
+        currentStatsDate = new Date();
+    } else {
+        statsPeriodNavigator.classList.add('hidden');
+    }
     renderGeneralStats();
 }
 
@@ -331,8 +336,7 @@ async function initializePage() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     
-    // Veriyi çekerken de başlangıç tarihine göre filtrele
-    const { data, error } = await db.from('shoots').select('*').gte('date', START_DATE_LIMIT);
+    const { data, error } = await db.from('shoots').select('*');
     if (error) { 
         if(teacherReportContainer) teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; 
         return; 
@@ -352,10 +356,16 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.keys(filterButtons).forEach(key => {
         if(filterButtons[key]) filterButtons[key].addEventListener('click', () => setActiveStatsButton(key));
     });
-    // Navigasyon butonları artık kullanılmıyor, event listener'larını kaldırabiliriz veya bırakabiliriz.
-    // if(statsPrevPeriodBtn) statsPrevPeriodBtn.addEventListener('click', () => { ... });
-    // if(statsNextPeriodBtn) statsNextPeriodBtn.addEventListener('click', () => { ... });
-    
+    if(statsPrevPeriodBtn) statsPrevPeriodBtn.addEventListener('click', () => {
+        if (currentStatsFilter === 'week') { currentStatsDate.setDate(currentStatsDate.getDate() - 7); } 
+        else if (currentStatsFilter === 'month') { currentStatsDate.setMonth(currentStatsDate.getMonth() - 1); }
+        renderGeneralStats();
+    });
+    if(statsNextPeriodBtn) statsNextPeriodBtn.addEventListener('click', () => {
+        if (currentStatsFilter === 'week') { currentStatsDate.setDate(currentStatsDate.getDate() + 7); } 
+        else if (currentStatsFilter === 'month') { currentStatsDate.setMonth(currentStatsDate.getMonth() + 1); }
+        renderGeneralStats();
+    });
     if(teacherStatsFilter) teacherStatsFilter.addEventListener('input', renderGeneralStats);
     if(directorStatsFilter) directorStatsFilter.addEventListener('input', renderGeneralStats);
     
