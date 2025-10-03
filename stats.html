@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; }
         .filter-btn.active { background-color: #2563eb; color: white; }
@@ -89,7 +87,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="bg-white rounded-2xl shadow-lg p-6">
             <h2 class="text-xl font-bold text-gray-800 mb-6">Grafiksel Analizler</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
@@ -98,7 +96,7 @@
                     <canvas id="studioOccupancyChart"></canvas>
                 </div>
                 <div class="col-span-1">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">En Çok Çekim Yapan Personel (Gün Bazlı)</h3>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">En Çok Çekim Yapan Yönetmen (Gün Bazlı)</h3>
                     <canvas id="personnelPerformanceChart"></canvas>
                 </div>
             </div>
@@ -132,6 +130,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js" type="module" defer></script>
     <script src="notifications.js" type="module" defer></script>
-    <script src="stats.js" type="module" defer></script>
+    <script src="stats.js" type="module" defer></script> 
 </body>
 </html>
