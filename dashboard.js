@@ -1,34 +1,39 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // --- Yetki Kontrolü ve Anasayfa Linklerinin Yönetimi ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 async function checkAuthAndApplyPermissions() {
-    const { data: { session } } = await supabaseAuth.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
         window.location.href = 'login.html';
         return;
     }
 
-    const { data: { user } } = await supabaseAuth.auth.getUser();
+    const { data: { user } } = await supabaseClient.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
 
+    // Linkleri al
     const cekimTakipLink = document.getElementById('cekim-takip-link');
     const monitoringLink = document.getElementById('monitoring-link');
     const paymentLink = document.getElementById('payment-link');
+    const hataBildirimLink = document.getElementById('hata-bildirim-link'); // Yeni link
 
     function deactivateLink(link) {
         if (link) {
             link.removeAttribute('href');
             link.classList.add('opacity-50', 'cursor-not-allowed');
+            link.addEventListener('click', (e) => e.preventDefault()); // Tıklamayı tamamen engelle
         }
     }
     
+    // Admin tüm yetkilere sahip olduğu için kontrol etmeye gerek yok
     if (permissions.includes('admin')) {
         return; 
     }
 
+    // Yetkileri tek tek kontrol et
     if (!permissions.includes('view_cekim')) {
         deactivateLink(cekimTakipLink);
     }
@@ -38,6 +43,10 @@ async function checkAuthAndApplyPermissions() {
     if (!permissions.includes('view_odeme')) {
         deactivateLink(paymentLink);
     }
+    // YENİ EKLENEN KONTROL
+    if (!permissions.includes('view_hata_bildirim')) {
+        deactivateLink(hataBildirimLink);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', checkAuthAndApplyPermissions);
@@ -45,17 +54,11 @@ document.addEventListener('DOMContentLoaded', checkAuthAndApplyPermissions);
 
 // --- Çıkış Butonu İşlevselliği ---
 const logoutBtn = document.getElementById('logout-btn');
-logoutBtn.addEventListener('click', async () => {
-    const mainStorageAdapter = {
-        getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-        setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
-        removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-    };
-    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { storage: mainStorageAdapter }
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'login.html';
     });
-    await supabase_logout.auth.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = 'login.html';
-});
+}
