@@ -51,23 +51,34 @@ let studioChartInstance;
 let personnelChartInstance;
 
 // --- Yardımcı Fonksiyonlar ---
-const getWeekRange = (date = new Date()) => { /* ... */ };
-const getMonthRange = (date = new Date()) => { /* ... */ };
-const getWeekIdentifier = (d) => { /* ... */ };
+const getWeekRange = (date = new Date()) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const daysToSubtract = day === 0 ? 6 : day - 1;
+    const start = new Date(d);
+    start.setDate(d.getDate() - daysToSubtract);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+};
+const getMonthRange = (date = new Date()) => { const d = new Date(date); const start = new Date(d.getFullYear(), d.getMonth(), 1); const end = new Date(d.getFullYear(), d.getMonth() + 1, 0); end.setHours(23, 59, 59, 999); return { start, end }; };
+const getWeekIdentifier = (d) => { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7)); var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)); var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7); return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`; };
 const HHMMToMinutes = (timeStr) => { if (typeof timeStr !== 'string' || !timeStr.includes(':')) return 0; const [hours, minutes] = timeStr.split(':').map(Number); return (hours * 60) + minutes; };
-const minutesToHHMM = (totalMinutes) => { /* ... */ };
+const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 
 // =================================================================================
-// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU (SAYIM MANTIĞI DÜZELTİLDİ)
+// BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU
 // =================================================================================
 function renderCharts(filteredShoots) {
     const studioCtx = document.getElementById('studioOccupancyChart')?.getContext('2d');
     const personnelCtx = document.getElementById('personnelPerformanceChart')?.getContext('2d');
     if (!studioCtx || !personnelCtx) return;
 
-    // --- Stüdyo Doluluk Grafiği (Aynı kalıyor) ---
+    // --- Stüdyo Doluluk Grafiği ---
     const studioData = {};
     filteredShoots.forEach(shoot => {
         if (shoot.studio && shoot.start_time && shoot.end_time) {
@@ -96,8 +107,7 @@ function renderCharts(filteredShoots) {
         }
     });
 
-    // --- YÖNETMEN PERFORMANS GRAFİĞİ (SAYIM MANTIĞI DÜZELTİLDİ) ---
-    // Artık toplam çekim sayısını değil, FARKLI GÜN sayısını sayıyoruz.
+    // --- YÖNETMEN PERFORMANS GRAFİĞİ (İsteğine göre düzeltildi) ---
     const directorDayCounts = {};
     const directorDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -110,9 +120,7 @@ function renderCharts(filteredShoots) {
         directorDayCounts[directorName] = (directorDayCounts[directorName] || 0) + 1;
     });
 
-    const sortedDirectors = Object.entries(directorDayCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10);
+    const sortedDirectors = Object.entries(directorDayCounts).sort(([, a], [, b]) => b - a).slice(0, 10);
     const directorLabels = sortedDirectors.map(([name]) => name);
     const directorData = sortedDirectors.map(([, count]) => count);
 
@@ -122,7 +130,7 @@ function renderCharts(filteredShoots) {
         data: {
             labels: directorLabels,
             datasets: [{
-                label: 'Farklı Gün Sayısı', // Etiket de güncellendi
+                label: 'Farklı Gün Sayısı',
                 data: directorData,
                 backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
             }]
@@ -135,33 +143,26 @@ function renderCharts(filteredShoots) {
     });
 }
 
+
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLAR (SAYIM MANTIĞI DÜZELTİLDİ)
+// BÖLÜM 3: MEVCUT FONKSİYONLARIN DOĞRU VE TAM HALLERİ
 // =================================================================================
 
 function renderGeneralStats() {
     if (!statsContent) return;
     let filteredShoots = [];
 
-    // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
         const range = getWeekRange(currentStatsDate);
-        const today = new Date();
-        const endDate = today > range.end ? range.end : today;
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(endDate));
-        statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
     } else if (currentStatsFilter === 'month') {
         const range = getMonthRange(currentStatsDate);
-        const today = new Date();
-        const endDate = today > range.end ? range.end : today;
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(endDate));
-        statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-    } else { // "Tüm Zamanlar" için yeni filtre
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
+    } else { 
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
     
-    // --- ÖĞRETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
-    // Artık FARKLI GÜN sayıyoruz.
+    // --- ÖĞRETMEN SAYIM LOGIĞI (İsteğine göre düzeltildi -> Farklı Gün Sayımı) ---
     const teacherCounts = {};
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -174,13 +175,12 @@ function renderGeneralStats() {
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
 
-    // --- YÖNETMEN SAYIM LOGIĞI (DÜZELTİLDİ) ---
-    // Artık FARKLI GÜN sayıyoruz.
+    // --- YÖNETMEN SAYIM LOGIĞI (İsteğine göre düzeltildi -> Toplam Çekim Sayısı) ---
     const directorCounts = {};
+    ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
     filteredShoots.forEach(shoot => {
-        if (shoot.director && ALL_DIRECTORS.includes(shoot.director)) {
-            // Burada doğrudan sayım yapıyoruz, çünkü yönetmen tablosu zaten gün bazlı sayım yapıyor.
-             directorCounts[shoot.director] = (directorCounts[shoot.director] || 0) + 1;
+        if (shoot.director && directorCounts.hasOwnProperty(shoot.director)) {
+            directorCounts[shoot.director]++;
         }
     });
 
@@ -201,7 +201,6 @@ function renderGeneralStats() {
     renderCharts(filteredShoots);
 }
 
-// BU KOD BLOKLARININ İÇERİĞİ SENİN ÇALIŞAN KODUNLA AYNIDIR, DEĞİŞİKLİK YOK
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
@@ -340,7 +339,7 @@ async function initializePage() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     
-    const { data, error } = await db.from('shoots').select('*');
+    const { data, error } = await db.from('shoots').select('*').gte('date', START_DATE_LIMIT);
     if (error) { 
         if(teacherReportContainer) teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; 
         return; 
