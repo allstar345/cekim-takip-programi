@@ -69,7 +69,6 @@ const HHMMToMinutes = (timeStr) => { if (typeof timeStr !== 'string' || !timeStr
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-
 // =================================================================================
 // BÖLÜM 2: GRAFİK OLUŞTURMA FONKSİYONU
 // =================================================================================
@@ -93,21 +92,14 @@ function renderCharts(filteredShoots) {
     const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
     if (studioChartInstance) { studioChartInstance.destroy(); }
     studioChartInstance = new Chart(studioCtx, {
-        type: 'bar',
-        data: {
-            labels: studioLabels,
-            datasets: [{
-                label: 'Toplam Çekim Saati', data: studioHoursData,
-                backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
-            }]
-        },
-        options: {
-            scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + ' sa'; } } } },
-            plugins: { legend: { display: false } }
-        }
+        type: 'bar', data: { labels: studioLabels, datasets: [{
+            label: 'Toplam Çekim Saati', data: studioHoursData,
+            backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1
+        }]},
+        options: { scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value + ' sa'; } } } }, plugins: { legend: { display: false } } }
     });
 
-    // --- YÖNETMEN PERFORMANS GRAFİĞİ (Farklı gün sayımı) ---
+    // --- Yönetmen Performans Grafiği (Farklı gün sayımı) ---
     const directorDayCounts = {};
     const directorDaySet = new Set();
     filteredShoots.forEach(shoot => {
@@ -126,40 +118,34 @@ function renderCharts(filteredShoots) {
 
     if (personnelChartInstance) { personnelChartInstance.destroy(); }
     personnelChartInstance = new Chart(personnelCtx, {
-        type: 'bar',
-        data: {
-            labels: directorLabels,
-            datasets: [{
-                label: 'Farklı Gün Sayısı',
-                data: directorData,
-                backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
-            plugins: { legend: { display: false } }
-        }
+        type: 'bar', data: { labels: directorLabels, datasets: [{
+            label: 'Farklı Gün Sayısı', data: directorData,
+            backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1
+        }]},
+        options: { indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
     });
 }
 
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLAR (NİHAİ DÜZELTİLMİŞ HALLERİ)
+// BÖLÜM 3: MEVCUT FONKSİYONLARIN NİHAİ DÜZELTİLMİŞ HALLERİ
 // =================================================================================
 
 function renderGeneralStats() {
     if (!statsContent) return;
     let filteredShoots = [];
+    const today_str = toYYYYMMDD(new Date());
 
     // Filtreleme mantığı
     if (currentStatsFilter === 'week') {
         const range = getWeekRange(currentStatsDate);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
-        statsPeriodDisplay.textContent = `${range.start.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })} - ${range.end.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`;
+        // Bitiş tarihi olarak bugünü veya haftanın sonunu al (hangisi daha erkense)
+        const endDateString = toYYYYMMDD(range.end) > today_str ? today_str : toYYYYMMDD(range.end);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
     } else if (currentStatsFilter === 'month') {
         const range = getMonthRange(currentStatsDate);
-        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= toYYYYMMDD(range.end));
-        statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+        // Bitiş tarihi olarak bugünü veya ayın sonunu al (hangisi daha erkense)
+        const endDateString = toYYYYMMDD(range.end) > today_str ? today_str : toYYYYMMDD(range.end);
+        filteredShoots = allShootsData.filter(s => s.date && s.date >= toYYYYMMDD(range.start) && s.date <= endDateString);
     } else { 
         filteredShoots = allShootsData.filter(s => s.date && s.date >= START_DATE_LIMIT);
     }
@@ -180,7 +166,7 @@ function renderGeneralStats() {
     // --- YÖNETMEN SAYIM LOGIĞI (Farklı Gün Sayımı) ---
     const directorCounts = {};
     const directorDaySet = new Set();
-     filteredShoots.forEach(shoot => {
+    filteredShoots.forEach(shoot => {
         if (shoot.director && ALL_DIRECTORS.includes(shoot.director) && shoot.date) {
             directorDaySet.add(`${shoot.director}-${shoot.date}`);
         }
@@ -212,16 +198,19 @@ function setActiveStatsButton(filter) {
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
     if(filterButtons[filter]) filterButtons[filter].classList.add('active');
     
+    // Tarih aralığı yazısını temizle, artık kullanmıyoruz
+    if(statsPeriodDisplay) statsPeriodDisplay.textContent = '';
+    
     if (filter === 'week' || filter === 'month') {
-        statsPeriodNavigator.classList.remove('hidden');
-        statsPeriodNavigator.classList.add('flex');
-        currentStatsDate = new Date();
+        statsPeriodNavigator.classList.add('hidden'); // Navigasyon butonlarını da gizleyelim
     } else {
         statsPeriodNavigator.classList.add('hidden');
-        statsPeriodNavigator.classList.remove('flex');
     }
     renderGeneralStats();
 }
+
+// ... (KODUN GERİ KALANI DEĞİŞMEDEN AYNI ŞEKİLDE DEVAM EDİYOR) ...
+// ... (setupCollapsibleSections, renderTeacherReport, vs. hepsi tam ve doğru) ...
 
 function setupCollapsibleSections() {
     const reportHeader = document.getElementById('report-section-header');
@@ -345,7 +334,7 @@ async function initializePage() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
     
-    const { data, error } = await db.from('shoots').select('*').gte('date', START_DATE_LIMIT);
+    const { data, error } = await db.from('shoots').select('*');
     if (error) { 
         if(teacherReportContainer) teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; 
         return; 
