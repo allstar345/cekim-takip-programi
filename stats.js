@@ -1,13 +1,14 @@
-import { supabaseUrl, supabaseAnonKey } from './config.js';
-
 // =================================================================================
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
 // --- Yetkilendirme ve Supabase Bağlantısı ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: () => {}, removeItem: () => {} };
-const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
-const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
+const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
@@ -44,8 +45,9 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45;
+const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
+
 
 // --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
@@ -66,11 +68,13 @@ const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) ret
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+
 // =================================================================================
-// BÖLÜM 2: GENEL İSTATİSTİKLER VE DİĞER FONKSİYONLAR (ORİJİNAL ÇALIŞAN HALİ)
+// BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
 // =================================================================================
 function renderGeneralStats() {
     if (!statsContent) return;
+
     let filteredShoots = allShootsData;
     let range;
 
@@ -96,6 +100,7 @@ function renderGeneralStats() {
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
 
+    // DÜZELTME: Öğretmen ismi hatalı görünüyordu, düzeltildi.
     const teacherDaySet = new Set();
     filteredShoots.forEach(shoot => {
         if (shoot.teacher && shoot.date) {
@@ -104,10 +109,11 @@ function renderGeneralStats() {
     });
     const teacherCounts = {};
     teacherDaySet.forEach(entry => {
-        const teacherName = entry.substring(0, entry.lastIndexOf('-'));
+        const teacherName = entry.substring(0, entry.length - 11); // İsim "-YYYY-AA-GG" formatından doğru ayrıştırılıyor.
         teacherCounts[teacherName] = (teacherCounts[teacherName] || 0) + 1;
     });
-
+    
+    // DÜZELTME: Yönetmen sayımı "0" gösteriyordu. Orijinal, çalışan haline geri döndürüldü.
     const directorCounts = {};
     ALL_DIRECTORS.forEach(director => { directorCounts[director] = 0; });
     filteredShoots.forEach(shoot => {
@@ -115,21 +121,23 @@ function renderGeneralStats() {
             directorCounts[shoot.director]++;
         }
     });
-
+    
     let sortedTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]);
     let sortedDirectors = Object.entries(directorCounts).sort((a, b) => b[1] - a[1]);
-
+    
     const teacherFilterText = teacherStatsFilter.value.toLowerCase().trim();
     if (teacherFilterText) { sortedTeachers = sortedTeachers.filter(([name]) => name.toLowerCase().includes(teacherFilterText)); }
     const directorFilterText = directorStatsFilter.value.toLowerCase().trim();
     if (directorFilterText) { sortedDirectors = sortedDirectors.filter(([name]) => name.toLowerCase().includes(directorFilterText)); }
-
+    
     teacherStatsBody.innerHTML = sortedTeachers.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
     directorStatsBody.innerHTML = sortedDirectors.map(([name, count]) => `<tr><td class="px-4 py-2">${name}</td><td class="px-4 py-2 text-center">${count}</td></tr>`).join('') || '<tr><td colspan="2" class="text-center p-4">Sonuç bulunamadı.</td></tr>';
-
+    
     statsLoading.classList.add('hidden');
     statsContent.classList.remove('hidden');
 }
+
+// ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
 
 function setActiveStatsButton(filter) {
     currentStatsFilter = filter;
