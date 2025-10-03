@@ -8,6 +8,7 @@ const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sess
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 const db = supabaseClient;
 
+// --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
 const statsLoading = document.getElementById('stats-loading');
 const statsContent = document.getElementById('stats-content');
@@ -34,6 +35,7 @@ const statsPrevPeriodBtn = document.getElementById('stats-prev-period');
 const statsNextPeriodBtn = document.getElementById('stats-next-period');
 const statsPeriodDisplay = document.getElementById('stats-period-display');
 
+// --- Global Değişkenler ---
 let allShootsData = [];
 let filteredReportData = [];
 let reportCurrentPage = 1;
@@ -41,13 +43,14 @@ const REPORT_ROWS_PER_PAGE = 10;
 let currentTimesheetDate = new Date();
 let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
-const WEEKLY_NORMAL_HOURS_LIMIT = 45;
+const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
 const START_DATE_LIMIT = '2025-09-15';
 
 let studioChartInstance;
 let personnelChartInstance;
 
+// --- Yardımcı Fonksiyonlar ---
 const getWeekRange = (date = new Date()) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -205,7 +208,7 @@ function setActiveStatsButton(filter) {
     if(filterButtons[filter]) filterButtons[filter].classList.add('active');
     
     if (filter === 'week' || filter === 'month') {
-        statsPeriodNavigator.classList.remove('hidden'); // Düzeltme: Navigasyon tekrar görünür yapıldı
+        statsPeriodNavigator.classList.remove('hidden');
         statsPeriodNavigator.classList.add('flex');
         currentStatsDate = new Date();
     } else {
