@@ -1,22 +1,8 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// --- DÜZELTME BURADA ---
-// Supabase client'ını, kullanıcının oturumunu (session) doğru bulabilmesi için
-// hem localStorage hem de sessionStorage'a bakacak şekilde yapılandırıyoruz.
-const authStorageAdapter = { 
-    getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-    setItem: (key, value) => { 
-        // Bu dosya sadece okuma yaptığı için setItem ve removeItem'ın içi boş kalabilir
-        // ama Supabase'in beklemesi nedeniyle tanımlı olmaları gerekir.
-        try { localStorage.setItem(key, value); } catch (e) {}
-    },
-    removeItem: (key) => { 
-        localStorage.removeItem(key); 
-        sessionStorage.removeItem(key);
-    }
-};
-
-const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey, { 
+// İsim çakışmasını önlemek için Supabase client'ını farklı bir isimle oluşturuyoruz.
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { 
     auth: { storage: authStorageAdapter } 
 });
 
@@ -29,12 +15,12 @@ async function fetchNotifications() {
         return;
     }
 
-    // Aktif kullanıcıyı al (Artık doğru şekilde bulacak)
-    const { data: { user } } = await supabase.auth.getUser();
+    // Aktif kullanıcıyı al
+    const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) return;
 
     // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
-    const { data: notifications, error } = await supabase
+    const { data: notifications, error } = await supabaseClient
         .from('notifications')
         .select('*')
         .eq('employee_id', user.id)
