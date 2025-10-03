@@ -1,14 +1,13 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
 // =================================================================================
-// BÖLÜM 1: TEMEL KURULUM VE DEĞİŞKENLER
+// BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
-// --- Supabase Bağlantısı ---
-// Tüm işlemler için tek ve doğru yapılandırılmış bir client kullanalım
+// --- Yetkilendirme ve Supabase Bağlantısı ---
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
-const db = supabaseClient; // db değişkeni de bu client'ı kullansın
+const db = supabaseClient;
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
@@ -73,12 +72,11 @@ const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1
 
 
 // =================================================================================
-// BÖLÜM 2: YENİ GRAFİK OLUŞTURMA FONKSİYONLARI
+// BÖLÜM 2: YENİ GRAFİK OLUŞTURMA FONKSİYONU
 // =================================================================================
-
 function renderCharts(filteredShoots) {
-    // --- GRAFİK 1: STÜDYO DOLULUK (ÇİZGİ GRAFİĞİ) ---
-    const studioData = {}; // Örn: { "Stüdyo 1": 1200, "Stüdyo 2": 950 } (toplam dakika)
+    // --- GRAFİK 1: STÜDYO DOLULUK (BAR GRAFİĞİ) ---
+    const studioData = {}; 
     filteredShoots.forEach(shoot => {
         if (shoot.studio && shoot.start_time && shoot.end_time) {
             const duration = HHMMToMinutes(shoot.end_time) - HHMMToMinutes(shoot.start_time);
@@ -90,14 +88,14 @@ function renderCharts(filteredShoots) {
 
     const sortedStudios = Object.entries(studioData).sort(([, a], [, b]) => b - a);
     const studioLabels = sortedStudios.map(([name]) => name);
-    const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1)); // Dakikayı saate çevir
+    const studioHoursData = sortedStudios.map(([, minutes]) => (minutes / 60).toFixed(1));
 
     const studioCtx = document.getElementById('studioOccupancyChart').getContext('2d');
     if (studioChartInstance) {
-        studioChartInstance.destroy(); // Önceki grafiği temizle
+        studioChartInstance.destroy();
     }
     studioChartInstance = new Chart(studioCtx, {
-        type: 'bar', // Çizgi yerine bar daha okunaklı olabilir
+        type: 'bar',
         data: {
             labels: studioLabels,
             datasets: [{
@@ -112,17 +110,16 @@ function renderCharts(filteredShoots) {
             scales: {
                 y: { 
                     beginAtZero: true,
-                    ticks: {
-                        callback: function(value) { return value + ' sa'; }
-                    }
+                    ticks: { callback: function(value) { return value + ' sa'; } }
                 }
-            }
+            },
+            plugins: { legend: { display: false } }
         }
     });
     
     // --- GRAFİK 2: PERSONEL PERFORMANSI (YATAY BAR GRAFİĞİ) ---
     const personnelCounts = {};
-    const personnelDayCounter = new Set(); // Bir personelin bir günde birden fazla çekimini tek saymak için
+    const personnelDayCounter = new Set();
     filteredShoots.forEach(shoot => {
         if (shoot.teacher && shoot.date) personnelDayCounter.add(`${shoot.teacher}-${shoot.date}`);
         if (shoot.director && shoot.date) personnelDayCounter.add(`${shoot.director}-${shoot.date}`);
@@ -134,14 +131,14 @@ function renderCharts(filteredShoots) {
 
     const sortedPersonnel = Object.entries(personnelCounts)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 10); // En çok çekim yapan 10 kişiyi göster
+        .slice(0, 10);
 
     const personnelLabels = sortedPersonnel.map(([name]) => name);
     const personnelData = sortedPersonnel.map(([, count]) => count);
 
     const personnelCtx = document.getElementById('personnelPerformanceChart').getContext('2d');
     if (personnelChartInstance) {
-        personnelChartInstance.destroy(); // Önceki grafiği temizle
+        personnelChartInstance.destroy();
     }
     personnelChartInstance = new Chart(personnelCtx, {
         type: 'bar',
@@ -156,27 +153,20 @@ function renderCharts(filteredShoots) {
             }]
         },
         options: {
-            indexAxis: 'y', // Grafiği yatay yap
+            indexAxis: 'y',
             scales: {
                 x: { 
                     beginAtZero: true,
-                    ticks: {
-                        stepSize: 1 // Gün sayısı tam sayı olmalı
-                    }
+                    ticks: { stepSize: 1 }
                 }
             },
-            plugins: {
-                legend: {
-                    display: false // Tek dataset olduğu için legend'ı gizleyebiliriz
-                }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 }
 
-
 // =================================================================================
-// BÖLÜM 3: MEVCUT FONKSİYONLAR
+// BÖLÜM 3: MEVCUT FONKSİYONLARIN DOĞRU HALLERİ
 // =================================================================================
 
 function renderGeneralStats() {
@@ -202,7 +192,7 @@ function renderGeneralStats() {
         statsPeriodDisplay.textContent = currentStatsDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
         statsSubtitle.textContent = isCurrentMonth ? 'Bu ayın verileri (bugüne kadar) gösterilmektedir.' : 'Seçilen ayın verileri gösterilmektedir.';
     } else {
-        filteredShoots = allShootsData; // Tüm zamanlar seçildiğinde tüm veriyi kullan
+        filteredShoots = allShootsData;
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
     
@@ -275,8 +265,8 @@ function setupCollapsibleSections() {
     if(timesheetHeader) timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon));
 }
 
-function renderTeacherReport() { if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
-function renderPaginationControls() { reportPaginationContainer.innerHTML = ''; reportTotalCount.textContent = `Toplam ${filteredReportData.length} kayıt bulundu.`; const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (pageCount <= 1) return; let paginationHTML = ''; paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage - 1})" ${reportCurrentPage === 1 ? 'disabled' : ''}>&laquo;</button>`; for (let i = 1; i <= pageCount; i++) { paginationHTML += `<button class="pagination-btn ${i === reportCurrentPage ? 'active' : ''}" onclick="changeReportPage(${i})">${i}</button>`; } paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage + 1})" ${reportCurrentPage === pageCount ? 'disabled' : ''}>&raquo;</button>`; reportPaginationContainer.innerHTML = paginationHTML; }
+function renderTeacherReport() { if (!teacherReportContainer) return; if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
+function renderPaginationControls() { if (!reportPaginationContainer) return; reportPaginationContainer.innerHTML = ''; reportTotalCount.textContent = `Toplam ${filteredReportData.length} kayıt bulundu.`; const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (pageCount <= 1) return; let paginationHTML = ''; paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage - 1})" ${reportCurrentPage === 1 ? 'disabled' : ''}>&laquo;</button>`; for (let i = 1; i <= pageCount; i++) { paginationHTML += `<button class="pagination-btn ${i === reportCurrentPage ? 'active' : ''}" onclick="changeReportPage(${i})">${i}</button>`; } paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage + 1})" ${reportCurrentPage === pageCount ? 'disabled' : ''}>&raquo;</button>`; reportPaginationContainer.innerHTML = paginationHTML; }
 window.changeReportPage = (page) => { const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (page < 1 || page > pageCount) return; reportCurrentPage = page; renderTeacherReport(); };
 function applyReportFilters() { let filtered = [...allShootsData]; if (reportTeacherSelect.value) filtered = filtered.filter(s => s.teacher === reportTeacherSelect.value); if (reportFilterDate.value) filtered = filtered.filter(s => s.date === reportFilterDate.value); if (reportFilterDirector.value) filtered = filtered.filter(s => s.director === reportFilterDirector.value); if (reportGlobalSearch.value) { const searchText = reportGlobalSearch.value.toLowerCase(); filtered = filtered.filter(s => (s.teacher && s.teacher.toLowerCase().includes(searchText)) || (s.shoot_code && s.shoot_code.toLowerCase().includes(searchText)) || (s.content && s.content.toLowerCase().includes(searchText)) || (s.director && s.director.toLowerCase().includes(searchText))); } filteredReportData = filtered.sort((a, b) => new Date(b.date + 'T00:00:00') - new Date(a.date + 'T00:00:00')); reportCurrentPage = 1; renderTeacherReport(); }
 async function populateReportDropdowns() { const { data: teachers } = await db.from('teachers').select('name').order('name'); if (teachers) { reportTeacherSelect.innerHTML = '<option value="">Tümü</option>' + teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join(''); } const directors = [...new Set(allShootsData.map(s => s.director).filter(Boolean))].sort(); reportFilterDirector.innerHTML = '<option value="">Tümü</option>' + directors.map(d => `<option value="${d}">${d}</option>`).join(''); }
@@ -375,14 +365,20 @@ async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheet
 async function initializePage() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return; }
+    
     const { data, error } = await db.from('shoots').select('*');
-    if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; }
+    if (error) { 
+        teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; 
+        return; 
+    }
+    
     allShootsData = data;
     setActiveStatsButton('month'); 
     await populateReportDropdowns();
     applyReportFilters();
     await renderTimesheet();
     setupCollapsibleSections();
+
     Object.keys(filterButtons).forEach(key => {
         filterButtons[key].addEventListener('click', () => setActiveStatsButton(key));
     });
@@ -398,12 +394,14 @@ async function initializePage() {
     });
     teacherStatsFilter.addEventListener('input', renderGeneralStats);
     directorStatsFilter.addEventListener('input', renderGeneralStats);
-    [reportTeacherSelect, reportFilterDate, reportFilterDirector].forEach(el => { el.addEventListener('change', applyReportFilters); });
-    reportGlobalSearch.addEventListener('input', applyReportFilters);
-    prevWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() - 7); renderTimesheet(); });
-    nextWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() + 7); renderTimesheet(); });
-    saveTimesheetBtn.addEventListener('click', saveTimesheet);
-    timesheetContainer.addEventListener('input', (e) => { 
+    [reportTeacherSelect, reportFilterDate, reportFilterDirector].forEach(el => { 
+        if(el) el.addEventListener('change', applyReportFilters); 
+    });
+    if(reportGlobalSearch) reportGlobalSearch.addEventListener('input', applyReportFilters);
+    if(prevWeekTimesheetBtn) prevWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() - 7); renderTimesheet(); });
+    if(nextWeekTimesheetBtn) nextWeekTimesheetBtn.addEventListener('click', () => { currentTimesheetDate.setDate(currentTimesheetDate.getDate() + 7); renderTimesheet(); });
+    if(saveTimesheetBtn) saveTimesheetBtn.addEventListener('click', saveTimesheet);
+    if(timesheetContainer) timesheetContainer.addEventListener('input', (e) => { 
         if (e.target.matches('input[type="time"]')) { 
             calculateAllTotals(); 
             const parentDiv = e.target.parentElement;
