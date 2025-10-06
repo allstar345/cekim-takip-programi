@@ -7,7 +7,7 @@ const supabaseAdminClient = supabase.createClient(supabaseUrl, supabaseAnonKey, 
 const loadingDiv = document.getElementById('loading-users');
 const tableContainer = document.getElementById('user-table-container');
 const userListBody = document.getElementById('user-list-body');
-const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'admin'];
+const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'admin', 'view_hata_bildirim'];
 
 async function checkAdminPermission() {
     const { data: { user } } = await supabaseAdminClient.auth.getUser();
