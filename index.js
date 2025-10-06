@@ -286,7 +286,7 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
         const onLeaveIsSet = onLeaveForDay.length > 0;
         
         const dayContainer = document.createElement('div');
-        dayContainer.className = 'border p-2 rounded-lg bg-white'; // Arka plan eklendi
+        dayContainer.className = 'border p-2 rounded-lg';
         
         let badgesHTML = onLeaveIsSet
             ? onLeaveForDay.map(member => `<span class="inline-block bg-gray-200 text-gray-800 text-xs font-medium mr-1 mb-1 px-2 py-0.5 rounded-full">${member}</span>`).join('')
@@ -301,9 +301,6 @@ function renderDailyLeavesPlanner(dailyLeavesMap) {
     });
 }
 
-// ###############################################################
-// ##### GÖRSEL GÜNCELLEME BU FONKSİYONDA YAPILDI #####
-// ###############################################################
 function createTimetableHtml(shoots, dailyTeamsMap) {
     const gridData = {};
     const weekKey = sortedWeeks[currentPage];
@@ -337,10 +334,10 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
 
         const teamDisplayHTML = `
             <div class="p-1 text-xs">
-                <div class="text-blue-600 font-semibold min-h-[1.5rem] ${teamIsSet ? '' : 'hidden'}">
+                <div class="text-blue-600 font-normal min-h-[1.5rem] ${teamIsSet ? '' : 'hidden'}">
                     ${teamForDay.join(', ')}
                 </div>
-                <button data-day="${day}" class="daily-team-edit-btn text-indigo-600 hover:underline mt-1 font-medium">
+                <button data-day="${day}" class="daily-team-edit-btn text-indigo-600 hover:underline mt-1">
                     ${teamIsSet ? 'Ekibi Düzenle' : 'Ekip Ata'}
                 </button>
             </div>
@@ -358,41 +355,30 @@ function createTimetableHtml(shoots, dailyTeamsMap) {
                     timeDisplay = shoot.time;
                 }
 
-                // Kameramanları birleştirme mantığı
-                const cameramen = [shoot.kameraman_1, shoot.kameraman_2].filter(Boolean);
-                const cameramanDisplayHtml = cameramen.join(' / ');
+                let cameramanDisplayHtml = '';
+                if (shoot.kameraman_1 || shoot.kameraman_2) {
+                    cameramanDisplayHtml = `<p class="text-gray-500 text-xs">K: ${shoot.kameraman_1 || '-'} / ${shoot.kameraman_2 || '-'}</p>`;
+                }
 
-                // YENİ, MODERN KART TASARIMI
                 return `
-                <div class="shoot-entry space-y-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md hover:border-blue-400 transition-all duration-200">
-                    <div>
-                        <p class="font-semibold text-gray-900">${shoot.teacher || 'Öğretmen Belirtilmemiş'}</p>
-                        <p class="text-sm text-blue-600 font-medium">${timeDisplay}</p>
-                    </div>
-                    
-                    <p class="text-sm text-gray-600">${shoot.content || '-'}</p>
-                    
-                    <div class="border-t border-gray-200 pt-2 text-xs text-gray-500 space-y-1">
-                        <p><span class="font-medium">Yönetmen:</span> ${shoot.director || '-'}</p>
-                        ${cameramanDisplayHtml ? `<p><span class="font-medium">Kameraman:</span> ${cameramanDisplayHtml}</p>` : ''}
-                    </div>
-
-                    <div class="flex items-center justify-end space-x-2 pt-1">
-                        <button data-id="${shoot.id}" class="edit-btn p-1.5 rounded-md text-gray-500 bg-gray-100 hover:bg-blue-100 hover:text-blue-600 transition-colors">
-                            <svg class="w-4 h-4 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                        </button>
-                        <button data-id="${shoot.id}" class="delete-btn p-1.5 rounded-md text-gray-500 bg-gray-100 hover:bg-red-100 hover:text-red-600 transition-colors">
-                            <svg class="w-4 h-4 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09.921-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-                        </button>
+                <div class="shoot-entry text-left">
+                    <p class="font-semibold text-gray-800">${shoot.teacher || ''}</p>
+                    <p class="text-gray-600">${timeDisplay}</p>
+                    <p class="text-gray-500 text-xs">${shoot.content || ''}</p>
+                    <p class="text-gray-500 text-xs italic mt-1">Y: ${shoot.director || '-'}</p>
+                    ${cameramanDisplayHtml}
+                    <div class="flex items-center justify-end space-x-1 mt-2">
+                         <button data-id="${shoot.id}" class="edit-btn text-xs text-indigo-600 hover:text-indigo-900 p-1 rounded-md bg-indigo-50 hover:bg-indigo-100">D</button>
+                         <button data-id="${shoot.id}" class="delete-btn text-xs text-red-600 hover:text-red-900 p-1 rounded-md bg-red-50 hover:bg-red-100">S</button>
                     </div>
                 </div>
                 `;
             }).join('');
             
-            return `<td class="timetable-cell align-top">${cellContent}</td>`;
+            return `<td class="timetable-cell">${cellContent}</td>`;
         }).join('');
         
-        return `<tr class="${dayColorClass}"><td class="day-header align-top"><div>${day}</div>${teamDisplayHTML}</td>${cellsHtml}</tr>`;
+        return `<tr class="${dayColorClass} hover:brightness-95 transition-all duration-200"><td class="day-header"><div>${day}</div>${teamDisplayHTML}</td>${cellsHtml}</tr>`;
     }).join('');
 
     return `
@@ -420,14 +406,10 @@ function updateNavControls() {
     if (currentWeekKey) {
         const [year, weekNo] = currentWeekKey.split('-').map(Number);
         const range = getWeekDateRange(year, weekNo);
-        displayStr = `${range.start.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long'})} - ${range.end.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'})}`;
+        displayStr = `Gösterilen Hafta: ${range.start.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long'})} - ${range.end.toLocaleDateString('tr-TR', {day: 'numeric', month: 'long', year: 'numeric'})}`;
     }
     weekRangeDisplay.textContent = displayStr;
 }
-// Diğer fonksiyonlar (populateFormForEdit, resetFormState, event listener'lar, vs.) AYNEN KALDI
-// ...
-// ... Sadece createTimetableHtml fonksiyonu güncellendiği için kodun geri kalanı
-// ... senin çalışan versiyonunla birebir aynıdır. Aşağıya ekliyorum.
 
 function populateFormForEdit(shoot) {
     const elements = form.elements;
@@ -496,13 +478,7 @@ nextBtn.addEventListener('click', () => {
 });
 
 document.querySelector('main').addEventListener('click', async (e) => {
-    let target = e.target;
-    // Eğer tıklanan element SVG ise, asıl hedefimiz olan butonu bulalım
-    if (target.tagName.toLowerCase() === 'svg') {
-        target = target.closest('button');
-    }
-    if (!target) return;
-
+    const target = e.target;
     const weekKey = sortedWeeks[currentPage];
 
     if (!weekKey) return;
@@ -588,7 +564,7 @@ document.querySelector('main').addEventListener('click', async (e) => {
         }
     }
 
-    const buttonInTable = target.closest('.shoot-entry button');
+    const buttonInTable = e.target.closest('.shoot-entry button');
     if (buttonInTable) {
         if (buttonInTable.classList.contains('delete-btn')) {
             const id = buttonInTable.getAttribute('data-id');
