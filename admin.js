@@ -8,7 +8,7 @@ const tableContainer = document.getElementById('user-table-container');
 const userListBody = document.getElementById('user-list-body');
 
 // DEĞİŞİKLİK BURADA: Yeni yetki adı eklendi
-const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'admin'];
+const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'view_stats', 'admin'];
 
 async function checkAdminPermission() {
     const { data: { user } } = await supabaseAdminClient.auth.getUser();
