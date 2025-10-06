@@ -1,13 +1,14 @@
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// İsim çakışmasını önlemek için Supabase client'ını farklı bir isimle oluşturuyoruz.
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseAdminClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 const loadingDiv = document.getElementById('loading-users');
 const tableContainer = document.getElementById('user-table-container');
 const userListBody = document.getElementById('user-list-body');
-const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'admin'];
+
+// DEĞİŞİKLİK BURADA: Yeni yetki adı eklendi
+const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'admin'];
 
 async function checkAdminPermission() {
     const { data: { user } } = await supabaseAdminClient.auth.getUser();
