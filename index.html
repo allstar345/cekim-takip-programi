@@ -14,15 +14,14 @@
         #form-wrapper { max-height: 1200px; overflow: hidden; transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; }
         #form-wrapper.collapsed { max-height: 0; padding-top: 0 !important; padding-bottom: 0 !important; }
         
-        /* YENİ TABLO STİLLERİ */
+        /* GÜNCELLENMİŞ TABLO STİLLERİ */
         .timetable { border-collapse: separate; width: 100%; border-spacing: 0; }
         .timetable th, .timetable td { border: 1px solid #e5e7eb; vertical-align: top; }
         .timetable th { padding: 12px 8px; background-color: #f9fafb; text-align: center; font-weight: 600; }
         .timetable .day-header { padding: 8px; font-weight: 600; text-align: center; min-width: 140px; }
         .timetable .timetable-cell { padding: 8px; } /* Hücre içi boşluk */
-        
-        /* Her bir çekim kartının stilini kaldırıyoruz, çünkü yeni tasarımda her çekim kendi kartı olacak */
-        .timetable .shoot-entry { /* Bu alan JS tarafında güncelleneceği için buradaki stiller artık gereksiz */ }
+        .timetable .timetable-cell > div:not(:last-child) { margin-bottom: 8px; } /* Hücre içindeki kartlar arasına boşluk */
+
     </style>
 </head>
 <body class="bg-gray-50">
@@ -74,16 +73,16 @@
                     </svg>
                 </button>
             </div>
-            <div id="form-wrapper" class="px-6 pb-8">
-                <form id="shoot-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <div id="form-wrapper" class="px-6 md:px-8 pb-8">
+                <form id="shoot-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 items-end">
                     </form>
             </div>
         </div>
         
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
-                </div>
-            <div class="flex justify-between items-center mt-4">
+        <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6">
+             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                 </div>
+             <div class="flex justify-between items-center mt-4">
                  <span id="record-count" class="text-sm font-medium text-gray-600">Toplam 0 kayıt bulundu.</span>
                  <button id="download-pdf-btn" class="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 ease-in-out disabled:opacity-50">
                     <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
@@ -93,7 +92,7 @@
         </div>
 
         <div id="navigation-controls" class="flex flex-wrap justify-between items-center bg-white p-4 rounded-2xl shadow-lg hidden">
-             <button id="prev-week-btn" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base">
+            <button id="prev-week-btn" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base">
                 &larr; Önceki Hafta
             </button>
             <div id="week-range-display" class="text-center text-lg font-semibold text-gray-700 w-full order-first sm:order-none sm:w-auto mb-2 sm:mb-0"></div>
@@ -102,23 +101,22 @@
             </button>
         </div>
         
-        <div id="daily-leaves-container" class="bg-white rounded-2xl shadow-lg p-6 hidden">
+        <div id="daily-leaves-container" class="bg-white rounded-2xl shadow-lg p-6 md:p-8 hidden">
              <h2 class="text-xl font-bold text-gray-900 mb-4">Günlük İzinli Planlaması</h2>
              <div id="daily-leaves-planner" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
              </div>
         </div>
 
-        <div id="loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
+        <div id="weekly-view-container" class="space-y-8"></div>
+         <div id="loading" class="text-center p-8 bg-white rounded-2xl shadow-lg">
              <p class="text-gray-500">Veriler yükleniyor...</p>
-        </div>
-        <div id="no-data" class="text-center p-8 bg-white rounded-2xl shadow-lg hidden">
+         </div>
+         <div id="no-data" class="text-center p-8 bg-white rounded-2xl shadow-lg hidden">
              <p class="text-gray-500">Gösterilecek çekim planı bulunmamaktadır.</p>
-        </div>
-        
-        <div id="weekly-view-container"></div>
+         </div>
     </main>
     
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js" type="module" defer></script>
     <script src="notifications.js" type="module" defer></script>
     <script src="index.js" type="module" defer></script>
