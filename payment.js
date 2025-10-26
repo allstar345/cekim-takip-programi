@@ -1,3 +1,4 @@
+import { db } from './config.js';
 
 // --- Sayfa İşlevselliği ---
 const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
