@@ -19,6 +19,7 @@ async function checkAuthAndApplyPermissions() {
     const monitoringLink = document.getElementById('monitoring-link');
     const paymentLink = document.getElementById('payment-link');
     const hataBildirimLink = document.getElementById('hata-bildirim-link'); // Yeni link
+    const statsPageLink   = document.getElementById('stats-page-link');
 
     function deactivateLink(link) {
         if (link) {
@@ -47,6 +48,9 @@ async function checkAuthAndApplyPermissions() {
     if (!permissions.includes('view_hata_bildirim')) {
         deactivateLink(hataBildirimLink);
     }
+    if (!permissions.includes('view_stats')) {
+    deactivateLink(statsPageLink);
+}
 }
 
 document.addEventListener('DOMContentLoaded', checkAuthAndApplyPermissions);
