@@ -51,31 +51,22 @@ async function fetchNotifications() {
     }
 }
 
-// Bu fonksiyon, bildirim menüsünün açma/kapama işlevselliğini yönetir.
+// notifications.js (oturumsuz)
 function setupNotificationInteraction() {
-    const notificationBell = document.getElementById('notification-bell');
-    const notificationDropdown = document.getElementById('notification-dropdown');
+  const bell = document.getElementById('notification-bell');
+  const dropdown = document.getElementById('notification-dropdown');
+  const dot = document.getElementById('notification-dot');
+  const list = document.getElementById('notification-list');
 
-    if (!notificationBell || !notificationDropdown) return;
+  if (!bell || !dropdown) return;
+  if (dot) dot.classList.add('hidden');
+  if (list) list.innerHTML = '<p class="text-gray-500 text-sm text-center p-4">Bildirim özelliği devre dışı.</p>';
 
-    notificationBell.addEventListener('click', (e) => {
-        e.stopPropagation();
-        notificationDropdown.classList.toggle('hidden');
-    });
-
-    notificationDropdown.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    document.addEventListener('click', () => {
-        if (!notificationDropdown.classList.contains('hidden')) {
-            notificationDropdown.classList.add('hidden');
-        }
-    });
+  bell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => dropdown.classList.add('hidden'));
 }
-
-// Sayfa tamamen yüklendiğinde bu fonksiyonları çalıştır
-document.addEventListener('DOMContentLoaded', () => {
-    setupNotificationInteraction();
-    fetchNotifications();
+document.addEventListener('DOMContentLoaded', setupNotificationInteraction);
 });
