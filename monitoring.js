@@ -1,4 +1,6 @@
-
+import { supabaseUrl, supabaseAnonKey } from './config.js';
+const { createClient } = supabase;
+const db = createClient(supabaseUrl, supabaseAnonKey);
 // --- Sayfa İşlevselliği ---
 const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
 const form = document.getElementById('monitoring-form');
