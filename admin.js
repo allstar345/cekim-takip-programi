@@ -11,8 +11,8 @@ const userListBody = document.getElementById('user-list-body');
 const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'view_stats', 'admin'];
 
 async function checkAdminPermission() {
-    console.log("Admin kontrolü kaldırıldı - herkes erişebilir.");
-    return true;
+  // Artık admin kontrolü yok; sayfa herkese açık.
+  return true;
 }
 
 async function fetchUsers() {
