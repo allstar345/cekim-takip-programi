@@ -4,23 +4,7 @@ import { supabaseUrl, supabaseAnonKey } from './config.js';
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
 const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
-async function checkAuthAndPermissions() {
-    const { data: { session } } = await supabaseAuth.auth.getSession();
-    if (!session) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    const { data: { user } } = await supabaseAuth.auth.getUser();
-    const permissions = user?.user_metadata?.permissions || [];
-
-    if (!permissions.includes('admin') && !permissions.includes('view_cekim')) {
-        alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
-        window.location.href = 'dashboard.html';
-    }
-}
-checkAuthAndPermissions();
-
+console.log("Yetki kontrolü kaldırıldı - herkes erişebilir.");
 
 // --- Sayfa İşlevselliği ---
 const mainStorageAdapter = {
@@ -762,19 +746,8 @@ downloadPdfBtn.addEventListener('click', () => {
     });
 });
 
-logoutBtn.addEventListener('click', async () => {
-    const mainStorageAdapter = {
-        getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-        setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); },
-        removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-    };
-    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { storage: mainStorageAdapter }
-    });
-    await supabase_logout.auth.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = 'login.html';
+logoutBtn?.addEventListener('click', () => {
+    window.location.reload();
 });
 
 async function fetchInitialData() {
@@ -808,7 +781,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabaseAuth.auth.getUser();
     const permissions = user?.user_metadata?.permissions || [];
     
-    if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
+    if (!'admin') && !'view_stats')) {
         const statsLink = document.getElementById('stats-link');
         if (statsLink) {
             statsLink.removeAttribute('href');
