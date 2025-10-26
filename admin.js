@@ -11,18 +11,12 @@ const userListBody = document.getElementById('user-list-body');
 const ALL_PERMISSIONS = ['view_cekim', 'view_izleme', 'view_odeme', 'view_hata_bildirim', 'view_stats', 'admin'];
 
 async function checkAdminPermission() {
-    const { data: { user } } = await supabaseAdminClient.auth.getUser();
-    if (!user || !user.user_metadata?.permissions?.includes('admin')) {
-        alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
-        window.location.href = 'dashboard.html';
-        return false;
-    }
+    console.log("Admin kontrolü kaldırıldı - herkes erişebilir.");
     return true;
 }
 
 async function fetchUsers() {
-    const isAdmin = await checkAdminPermission();
-    if (!isAdmin) return;
+
 
     loadingDiv.style.display = 'block';
     tableContainer.style.display = 'none';
