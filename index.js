@@ -778,17 +778,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateStaticDropdowns();
     await fetchInitialData();
     
-    const { data: { user } } = await supabaseAuth.auth.getUser();
-    const permissions = user?.user_metadata?.permissions || [];
-    
-    if (!'admin') && !'view_stats')) {
-        const statsLink = document.getElementById('stats-link');
-        if (statsLink) {
-            statsLink.removeAttribute('href');
-            statsLink.classList.add('opacity-50', 'cursor-not-allowed');
-            statsLink.addEventListener('click', e => {
-                e.preventDefault();
-            });
-        }
-    }
 });
