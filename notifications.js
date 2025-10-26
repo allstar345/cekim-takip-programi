@@ -1,72 +1,90 @@
+// notifications.js (temiz sürüm)
 import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// İsim çakışmasını önlemek için Supabase client'ını farklı bir isimle oluşturuyoruz.
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { 
-    auth: { storage: authStorageAdapter } 
-});
+const { createClient } = supabase;
+const db = createClient(supabaseUrl, supabaseAnonKey);
 
-// Bu fonksiyon, bildirimleri sunucudan çeker ve arayüzü günceller.
-async function fetchNotifications() {
-    const notificationList = document.getElementById('notification-list');
-    const notificationDot = document.getElementById('notification-dot');
+// UI elemanları
+const bell = document.getElementById('notification-bell');
+const dot = document.getElementById('notification-dot');
+const dropdown = document.getElementById('notification-dropdown');
+const list = document.getElementById('notification-list');
 
-    if (!notificationList || !notificationDot) {
-        return;
-    }
+let isOpen = false;
 
-    // Aktif kullanıcıyı al
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+// Bildirimleri çek
+async function loadNotifications() {
+  if (!list) return;
 
-    // Kullanıcıya ait okunmamış bildirimleri veritabanından çek
-    const { data: notifications, error } = await supabaseClient
-        .from('notifications')
-        .select('*')
-        .eq('employee_id', user.id)
-        .eq('is_read', false)
-        .order('created_at', { ascending: false });
+  // örnek şema: notifications(id, message, created_at, read)
+  const { data, error } = await db
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(20);
 
-    if (error) {
-        console.error('Bildirimler alınamadı:', error);
-        notificationList.innerHTML = '<p class="text-red-500 text-sm text-center p-4">Bildirimler yüklenemedi.</p>';
-        return;
-    }
+  if (error) {
+    console.error('Bildirimler alınamadı:', error);
+    list.innerHTML = `<p class="text-red-500 p-4 text-sm">Bildirimler alınamadı.</p>`;
+    dot?.classList.add('hidden');
+    return;
+  }
 
-    notificationList.innerHTML = ''; 
+  const unreadCount = (data || []).filter(n => !n.read).length;
+  if (unreadCount > 0) dot?.classList.remove('hidden'); else dot?.classList.add('hidden');
 
-    if (notifications && notifications.length > 0) {
-        notificationDot.classList.remove('hidden'); 
+  if (!data || data.length === 0) {
+    list.innerHTML = `<p class="text-gray-500 text-sm text-center p-4">Yeni bildirim yok.</p>`;
+    return;
+  }
 
-        notifications.forEach(notif => {
-            const notifElement = document.createElement('a');
-            notifElement.href = notif.link_url || '#';
-            notifElement.className = 'block py-3 px-4 text-sm text-gray-700 hover:bg-gray-100 transition-colors';
-            notifElement.textContent = notif.message;
-            notificationList.appendChild(notifElement);
-        });
-    } else {
-        notificationDot.classList.add('hidden');
-        notificationList.innerHTML = '<p class="text-gray-500 text-sm text-center p-4">Yeni bildirim yok.</p>';
-    }
-}
-
-// notifications.js (oturumsuz)
-function setupNotificationInteraction() {
-  const bell = document.getElementById('notification-bell');
-  const dropdown = document.getElementById('notification-dropdown');
-  const dot = document.getElementById('notification-dot');
-  const list = document.getElementById('notification-list');
-
-  if (!bell || !dropdown) return;
-  if (dot) dot.classList.add('hidden');
-  if (list) list.innerHTML = '<p class="text-gray-500 text-sm text-center p-4">Bildirim özelliği devre dışı.</p>';
-
-  bell.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.toggle('hidden');
+  list.innerHTML = '';
+  data.forEach(n => {
+    const item = document.createElement('div');
+    item.className = 'px-4 py-3 border-b hover:bg-gray-50';
+    item.innerHTML = `
+      <div class="text-sm text-gray-800">${n.message || '—'}</div>
+      <div class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleString('tr-TR')}</div>
+    `;
+    list.appendChild(item);
   });
-  document.addEventListener('click', () => dropdown.classList.add('hidden'));
 }
-document.addEventListener('DOMContentLoaded', setupNotificationInteraction);
+
+// Aç/Kapat
+function toggleDropdown(force) {
+  if (!dropdown) return;
+  isOpen = force ?? !isOpen;
+  if (isOpen) {
+    dropdown.classList.remove('hidden');
+    loadNotifications();
+  } else {
+    dropdown.classList.add('hidden');
+  }
+}
+
+// Dışarı tıklayınca kapat
+document.addEventListener('click', (e) => {
+  if (!dropdown || !bell) return;
+  if (dropdown.contains(e.target) || bell.contains(e.target)) return;
+  toggleDropdown(false);
 });
+
+// Zil tıklandı
+bell?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleDropdown();
+});
+
+// Realtime – bildirim tablosu değiştikçe listeyi güncelle
+try {
+  db.channel('public:notifications')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+      if (isOpen) loadNotifications(); else dot?.classList.remove('hidden');
+    })
+    .subscribe();
+} catch (err) {
+  console.warn('Realtime bildirimi açılamadı:', err);
+}
+
+// İlk yükleme
+loadNotifications();
