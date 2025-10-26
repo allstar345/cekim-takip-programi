@@ -1,4 +1,4 @@
-import { supabaseUrl, supabaseAnonKey } from './config.js';
+import { db } from './config.js';
 
 const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
 const supabaseAdminClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
