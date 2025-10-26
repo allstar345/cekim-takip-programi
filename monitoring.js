@@ -1,26 +1,3 @@
-import { supabaseUrl, supabaseAnonKey } from './config.js';
-
-// --- Yetki Kontrolü ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
-
-async function checkAuthAndPermissions() {
-    const { data: { session } } = await supabaseAuth.auth.getSession();
-    if (!session) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    const { data: { user } } = await supabaseAuth.auth.getUser();
-    const permissions = user?.user_metadata?.permissions || [];
-
-    if (!permissions.includes('admin') && !permissions.includes('view_izleme')) {
-        alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
-        window.location.href = 'dashboard.html';
-    }
-}
-checkAuthAndPermissions();
-
 
 // --- Sayfa İşlevselliği ---
 const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
