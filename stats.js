@@ -198,12 +198,24 @@ reportGlobalSearch?.addEventListener('input', applyReportFilters);
 }
 
 function setupCollapsibleSections() {
-    const reportHeader = document.getElementById('report-section-header');
-    const reportContent = document.getElementById('report-section-content');
-    const reportIcon = document.getElementById('report-toggle-icon');
-    const timesheetHeader = document.getElementById('timesheet-section-header');
-    const timesheetContent = document.getElementById('timesheet-section-content');
-    const timesheetIcon = document.getElementById('timesheet-toggle-icon');
+    const reportHeader   = document.getElementById('report-section-header');
+const reportContent  = document.getElementById('report-section-content');
+const reportIcon     = document.getElementById('report-toggle-icon');
+
+const timesheetHeader  = document.getElementById('timesheet-section-header');
+const timesheetContent = document.getElementById('timesheet-section-content');
+const timesheetIcon    = document.getElementById('timesheet-toggle-icon');
+  // === Akordeon toggle ===
+reportHeader?.addEventListener('click', () => {
+  reportContent.classList.toggle('hidden');
+  reportIcon.style.transform = reportContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+});
+
+timesheetHeader?.addEventListener('click', () => {
+  timesheetContent.classList.toggle('hidden');
+  timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+});
+
     const toggleSection = (content, icon) => {
         const isHidden = content.classList.toggle('hidden');
         icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
