@@ -123,7 +123,7 @@ async function markAllAsUnpaid() { const period = getPaymentPeriod(currentDate);
 async function handlePayment(teacherName, dueMinutes, dueAmount) { const period = getPaymentPeriod(currentDate); const { error } = await db.from('payment_records').insert([{ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: dueMinutes, paid_amount: dueAmount }]); if (error) { alert('Ödeme kaydedilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 async function handleCancelPayment(paymentId) { if (!confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) return; const { error } = await db.from('payment_records').delete().eq('id', paymentId); if (error) { alert('Ödeme iptal edilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 
-tableContainer.addEventListener('click', (e) => {
+tableContainer?.addEventListener('click', (e) => {
     if (e.target.classList.contains('cancel-payment-btn')) {
         const paymentId = e.target.dataset.paymentId;
         handleCancelPayment(paymentId);
@@ -155,21 +155,31 @@ tableContainer.addEventListener('click', (e) => {
     }
 });
 
-tableContainer.addEventListener('change', (e) => { if (e.target.classList.contains('payment-status-select') && e.target.value === 'paid') { const select = e.target; const { teacherName, dueMinutes, dueAmount } = select.dataset; select.disabled = true; handlePayment(teacherName, parseInt(dueMinutes), parseFloat(dueAmount)); } });
-markAllPaidBtn.addEventListener('click', async () => { const selects = document.querySelectorAll('.payment-status-select'); const paymentsToInsert = []; const period = getPaymentPeriod(currentDate); selects.forEach(select => { const { teacherName, dueMinutes, dueAmount } = select.dataset; paymentsToInsert.push({ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: parseInt(dueMinutes), paid_amount: parseFloat(dueAmount) }); }); if(paymentsToInsert.length === 0) { alert('Ödenecek kayıt bulunmamaktadır.'); return; } const { error } = await db.from('payment_records').insert(paymentsToInsert); if (error) { alert('Toplu ödeme kaydedilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } });
-
-prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); fetchAndRenderData(); });
-nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); fetchAndRenderData(); });
-downloadPdfBtn.addEventListener('click', downloadPaymentPDF);
-markAllUnpaidBtn.addEventListener('click', markAllAsUnpaid);
-
-logoutBtn.addEventListener('click', async () => {
-    const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
-    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: mainStorageAdapter } });
-    await supabase_logout.auth.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = 'login.html';
+tableContainer?.addEventListener('change', (e) => { if (e.target.classList.contains('payment-status-select') && e.target.value === 'paid') { const select = e.target; const { teacherName, dueMinutes, dueAmount } = select.dataset; select.disabled = true; handlePayment(teacherName, parseInt(dueMinutes), parseFloat(dueAmount)); } });
+markAllPaidBtn?.addEventListener('click', async () => { 
+  const selects = document.querySelectorAll('.payment-status-select');
+  const paymentsToInsert = [];
+  const period = getPaymentPeriod(currentDate);
+  selects.forEach(select => {
+    const { teacherName, dueMinutes, dueAmount } = select.dataset;
+    paymentsToInsert.push({
+      teacher_name: teacherName,
+      payment_period_start: period.start,
+      payment_period_end: period.end,
+      paid_duration_minutes: parseInt(dueMinutes),
+      paid_amount: parseFloat(dueAmount)
+    });
+  });
+  if (paymentsToInsert.length === 0) { alert('Ödenecek kayıt bulunmamaktadır.'); return; }
+  const { error } = await db.from('payment_records').insert(paymentsToInsert);
+  if (error) { alert('Toplu ödeme kaydedilirken bir hata oluştu!'); console.error(error); }
+  else { fetchAndRenderData(); }
 });
+
+prevMonthBtn?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); fetchAndRenderData(); });
+nextMonthBtn?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); fetchAndRenderData(); });
+downloadPdfBtn?.addEventListener('click', downloadPaymentPDF);
+markAllUnpaidBtn?.addEventListener('click', markAllAsUnpaid);
+
 
 document.addEventListener('DOMContentLoaded', fetchAndRenderData);
