@@ -1,5 +1,91 @@
 import { db } from './config.js';
-console.log("Yetki kontrolü kaldırıldı - herkes erişebilir.");
+// ==== PATCH1.A — DOM referansları (varsa tekrar tanımlamayın) ====
+const teacherSelect   = document.getElementById('teacher');
+const studioSelect    = document.getElementById('studio');
+const directorSelect  = document.getElementById('director');
+const cam1Select      = document.getElementById('kameraman_1');
+const cam2Select      = document.getElementById('kameraman_2');
+
+// ==== PATCH1.B — Yardımcılar ====
+function fillSelect(select, items, { withEmpty=true } = {}) {
+  if (!select) return;
+  select.innerHTML = '';
+  if (withEmpty) select.insertAdjacentHTML('beforeend', `<option value="">Seçiniz...</option>`);
+  items.forEach(x => select.insertAdjacentHTML('beforeend', `<option value="${x}">${x}</option>`));
+}
+
+function uniq(arr){ return Array.from(new Set(arr.filter(Boolean))); }
+
+// ==== PATCH1.C — Açılır listeleri yükle ====
+async function loadDropdownOptions() {
+  // 1) Öğretmenler (teachers tablosu)
+  let teacherNames = [];
+  const { data: tData, error: tErr } = await db.from('teachers').select('name');
+  if (!tErr && tData) teacherNames = uniq(tData.map(x => x.name));
+
+  // 2) Yönetmenler (shoots'tan distinct)
+  let directors = [];
+  const { data: dData } = await db.from('shoots').select('director');
+  if (dData) directors = uniq(dData.map(x => x.director));
+
+  // 3) Stüdyolar (shoots'tan distinct)
+  let studios = [];
+  const { data: sData } = await db.from('shoots').select('studio');
+  if (sData) studios = uniq(sData.map(x => x.studio));
+
+  // 4) Kameramanlar (shoots'tan kameraman_1/2)
+  let cams = [];
+  const { data: cData } = await db.from('shoots').select('kameraman_1, kameraman_2');
+  if (cData) {
+    cams = uniq(cData.flatMap(x => [x.kameraman_1, x.kameraman_2]));
+  }
+
+  // Doldur
+  fillSelect(teacherSelect,  teacherNames);
+  fillSelect(directorSelect, directors);
+  fillSelect(studioSelect,   studios);
+  fillSelect(cam1Select,     cams);
+  fillSelect(cam2Select,     cams);
+}
+
+// ==== PATCH1.D — Çekimleri getir ====
+window.allShoots = []; // render fonksiyonların kullandığı global
+async function fetchAllShoots() {
+  const loader = document.getElementById('loading') || document.getElementById('list-loading');
+  loader?.classList.remove('hidden');
+
+  const { data, error } = await db
+    .from('shoots')
+    .select('*')
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error('Çekimler alınamadı:', error);
+    window.allShoots = [];
+  } else {
+    window.allShoots = data || [];
+  }
+
+  loader?.classList.add('hidden');
+}
+
+// ==== PATCH1.E — İlk yükleme ====
+window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await loadDropdownOptions();     // << açılır listeleri doldur
+    await fetchAllShoots();          // << tüm çekimleri al
+    await processAndRenderData?.();  // << sende tabloyu çizen mevcut fonksiyon
+  } catch (e) {
+    console.error('init error:', e);
+  } finally {
+    document.getElementById('loading')?.classList.add('hidden');
+    document.getElementById('list-loading')?.classList.add('hidden');
+  }
+});
+
 let allShoots = []; 
 let groupedShoots = {};
 let sortedWeeks = [];
