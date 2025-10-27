@@ -73,7 +73,6 @@ const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1
 // BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
 // =================================================================================
 function renderGeneralStats() {
-  const filtered = getFilteredRows(allShootsData, currentStatsFilter, currentStatsDate);
     if (!statsContent) return;
 
     let filteredShoots = allShootsData;
@@ -175,7 +174,7 @@ timesheetHeader?.addEventListener('click', () => {
   timesheetContent.classList.toggle('hidden');
   timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
 });
-
+}
 function renderTeacherReport() { if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
 function renderPaginationControls() { reportPaginationContainer.innerHTML = ''; reportTotalCount.textContent = `Toplam ${filteredReportData.length} kayıt bulundu.`; const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (pageCount <= 1) return; let paginationHTML = ''; paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage - 1})" ${reportCurrentPage === 1 ? 'disabled' : ''}>&laquo;</button>`; for (let i = 1; i <= pageCount; i++) { paginationHTML += `<button class="pagination-btn ${i === reportCurrentPage ? 'active' : ''}" onclick="changeReportPage(${i})">${i}</button>`; } paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage + 1})" ${reportCurrentPage === pageCount ? 'disabled' : ''}>&raquo;</button>`; reportPaginationContainer.innerHTML = paginationHTML; }
 window.changeReportPage = (page) => { const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (page < 1 || page > pageCount) return; reportCurrentPage = page; renderTeacherReport(); };
@@ -212,7 +211,7 @@ async function renderTimesheet() {
                 if (!autoTimes[key]) { autoTimes[key] = { start: shoot.start_time, end: shoot.end_time }; } 
                 else {
                     if (shoot.start_time < autoTimes[key].start) autoTimes[key].start = shoot.start_time;
-                    if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = autoTimes[key].end;
+                    if (shoot.end_time > autoTimes[key].end) autoTimes[key].end = shoot.end_time;
                 }
             });
         });
