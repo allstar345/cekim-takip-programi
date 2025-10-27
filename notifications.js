@@ -1,8 +1,4 @@
-// notifications.js (temiz sürüm)
-import { supabaseUrl, supabaseAnonKey } from './config.js';
-
-const { createClient } = supabase;
-const db = createClient(supabaseUrl, supabaseAnonKey);
+import { db } from './config.js';
 
 // UI elemanları
 const bell = document.getElementById('notification-bell');
