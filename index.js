@@ -1,22 +1,5 @@
-import { supabaseUrl, supabaseAnonKey } from './config.js';
-
-// --- Yetki Kontrolü ---
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
-
+import { db } from './config.js';
 console.log("Yetki kontrolü kaldırıldı - herkes erişebilir.");
-
-// --- Sayfa İşlevselliği ---
-const mainStorageAdapter = {
-    getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
-    setItem: (key, value) => { localStorage.setItem(key, value); },
-    removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
-};
-
-const db = supabase.createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { storage: mainStorageAdapter }
-});
-
 let allShoots = []; 
 let groupedShoots = {};
 let sortedWeeks = [];
