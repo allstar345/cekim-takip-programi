@@ -565,37 +565,55 @@ cancelBtn.addEventListener('click', resetFormState);
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  const elements = form.elements;
+
   const row = {
-    date: dateInput.value,              // "YYYY-MM-DD"
-    day: daySelect.value,               // örn: "Pazartesi"
-    studio: studioSelect.value,
-    teacher: teacherSelect.value,
-    director: directorSelect.value,
-    cameraman1: cam1Select.value || null,
-    cameraman2: cam2Select.value || null,
-    start_time: startTimeInput.value,   // "HH:MM"
-    end_time: endTimeInput.value,       // "HH:MM"
-    code: codeInput.value || null,
-    content: contentInput.value || null
+    date: elements['date'].value || null,
+    day: elements['day'].value || null,
+    studio: elements['studio'].value || null,
+    teacher: elements['teacher'].value || null,
+    start_time: elements['start_time'].value || null,
+    end_time: elements['end_time'].value || null,
+    director: elements['director'].value || null,
+    kameraman_1: elements['kameraman_1'].value || null,
+    kameraman_2: elements['kameraman_2'].value || null,
+    shoot_code: elements['shoot_code'].value || null,
+    content: elements['content'].value || null
   };
 
-  // NOT: onConflict alanları sizin tekillik kuralınıza göre ayarlayın.
-  // ör: aynı tarih+öğretmen+stüdyo tekil ise:
-  const { data, error } = await db
-    .from('shoots')
-    .upsert(row, { onConflict: 'date,teacher,studio', ignoreDuplicates: false })
-    .select(); // sonucu gerçekte gör
+  // Güncelleme mi, yeni ekleme mi?
+  if (currentEditId) {
+    row.id = currentEditId; // id ile update
+    const { data, error } = await db
+      .from('shoots')
+      .upsert(row, { onConflict: 'id', ignoreDuplicates: false })
+      .select();
 
-  if (error) {
-    console.error('Kaydet hatası:', error);
-    await Swal.fire('Hata', 'Kayıt eklenemedi/güncellenemedi. Ayrıntılar konsolda.', 'error');
-    return;
+    if (error) {
+      console.error('Güncelleme hatası:', error);
+      await Swal.fire('Hata', 'Kayıt güncellenemedi. Ayrıntılar konsolda.', 'error');
+      return;
+    }
+  } else {
+    // Tekilleştirme kuralın buysa gün+öğretmen+stüdyo; değilse ihtiyacına göre değiştir
+    const { data, error } = await db
+      .from('shoots')
+      .upsert(row, { onConflict: 'date,teacher,studio', ignoreDuplicates: false })
+      .select();
+
+    if (error) {
+      console.error('Ekleme hatası:', error);
+      await Swal.fire('Hata', 'Kayıt eklenemedi. Ayrıntılar konsolda.', 'error');
+      return;
+    }
   }
 
   await Swal.fire('Başarılı', 'Kayıt kaydedildi.', 'success');
-  await fetchInitialData();  // listeni yeniden yükleyen fonksiyon (sende nasıl adlandırıldıysa onu kullan)
-  form.reset();
+  resetFormState();
+  await fetchAllShoots();     // tüm çekimleri yeniden çek
+  await processAndRenderData(); // tabloyu yeniden üret
 });
+
 
 
     if (!shootData.date || !shootData.start_time || !shootData.end_time) {
@@ -762,7 +780,21 @@ async function fetchInitialData() {
         await processAndRenderData(); 
     }
 }
+async function fetchAllShoots() {
+  loadingDiv?.classList.remove('hidden');
 
+  const { data, error } = await db
+    .from('shoots')
+    .select('*')
+    .order('date', { ascending: true });
+
+  if (error) {
+    console.error('Çekimler alınamadı:', error);
+    allShoots = [];
+  } else {
+    allShoots = data || [];
+  }
+}
 const shootsSubscription = db.channel('public:shoots')
     .on(
         'postgres_changes',
@@ -775,8 +807,8 @@ const shootsSubscription = db.channel('public:shoots')
     .subscribe();
 
 document.addEventListener('DOMContentLoaded', async () => {
-    populateTeacherDropdowns();
-    populateStaticDropdowns();
-    await fetchInitialData();
-    
+  await populateTeacherDropdowns();
+  populateStaticDropdowns();
+  await fetchAllShoots();
+  await processAndRenderData();
 });
