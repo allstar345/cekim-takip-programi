@@ -1,7 +1,5 @@
 import { db } from './config.js';
 
-// --- Sayfa İşlevselliği ---
-const db = supabase.createClient(supabaseUrl, supabaseAnonKey);
 const loadingDiv = document.getElementById('loading');
 const tableContainer = document.getElementById('payment-table-container');
 const prevMonthBtn = document.getElementById('prev-month-btn');
