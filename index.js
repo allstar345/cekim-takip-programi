@@ -1,89 +1,36 @@
-import { db } from './config.js';
-// ==== PATCH1.A — DOM referansları (varsa tekrar tanımlamayın) ====
-const teacherSelect   = document.getElementById('teacher');
-const studioSelect    = document.getElementById('studio');
-const directorSelect  = document.getElementById('director');
-const cam1Select      = document.getElementById('kameraman_1');
-const cam2Select      = document.getElementById('kameraman_2');
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-// ==== PATCH1.B — Yardımcılar ====
-function fillSelect(select, items, { withEmpty=true } = {}) {
-  if (!select) return;
-  select.innerHTML = '';
-  if (withEmpty) select.insertAdjacentHTML('beforeend', `<option value="">Seçiniz...</option>`);
-  items.forEach(x => select.insertAdjacentHTML('beforeend', `<option value="${x}">${x}</option>`));
+// --- Yetki Kontrolü ---
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
+
+async function checkAuthAndPermissions() {
+    const { data: { session } } = await supabaseAuth.auth.getSession();
+    if (!session) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    const permissions = user?.user_metadata?.permissions || [];
+
+    if (!permissions.includes('admin') && !permissions.includes('view_cekim')) {
+        alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
+        window.location.href = 'dashboard.html';
+    }
 }
+checkAuthAndPermissions();
 
-function uniq(arr){ return Array.from(new Set(arr.filter(Boolean))); }
 
-// ==== PATCH1.C — Açılır listeleri yükle ====
-async function loadDropdownOptions() {
-  // 1) Öğretmenler (teachers tablosu)
-  let teacherNames = [];
-  const { data: tData, error: tErr } = await db.from('teachers').select('name');
-  if (!tErr && tData) teacherNames = uniq(tData.map(x => x.name));
+// --- Sayfa İşlevselliği ---
+const mainStorageAdapter = {
+    getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key),
+    setItem: (key, value) => { localStorage.setItem(key, value); },
+    removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); },
+};
 
-  // 2) Yönetmenler (shoots'tan distinct)
-  let directors = [];
-  const { data: dData } = await db.from('shoots').select('director');
-  if (dData) directors = uniq(dData.map(x => x.director));
-
-  // 3) Stüdyolar (shoots'tan distinct)
-  let studios = [];
-  const { data: sData } = await db.from('shoots').select('studio');
-  if (sData) studios = uniq(sData.map(x => x.studio));
-
-  // 4) Kameramanlar (shoots'tan kameraman_1/2)
-  let cams = [];
-  const { data: cData } = await db.from('shoots').select('kameraman_1, kameraman_2');
-  if (cData) {
-    cams = uniq(cData.flatMap(x => [x.kameraman_1, x.kameraman_2]));
-  }
-
-  // Doldur
-  fillSelect(teacherSelect,  teacherNames);
-  fillSelect(directorSelect, directors);
-  fillSelect(studioSelect,   studios);
-  fillSelect(cam1Select,     cams);
-  fillSelect(cam2Select,     cams);
-}
-
-// ==== PATCH1.D — Çekimleri getir ====
-window.allShoots = []; // render fonksiyonların kullandığı global
-async function fetchAllShoots() {
-  const loader = document.getElementById('loading') || document.getElementById('list-loading');
-  loader?.classList.remove('hidden');
-
-  const { data, error } = await db
-    .from('shoots')
-    .select('*')
-    .order('date', { ascending: true });
-
-  if (error) {
-    console.error('Çekimler alınamadı:', error);
-    window.allShoots = [];
-  } else {
-    window.allShoots = data || [];
-  }
-
-  loader?.classList.add('hidden');
-}
-
-// ==== PATCH1.E — İlk yükleme ====
-window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
-window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
-
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await loadDropdownOptions();     // << açılır listeleri doldur
-    await fetchAllShoots();          // << tüm çekimleri al
-    await processAndRenderData?.();  // << sende tabloyu çizen mevcut fonksiyon
-  } catch (e) {
-    console.error('init error:', e);
-  } finally {
-    document.getElementById('loading')?.classList.add('hidden');
-    document.getElementById('list-loading')?.classList.add('hidden');
-  }
+const db = supabase.createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { storage: mainStorageAdapter }
 });
 
 let allShoots = []; 
@@ -646,67 +593,25 @@ document.querySelector('main').addEventListener('click', async (e) => {
     }
 });
 
-document.getElementById('prev-week-btn')?.addEventListener('click', goPrevWeek);
-document.getElementById('next-week-btn')?.addEventListener('click', goNextWeek);
-document.getElementById('download-pdf-btn')?.addEventListener('click', onDownloadPdf);
-document.getElementById('save-btn')?.addEventListener('click', onSave);
-document.getElementById('cancel-btn')?.addEventListener('click', resetFormState);
-
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const elements = form.elements;
-
-  const row = {
-    date: elements['date'].value || null,
-    day: elements['day'].value || null,
-    studio: elements['studio'].value || null,
-    teacher: elements['teacher'].value || null,
-    start_time: elements['start_time'].value || null,
-    end_time: elements['end_time'].value || null,
-    director: elements['director'].value || null,
-    kameraman_1: elements['kameraman_1'].value || null,
-    kameraman_2: elements['kameraman_2'].value || null,
-    shoot_code: elements['shoot_code'].value || null,
-    content: elements['content'].value || null
-  };
-
-  // Güncelleme mi, yeni ekleme mi?
-  if (currentEditId) {
-    row.id = currentEditId; // id ile update
-    const { data, error } = await db
-      .from('shoots')
-      .upsert(row, { onConflict: 'id', ignoreDuplicates: false })
-      .select();
-
-    if (error) {
-      console.error('Güncelleme hatası:', error);
-      await Swal.fire('Hata', 'Kayıt güncellenemedi. Ayrıntılar konsolda.', 'error');
-      return;
-    }
-  } else {
-    // Tekilleştirme kuralın buysa gün+öğretmen+stüdyo; değilse ihtiyacına göre değiştir
-    const { data, error } = await db
-      .from('shoots')
-      .upsert(row, { onConflict: 'date,teacher,studio', ignoreDuplicates: false })
-      .select();
-
-    if (error) {
-      console.error('Ekleme hatası:', error);
-      await Swal.fire('Hata', 'Kayıt eklenemedi. Ayrıntılar konsolda.', 'error');
-      return;
-    }
-  }
-
-  await Swal.fire('Başarılı', 'Kayıt kaydedildi.', 'success');
-  resetFormState();
-  await fetchAllShoots();     // tüm çekimleri yeniden çek
-  await processAndRenderData(); // tabloyu yeniden üret
-});
-
-
+    e.preventDefault();
+    const formData = new FormData(form);
+    
+    const shootData = {
+        studio: formData.get('studio'),
+        teacher: formData.get('teacher'),
+        date: formData.get('date'),
+        day: formData.get('day'),
+        start_time: formData.get('start_time'),
+        end_time: formData.get('end_time'),
+        director: formData.get('director'),
+        kameraman_1: formData.get('kameraman_1'),
+        kameraman_2: formData.get('kameraman_2'),
+        shoot_code: formData.get('shoot_code'),
+        content: formData.get('content'),
+    };
 
     if (!shootData.date || !shootData.start_time || !shootData.end_time) {
         Swal.fire('Eksik Bilgi!', 'Lütfen tarih, başlangıç ve bitiş saatlerini girin.', 'warning');
@@ -858,7 +763,8 @@ downloadPdfBtn.addEventListener('click', () => {
 });
 
 logoutBtn?.addEventListener('click', () => {
-    window.location.reload();
+  // login yok; sadece sayfayı yenileyelim
+  window.location.reload();
 });
 
 async function fetchInitialData() {
@@ -872,27 +778,6 @@ async function fetchInitialData() {
         await processAndRenderData(); 
     }
 }
-// === PATCH-B.2: Tüm çekimleri oku (tek supabase client: db) ===
-async function fetchAllShoots() {
-  const loadingA = document.getElementById('loading');
-  const loadingB = document.getElementById('list-loading');
-  const loadingC = document.getElementById('logs-loading');
-  loadingA?.classList.remove('hidden'); loadingB?.classList.remove('hidden'); loadingC?.classList.remove('hidden');
-
-  const { data, error } = await db
-    .from('shoots')
-    .select('*')
-    .order('date', { ascending: true });
-
-  if (error) {
-    console.error('Çekimler alınamadı:', error);
-    window.allShoots = [];
-  } else {
-    window.allShoots = data || [];
-  }
-
-  loadingA?.classList.add('hidden'); loadingB?.classList.add('hidden'); loadingC?.classList.add('hidden');
-}
 
 const shootsSubscription = db.channel('public:shoots')
     .on(
@@ -905,30 +790,22 @@ const shootsSubscription = db.channel('public:shoots')
     )
     .subscribe();
 
-// === Hata yakalama: bir yerde patlarsa ne olduğunu konsola yaz ===
-window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
-window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
-
-// === Sayfa init ===
-// === PATCH-B.1: Hata yakalama + sayfa init ===
-window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
-window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
-
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await populateTeacherDropdowns?.();   // varsa
-    populateStaticDropdowns?.();          // varsa
-
-    await fetchAllShoots();               // PATCH-B.2'deki fonksiyon
-    await processAndRenderData?.();       // sende listeyi çizen fonksiyon
-  } catch (err) {
-    console.error('init error:', err);
-  } finally {
-    // loading id'in farklıysa burayı kendi id'inle değiştir (örn: 'list-loading' / 'logs-loading')
-    document.getElementById('loading')?.classList.add('hidden');
-    document.getElementById('list-loading')?.classList.add('hidden');
-    document.getElementById('logs-loading')?.classList.add('hidden');
-  }
+    populateTeacherDropdowns();
+    populateStaticDropdowns();
+    await fetchInitialData();
+    
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    const permissions = user?.user_metadata?.permissions || [];
+    
+    if (!permissions.includes('admin') && !permissions.includes('view_stats')) {
+        const statsLink = document.getElementById('stats-link');
+        if (statsLink) {
+            statsLink.removeAttribute('href');
+            statsLink.classList.add('opacity-50', 'cursor-not-allowed');
+            statsLink.addEventListener('click', e => {
+                e.preventDefault();
+            });
+        }
+    }
 });
-
-
