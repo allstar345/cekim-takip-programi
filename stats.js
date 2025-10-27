@@ -3,7 +3,7 @@
 // =================================================================================
 
 import { db } from './config.js';
-// === PATCH-A.1: Akordeon elemanlarını yakala (ID'ler HTML ile birebir) ===
+// ==== PATCH2.A — Akordeon elemanları ====
 const reportHeader   = document.getElementById('report-section-header');
 const reportContent  = document.getElementById('report-section-content');
 const reportIcon     = document.getElementById('report-toggle-icon');
@@ -12,11 +12,15 @@ const timesheetHeader  = document.getElementById('timesheet-section-header');
 const timesheetContent = document.getElementById('timesheet-section-content');
 const timesheetIcon    = document.getElementById('timesheet-toggle-icon');
 
-// === PATCH-A.2: Toggle davranışını bağla (guard'lı) ===
 reportHeader?.addEventListener('click', () => {
   reportContent.classList.toggle('hidden');
   reportIcon.style.transform = reportContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
 });
+timesheetHeader?.addEventListener('click', () => {
+  timesheetContent.classList.toggle('hidden');
+  timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+});
+
 
 timesheetHeader?.addEventListener('click', () => {
   timesheetContent.classList.toggle('hidden');
@@ -106,6 +110,32 @@ const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) ret
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+// ==== PATCH2.B — Tarih yardımcıları ====
+function ymd(d){        // 'YYYY-MM-DD' string -> Date
+  if (!d) return null;
+  // d zaten Date ise direkt dön
+  if (Object.prototype.toString.call(d) === '[object Date]') return d;
+  // 'YYYY-MM-DD' gibi string ise
+  const [y,m,day] = String(d).split('-').map(Number);
+  return new Date(y, (m||1)-1, day||1);
+}
+
+function weekRange(anchorDate=new Date()){
+  const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate());
+  const day = d.getDay(); // 0 pazar
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  const start = new Date(d); start.setDate(d.getDate() + diffToMonday);
+  const end   = new Date(start); end.setDate(start.getDate() + 6);
+  start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+  return { start, end };
+}
+
+function monthRange(anchorDate=new Date()){
+  const y = anchorDate.getFullYear(), m = anchorDate.getMonth();
+  const start = new Date(y, m, 1, 0,0,0,0);
+  const end   = new Date(y, m+1, 0, 23,59,59,999);
+  return { start, end };
+}
 
 // =================================================================================
 // BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
@@ -137,6 +167,20 @@ function renderGeneralStats() {
     } else {
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
+// ==== PATCH2.C — İstatistik için filtrelenen liste ====
+function getFilteredShootsForStats(allShoots, filter, anchorDate=new Date()){
+  if (!Array.isArray(allShoots)) return [];
+  let range;
+  if (filter === 'week')   range = weekRange(anchorDate);
+  if (filter === 'month')  range = monthRange(anchorDate);
+
+  return allShoots.filter(row => {
+    const d = ymd(row.date);
+    if (!d) return false;
+    if (!range) return true; // 'all'
+    return d >= range.start && d <= range.end;
+  });
+}
 
     // DÜZELTME: Öğretmen ismi hatalı görünüyordu, düzeltildi.
     const teacherDaySet = new Set();
@@ -215,6 +259,8 @@ reportGlobalSearch?.addEventListener('input', applyReportFilters);
     }
     renderGeneralStats();
 }
+const filtered = getFilteredShootsForStats(allShootsData, currentStatsFilter, currentStatsDate);
+const rows = filtered;
 
 function setupCollapsibleSections() {
     const reportHeader   = document.getElementById('report-section-header');
