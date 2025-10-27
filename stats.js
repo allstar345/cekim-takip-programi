@@ -2,30 +2,13 @@
 // BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
 // =================================================================================
 
-import { db } from './config.js';
-// ==== PATCH2.A — Akordeon elemanları ====
-const reportHeader   = document.getElementById('report-section-header');
-const reportContent  = document.getElementById('report-section-content');
-const reportIcon     = document.getElementById('report-toggle-icon');
+// --- Yetkilendirme ve Supabase Bağlantısı ---
+const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
 
-const timesheetHeader  = document.getElementById('timesheet-section-header');
-const timesheetContent = document.getElementById('timesheet-section-content');
-const timesheetIcon    = document.getElementById('timesheet-toggle-icon');
-
-reportHeader?.addEventListener('click', () => {
-  reportContent.classList.toggle('hidden');
-  reportIcon.style.transform = reportContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-});
-timesheetHeader?.addEventListener('click', () => {
-  timesheetContent.classList.toggle('hidden');
-  timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-});
-
-
-timesheetHeader?.addEventListener('click', () => {
-  timesheetContent.classList.toggle('hidden');
-  timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-});
+const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
+const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
@@ -64,31 +47,6 @@ let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
-// --- VERİYİ GETİR & BAŞLAT ---
-async function loadAllShootsForStats() {
-  const { data, error } = await db
-    .from('shoots')
-    .select('date, day, studio, teacher, director, shoot_code, content');
-
-  if (error) {
-    console.error('İstatistik verileri okunamadı:', error);
-    return [];
-  }
-  return data || [];
-}
-
-async function initStats() {
-  statsLoading?.classList.remove('hidden');
-  statsContent?.classList.add('hidden');
-
-  allShootsData = await loadAllShootsForStats();
-  setActiveStatsButton('month');     // varsayılan: Bu Ay
-  renderGeneralStats();              // tablo/özet üret
-  await populateReportDropdowns();   // öğretmen & yönetmen filtreleri
-  applyReportFilters();              // detay listesi
-}
-
-document.addEventListener('DOMContentLoaded', initStats);
 
 
 // --- Yardımcı Fonksiyonlar ---
@@ -110,37 +68,12 @@ const HHMMToMinutes = (timeStr) => { if (!timeStr || !timeStr.includes(':')) ret
 const minutesToHHMM = (totalMinutes) => { if (isNaN(totalMinutes) || totalMinutes < 0) totalMinutes = 0; const hours = Math.floor(totalMinutes / 60); const minutes = Math.round(totalMinutes % 60); return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 const toYYYYMMDD = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-// ==== PATCH2.B — Tarih yardımcıları ====
-function ymd(d){        // 'YYYY-MM-DD' string -> Date
-  if (!d) return null;
-  // d zaten Date ise direkt dön
-  if (Object.prototype.toString.call(d) === '[object Date]') return d;
-  // 'YYYY-MM-DD' gibi string ise
-  const [y,m,day] = String(d).split('-').map(Number);
-  return new Date(y, (m||1)-1, day||1);
-}
-
-function weekRange(anchorDate=new Date()){
-  const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate());
-  const day = d.getDay(); // 0 pazar
-  const diffToMonday = (day === 0 ? -6 : 1 - day);
-  const start = new Date(d); start.setDate(d.getDate() + diffToMonday);
-  const end   = new Date(start); end.setDate(start.getDate() + 6);
-  start.setHours(0,0,0,0); end.setHours(23,59,59,999);
-  return { start, end };
-}
-
-function monthRange(anchorDate=new Date()){
-  const y = anchorDate.getFullYear(), m = anchorDate.getMonth();
-  const start = new Date(y, m, 1, 0,0,0,0);
-  const end   = new Date(y, m+1, 0, 23,59,59,999);
-  return { start, end };
-}
 
 // =================================================================================
 // BÖLÜM 2: GENEL İSTATİSTİKLER VE AÇILIR/KAPANIR MEKANİZMASI
 // =================================================================================
 function renderGeneralStats() {
+  const filtered = getFilteredRows(allShootsData, currentStatsFilter, currentStatsDate);
     if (!statsContent) return;
 
     let filteredShoots = allShootsData;
@@ -167,20 +100,6 @@ function renderGeneralStats() {
     } else {
         statsSubtitle.textContent = 'Tüm zamanlara ait veriler gösterilmektedir.';
     }
-// ==== PATCH2.C — İstatistik için filtrelenen liste ====
-function getFilteredShootsForStats(allShoots, filter, anchorDate=new Date()){
-  if (!Array.isArray(allShoots)) return [];
-  let range;
-  if (filter === 'week')   range = weekRange(anchorDate);
-  if (filter === 'month')  range = monthRange(anchorDate);
-
-  return allShoots.filter(row => {
-    const d = ymd(row.date);
-    if (!d) return false;
-    if (!range) return true; // 'all'
-    return d >= range.start && d <= range.end;
-  });
-}
 
     // DÜZELTME: Öğretmen ismi hatalı görünüyordu, düzeltildi.
     const teacherDaySet = new Set();
@@ -222,30 +141,6 @@ function getFilteredShootsForStats(allShoots, filter, anchorDate=new Date()){
 // ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
 
 function setActiveStatsButton(filter) {
-    // --- EVENT BAĞLANTILARI (guard'lı) ---
-filterButtons.week?.addEventListener('click', () => setActiveStatsButton('week'));
-filterButtons.month?.addEventListener('click', () => setActiveStatsButton('month'));
-filterButtons.all?.addEventListener('click', () => setActiveStatsButton('all'));
-
-statsPrevPeriodBtn?.addEventListener('click', () => {
-  if (currentStatsFilter === 'week') currentStatsDate.setDate(currentStatsDate.getDate() - 7);
-  else if (currentStatsFilter === 'month') currentStatsDate.setMonth(currentStatsDate.getMonth() - 1);
-  renderGeneralStats();
-});
-statsNextPeriodBtn?.addEventListener('click', () => {
-  if (currentStatsFilter === 'week') currentStatsDate.setDate(currentStatsDate.getDate() + 7);
-  else if (currentStatsFilter === 'month') currentStatsDate.setMonth(currentStatsDate.getMonth() + 1);
-  renderGeneralStats();
-});
-
-// Detay filtreleri
-teacherStatsFilter?.addEventListener('input', renderGeneralStats);
-directorStatsFilter?.addEventListener('input', renderGeneralStats);
-reportTeacherSelect?.addEventListener('change', applyReportFilters);
-reportFilterDate?.addEventListener('change', applyReportFilters);
-reportFilterDirector?.addEventListener('change', applyReportFilters);
-reportGlobalSearch?.addEventListener('input', applyReportFilters);
-
     currentStatsFilter = filter;
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
     filterButtons[filter].classList.add('active');
@@ -259,18 +154,18 @@ reportGlobalSearch?.addEventListener('input', applyReportFilters);
     }
     renderGeneralStats();
 }
-const filtered = getFilteredShootsForStats(allShootsData, currentStatsFilter, currentStatsDate);
-const rows = filtered;
 
 function setupCollapsibleSections() {
-    const reportHeader   = document.getElementById('report-section-header');
+// Akordeon elemanları
+const reportHeader   = document.getElementById('report-section-header');
 const reportContent  = document.getElementById('report-section-content');
 const reportIcon     = document.getElementById('report-toggle-icon');
 
 const timesheetHeader  = document.getElementById('timesheet-section-header');
 const timesheetContent = document.getElementById('timesheet-section-content');
 const timesheetIcon    = document.getElementById('timesheet-toggle-icon');
-  // === Akordeon toggle ===
+
+// Akordeon toggle
 reportHeader?.addEventListener('click', () => {
   reportContent.classList.toggle('hidden');
   reportIcon.style.transform = reportContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
@@ -280,16 +175,6 @@ timesheetHeader?.addEventListener('click', () => {
   timesheetContent.classList.toggle('hidden');
   timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
 });
-
-    const toggleSection = (content, icon) => {
-        const isHidden = content.classList.toggle('hidden');
-        icon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
-    };
-    reportIcon.style.transform = 'rotate(0deg)';
-    timesheetIcon.style.transform = 'rotate(0deg)';
-    reportHeader.addEventListener('click', () => toggleSection(reportContent, reportIcon));
-    timesheetHeader.addEventListener('click', () => toggleSection(timesheetContent, timesheetIcon));
-}
 
 function renderTeacherReport() { if (filteredReportData.length === 0) { teacherReportContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Bu kriterlere uygun çekim kaydı bulunamadı.</p>`; renderPaginationControls(); return; } const startIndex = (reportCurrentPage - 1) * REPORT_ROWS_PER_PAGE; const endIndex = startIndex + REPORT_ROWS_PER_PAGE; const paginatedItems = filteredReportData.slice(startIndex, endIndex); let tableHTML = `<table id="teacher-report-table" class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Tarih</th><th class="px-4 py-2 text-left">Öğretmen</th><th class="px-4 py-2 text-left">Çekim Kodu</th><th class="px-4 py-2 text-left">Çekim İçeriği</th><th class="px-4 py-2 text-left">Yönetmen</th></tr></thead><tbody>${paginatedItems.map(shoot => `<tr><td class="px-4 py-2">${new Date(shoot.date + 'T00:00:00').toLocaleDateString('tr-TR')}</td><td class="px-4 py-2">${shoot.teacher || '-'}</td><td class="px-4 py-2">${shoot.shoot_code || '-'}</td><td class="px-4 py-2">${shoot.content || '-'}</td><td class="px-4 py-2">${shoot.director || '-'}</td></tr>`).join('')}</tbody></table>`; teacherReportContainer.innerHTML = tableHTML; renderPaginationControls(); }
 function renderPaginationControls() { reportPaginationContainer.innerHTML = ''; reportTotalCount.textContent = `Toplam ${filteredReportData.length} kayıt bulundu.`; const pageCount = Math.ceil(filteredReportData.length / REPORT_ROWS_PER_PAGE); if (pageCount <= 1) return; let paginationHTML = ''; paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage - 1})" ${reportCurrentPage === 1 ? 'disabled' : ''}>&laquo;</button>`; for (let i = 1; i <= pageCount; i++) { paginationHTML += `<button class="pagination-btn ${i === reportCurrentPage ? 'active' : ''}" onclick="changeReportPage(${i})">${i}</button>`; } paginationHTML += `<button class="pagination-btn" onclick="changeReportPage(${reportCurrentPage + 1})" ${reportCurrentPage === pageCount ? 'disabled' : ''}>&raquo;</button>`; reportPaginationContainer.innerHTML = paginationHTML; }
@@ -366,6 +251,18 @@ async function renderTimesheet() {
     timesheetContainer.innerHTML = tableHTML;
     calculateAllTotals();
 }
+  // Yardımcılar
+function ymd(s){ const [Y,M,D]=String(s).split('-').map(Number); return new Date(Y,(M||1)-1,D||1); }
+function weekRange(d=new Date()){const day=d.getDay();const diff=(day===0?-6:1-day);const start=new Date(d);start.setDate(d.getDate()+diff);start.setHours(0,0,0,0);const end=new Date(start);end.setDate(start.getDate()+6);end.setHours(23,59,59,999);return{start,end};}
+function monthRange(d=new Date()){const s=new Date(d.getFullYear(),d.getMonth(),1,0,0,0,0);const e=new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59,999);return{start:s,end:e};}
+
+function getFilteredRows(allRows, filter, anchor=new Date()){
+  if (!Array.isArray(allRows)) return [];
+  if (filter==='all') return allRows;
+  const r = filter==='week' ? weekRange(anchor) : monthRange(anchor);
+  return allRows.filter(x=>{const d=ymd(x.date);return d>=r.start && d<=r.end;});
+}
+  
 function calculateAllTotals() {
     const weeklyNormalMinutesLimit = WEEKLY_NORMAL_HOURS_LIMIT * 60;
     document.querySelectorAll('#timesheet-table tbody tr').forEach(row => {
