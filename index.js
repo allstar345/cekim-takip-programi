@@ -781,6 +781,7 @@ async function fetchInitialData() {
     }
 }
 async function fetchAllShoots() {
+  const loadingDiv = document.getElementById('loading'); // sizde "logs-loading"/"list-loading" olabilir; kendi id'nizi yazın
   loadingDiv?.classList.remove('hidden');
 
   const { data, error } = await db
@@ -790,11 +791,14 @@ async function fetchAllShoots() {
 
   if (error) {
     console.error('Çekimler alınamadı:', error);
-    allShoots = [];
+    window.allShoots = [];
   } else {
-    allShoots = data || [];
+    window.allShoots = data || [];
   }
+
+  loadingDiv?.classList.add('hidden');
 }
+
 const shootsSubscription = db.channel('public:shoots')
     .on(
         'postgres_changes',
@@ -806,9 +810,22 @@ const shootsSubscription = db.channel('public:shoots')
     )
     .subscribe();
 
+// === Hata yakalama: bir yerde patlarsa ne olduğunu konsola yaz ===
+window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
+
+// === Sayfa init ===
 document.addEventListener('DOMContentLoaded', async () => {
-  await populateTeacherDropdowns();
-  populateStaticDropdowns();
-  await fetchAllShoots();
-  await processAndRenderData();
+  try {
+    await populateTeacherDropdowns?.();   // varsa
+    populateStaticDropdowns?.();          // varsa
+
+    await fetchAllShoots();               // aşağıdaki fonksiyon
+    await processAndRenderData?.();       // sizdeki tabloyu/render’ı başlatan fonksiyon
+  } catch (err) {
+    console.error('init error:', err);
+  } finally {
+    document.getElementById('loading')?.classList.add('hidden'); // loading elemanınızın id'si farklıysa değiştirin
+  }
 });
+
