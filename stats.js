@@ -41,6 +41,31 @@ let currentStatsDate = new Date();
 let currentStatsFilter = 'month';
 const WEEKLY_NORMAL_HOURS_LIMIT = 45; 
 const ALL_DIRECTORS = ["Anıl Kolay", "Batuhan Gültekin", "Merve Çoklar", "Nurdan Özveren", "Gözde Bulut", "Ali Yıldırım", "Raşit Güngör"];
+// --- VERİYİ GETİR & BAŞLAT ---
+async function loadAllShootsForStats() {
+  const { data, error } = await db
+    .from('shoots')
+    .select('date, day, studio, teacher, director, shoot_code, content');
+
+  if (error) {
+    console.error('İstatistik verileri okunamadı:', error);
+    return [];
+  }
+  return data || [];
+}
+
+async function initStats() {
+  statsLoading?.classList.remove('hidden');
+  statsContent?.classList.add('hidden');
+
+  allShootsData = await loadAllShootsForStats();
+  setActiveStatsButton('month');     // varsayılan: Bu Ay
+  renderGeneralStats();              // tablo/özet üret
+  await populateReportDropdowns();   // öğretmen & yönetmen filtreleri
+  applyReportFilters();              // detay listesi
+}
+
+document.addEventListener('DOMContentLoaded', initStats);
 
 
 // --- Yardımcı Fonksiyonlar ---
@@ -134,6 +159,30 @@ function renderGeneralStats() {
 // ... (Kodun geri kalanı bir öncekiyle tamamen aynı, herhangi bir değişiklik yok) ...
 
 function setActiveStatsButton(filter) {
+    // --- EVENT BAĞLANTILARI (guard'lı) ---
+filterButtons.week?.addEventListener('click', () => setActiveStatsButton('week'));
+filterButtons.month?.addEventListener('click', () => setActiveStatsButton('month'));
+filterButtons.all?.addEventListener('click', () => setActiveStatsButton('all'));
+
+statsPrevPeriodBtn?.addEventListener('click', () => {
+  if (currentStatsFilter === 'week') currentStatsDate.setDate(currentStatsDate.getDate() - 7);
+  else if (currentStatsFilter === 'month') currentStatsDate.setMonth(currentStatsDate.getMonth() - 1);
+  renderGeneralStats();
+});
+statsNextPeriodBtn?.addEventListener('click', () => {
+  if (currentStatsFilter === 'week') currentStatsDate.setDate(currentStatsDate.getDate() + 7);
+  else if (currentStatsFilter === 'month') currentStatsDate.setMonth(currentStatsDate.getMonth() + 1);
+  renderGeneralStats();
+});
+
+// Detay filtreleri
+teacherStatsFilter?.addEventListener('input', renderGeneralStats);
+directorStatsFilter?.addEventListener('input', renderGeneralStats);
+reportTeacherSelect?.addEventListener('change', applyReportFilters);
+reportFilterDate?.addEventListener('change', applyReportFilters);
+reportFilterDirector?.addEventListener('change', applyReportFilters);
+reportGlobalSearch?.addEventListener('input', applyReportFilters);
+
     currentStatsFilter = filter;
     Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
     filterButtons[filter].classList.add('active');
