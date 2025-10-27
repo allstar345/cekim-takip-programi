@@ -119,7 +119,25 @@ async function downloadPaymentPDF() {
     });
 }
 
-async function markAllAsUnpaid() { const period = getPaymentPeriod(currentDate); if (!confirm(`Bu dönemdeki (${periodDisplay.textContent}) tüm ödeme kayıtlarını silmek istediğinizden emin misiniz?`)) return; const { error } = await db.from('payment_records').delete().eq('payment_period_start', period.start).eq('payment_period_end', period.end); if (error) { alert('Toplu ödeme iptali sırasında bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
+async function markAllAsUnpaid() {
+  const period = getPaymentPeriod(currentDate);
+  if (!confirm(`Bu dönemdeki (${periodDisplay.textContent}) tüm ödeme kayıtlarını silmek istediğinizden emin misiniz?`)) return;
+
+  loadingDiv.style.display = 'block';
+  tableContainer.innerHTML = '';
+
+  const { error } = await db
+    .from('payment_records')
+    .delete()
+    .eq('payment_period_start', period.start)
+    .eq('payment_period_end', period.end);
+
+  if (error) {
+    alert('Toplu ödeme iptali sırasında bir hata oluştu!');
+    console.error(error);
+  }
+  await fetchAndRenderData();
+}
 async function handlePayment(teacherName, dueMinutes, dueAmount) { const period = getPaymentPeriod(currentDate); const { error } = await db.from('payment_records').insert([{ teacher_name: teacherName, payment_period_start: period.start, payment_period_end: period.end, paid_duration_minutes: dueMinutes, paid_amount: dueAmount }]); if (error) { alert('Ödeme kaydedilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 async function handleCancelPayment(paymentId) { if (!confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) return; const { error } = await db.from('payment_records').delete().eq('id', paymentId); if (error) { alert('Ödeme iptal edilirken bir hata oluştu!'); console.error(error); } else { fetchAndRenderData(); } }
 
@@ -157,8 +175,7 @@ tableContainer?.addEventListener('click', (e) => {
 
 tableContainer?.addEventListener('change', (e) => { if (e.target.classList.contains('payment-status-select') && e.target.value === 'paid') { const select = e.target; const { teacherName, dueMinutes, dueAmount } = select.dataset; select.disabled = true; handlePayment(teacherName, parseInt(dueMinutes), parseFloat(dueAmount)); } });
 markAllPaidBtn?.addEventListener('click', async () => { 
-  const selects = document.querySelectorAll('.payment-status-select');
-  const paymentsToInsert = [];
+const selects = document.querySelectorAll('.payment-status-select[data-due-minutes]');  const paymentsToInsert = [];
   const period = getPaymentPeriod(currentDate);
   selects.forEach(select => {
     const { teacherName, dueMinutes, dueAmount } = select.dataset;
