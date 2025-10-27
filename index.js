@@ -563,22 +563,40 @@ document.querySelector('main').addEventListener('click', async (e) => {
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    
-    const shootData = {
-        studio: formData.get('studio'),
-        teacher: formData.get('teacher'),
-        date: formData.get('date'),
-        day: formData.get('day'),
-        start_time: formData.get('start_time'),
-        end_time: formData.get('end_time'),
-        director: formData.get('director'),
-        kameraman_1: formData.get('kameraman_1'),
-        kameraman_2: formData.get('kameraman_2'),
-        shoot_code: formData.get('shoot_code'),
-        content: formData.get('content'),
-    };
+  e.preventDefault();
+
+  const row = {
+    date: dateInput.value,              // "YYYY-MM-DD"
+    day: daySelect.value,               // örn: "Pazartesi"
+    studio: studioSelect.value,
+    teacher: teacherSelect.value,
+    director: directorSelect.value,
+    cameraman1: cam1Select.value || null,
+    cameraman2: cam2Select.value || null,
+    start_time: startTimeInput.value,   // "HH:MM"
+    end_time: endTimeInput.value,       // "HH:MM"
+    code: codeInput.value || null,
+    content: contentInput.value || null
+  };
+
+  // NOT: onConflict alanları sizin tekillik kuralınıza göre ayarlayın.
+  // ör: aynı tarih+öğretmen+stüdyo tekil ise:
+  const { data, error } = await db
+    .from('shoots')
+    .upsert(row, { onConflict: 'date,teacher,studio', ignoreDuplicates: false })
+    .select(); // sonucu gerçekte gör
+
+  if (error) {
+    console.error('Kaydet hatası:', error);
+    await Swal.fire('Hata', 'Kayıt eklenemedi/güncellenemedi. Ayrıntılar konsolda.', 'error');
+    return;
+  }
+
+  await Swal.fire('Başarılı', 'Kayıt kaydedildi.', 'success');
+  await fetchInitialData();  // listeni yeniden yükleyen fonksiyon (sende nasıl adlandırıldıysa onu kullan)
+  form.reset();
+});
+
 
     if (!shootData.date || !shootData.start_time || !shootData.end_time) {
         Swal.fire('Eksik Bilgi!', 'Lütfen tarih, başlangıç ve bitiş saatlerini girin.', 'warning');
