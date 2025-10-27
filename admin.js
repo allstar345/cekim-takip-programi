@@ -1,7 +1,6 @@
 import { db } from './config.js';
+const supabaseAdminClient = db; // tek client: config.js’ten gelen
 
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key) };
-const supabaseAdminClient = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: authStorageAdapter } });
 
 const loadingDiv = document.getElementById('loading-users');
 const tableContainer = document.getElementById('user-table-container');
