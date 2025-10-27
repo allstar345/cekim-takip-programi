@@ -3,6 +3,25 @@
 // =================================================================================
 
 import { db } from './config.js';
+// === PATCH-A.1: Akordeon elemanlarını yakala (ID'ler HTML ile birebir) ===
+const reportHeader   = document.getElementById('report-section-header');
+const reportContent  = document.getElementById('report-section-content');
+const reportIcon     = document.getElementById('report-toggle-icon');
+
+const timesheetHeader  = document.getElementById('timesheet-section-header');
+const timesheetContent = document.getElementById('timesheet-section-content');
+const timesheetIcon    = document.getElementById('timesheet-toggle-icon');
+
+// === PATCH-A.2: Toggle davranışını bağla (guard'lı) ===
+reportHeader?.addEventListener('click', () => {
+  reportContent.classList.toggle('hidden');
+  reportIcon.style.transform = reportContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+});
+
+timesheetHeader?.addEventListener('click', () => {
+  timesheetContent.classList.toggle('hidden');
+  timesheetIcon.style.transform = timesheetContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+});
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
