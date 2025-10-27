@@ -4,10 +4,6 @@
 
 import { db } from './config.js';
 
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
 const statsLoading = document.getElementById('stats-loading');
