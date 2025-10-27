@@ -83,7 +83,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 function resetForm() { form.reset(); currentEditId = null; submitBtn.textContent = 'Kaydı Ekle'; cancelBtn.classList.add('hidden'); durationDisplay.textContent = '0 Saat 0 Dakika'; }
-cancelBtn.addEventListener('click', resetForm);
+cancelBtn?.addEventListener('click', resetForm);
 
 logsTableContainer.addEventListener('click', async (e) => {
     const target = e.target;
@@ -123,14 +123,10 @@ logsTableContainer.addEventListener('click', async (e) => {
     }
 });
 
-logoutBtn.addEventListener('click', async () => {
-    const mainStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: (key, value) => { localStorage.setItem(key, value); sessionStorage.setItem(key, value); }, removeItem: (key) => { localStorage.removeItem(key); sessionStorage.removeItem(key); }, };
-    const supabase_logout = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth: { storage: mainStorageAdapter } });
-    await supabase_logout.auth.signOut();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = 'login.html';
+logoutBtn?.addEventListener('click', () => {
+  window.location.reload();
 });
+
 
 document.addEventListener('DOMContentLoaded', () => {
     populateTeacherDropdowns();
