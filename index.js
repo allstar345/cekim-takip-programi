@@ -560,6 +560,12 @@ document.querySelector('main').addEventListener('click', async (e) => {
     }
 });
 
+document.getElementById('prev-week-btn')?.addEventListener('click', goPrevWeek);
+document.getElementById('next-week-btn')?.addEventListener('click', goNextWeek);
+document.getElementById('download-pdf-btn')?.addEventListener('click', onDownloadPdf);
+document.getElementById('save-btn')?.addEventListener('click', onSave);
+document.getElementById('cancel-btn')?.addEventListener('click', resetFormState);
+
 cancelBtn.addEventListener('click', resetFormState);
 
 form.addEventListener('submit', async (e) => {
@@ -780,9 +786,12 @@ async function fetchInitialData() {
         await processAndRenderData(); 
     }
 }
+// === PATCH-B.2: Tüm çekimleri oku (tek supabase client: db) ===
 async function fetchAllShoots() {
-  const loadingDiv = document.getElementById('loading'); // sizde "logs-loading"/"list-loading" olabilir; kendi id'nizi yazın
-  loadingDiv?.classList.remove('hidden');
+  const loadingA = document.getElementById('loading');
+  const loadingB = document.getElementById('list-loading');
+  const loadingC = document.getElementById('logs-loading');
+  loadingA?.classList.remove('hidden'); loadingB?.classList.remove('hidden'); loadingC?.classList.remove('hidden');
 
   const { data, error } = await db
     .from('shoots')
@@ -796,7 +805,7 @@ async function fetchAllShoots() {
     window.allShoots = data || [];
   }
 
-  loadingDiv?.classList.add('hidden');
+  loadingA?.classList.add('hidden'); loadingB?.classList.add('hidden'); loadingC?.classList.add('hidden');
 }
 
 const shootsSubscription = db.channel('public:shoots')
@@ -815,17 +824,25 @@ window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.
 window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
 
 // === Sayfa init ===
+// === PATCH-B.1: Hata yakalama + sayfa init ===
+window.addEventListener('error', (e) => console.error('JS Error:', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('Promise Error:', e.reason || e));
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await populateTeacherDropdowns?.();   // varsa
     populateStaticDropdowns?.();          // varsa
 
-    await fetchAllShoots();               // aşağıdaki fonksiyon
-    await processAndRenderData?.();       // sizdeki tabloyu/render’ı başlatan fonksiyon
+    await fetchAllShoots();               // PATCH-B.2'deki fonksiyon
+    await processAndRenderData?.();       // sende listeyi çizen fonksiyon
   } catch (err) {
     console.error('init error:', err);
   } finally {
-    document.getElementById('loading')?.classList.add('hidden'); // loading elemanınızın id'si farklıysa değiştirin
+    // loading id'in farklıysa burayı kendi id'inle değiştir (örn: 'list-loading' / 'logs-loading')
+    document.getElementById('loading')?.classList.add('hidden');
+    document.getElementById('list-loading')?.classList.add('hidden');
+    document.getElementById('logs-loading')?.classList.add('hidden');
   }
 });
+
 
