@@ -276,8 +276,6 @@ function calculateAllTotals() {
 }
 async function saveTimesheet() { saveTimesheetBtn.disabled = true; saveTimesheetBtn.textContent = 'Kaydediliyor...'; const weekIdentifier = getWeekIdentifier(currentTimesheetDate); const dataToUpsert = []; document.querySelectorAll('#timesheet-table tbody tr').forEach(row => { const employeeName = row.dataset.employee; row.querySelectorAll('input.start-time').forEach(startInput => { const day = startInput.dataset.day; const endInput = row.querySelector(`input.end-time[data-day="${day}"]`); dataToUpsert.push({ week_identifier: weekIdentifier, employee_name: employeeName, day_of_week: day, start_time: startInput.value || null, end_time: endInput.value || null }); }); }); const { error } = await db.from('employee_timesheets').upsert(dataToUpsert, { onConflict: 'week_identifier, employee_name, day_of_week' }); if (error) { Swal.fire('Hata!', `Mesai kaydedilemedi: ${error.message}`, 'error'); } else { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesai Tablosu Kaydedildi', showConfirmButton: false, timer: 2000 }); } saveTimesheetBtn.disabled = false; saveTimesheetBtn.textContent = 'Değişiklikleri Kaydet'; }
 async function initializePage() {
-    const { data: { session } } = await supabaseAuth.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return; }
     const { data, error } = await db.from('shoots').select('*');
     if (error) { teacherReportContainer.innerHTML = `<p class="text-red-500">Veriler alınamadı.</p>`; return; }
     allShootsData = data;
@@ -316,6 +314,9 @@ async function initializePage() {
             endInput.classList.add('text-red-600', 'font-semibold');
         } 
     }); 
-    logoutBtn.addEventListener('click', async () => { await supabaseAuth.auth.signOut(); window.location.href = 'login.html'; });
+   logoutBtn?.addEventListener('click', () => {
+  // Public mod: sadece sayfayı yenile
+  window.location.reload();
+});
 }
 document.addEventListener('DOMContentLoaded', initializePage);
