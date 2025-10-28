@@ -7,7 +7,7 @@ const supabaseAuth = supabase.createClient(supabaseUrl, supabaseAnonKey, { auth:
 async function checkAuthAndPermissions() {
     const { data: { session } } = await supabaseAuth.auth.getSession();
     if (!session) {
-        window.location.href = 'login.html';
+        window.location.href = './login.html';
         return;
     }
 
@@ -16,7 +16,7 @@ async function checkAuthAndPermissions() {
 
     if (!permissions.includes('admin') && !permissions.includes('view_cekim')) {
         alert('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
-        window.location.href = 'dashboard.html';
+        window.location.href = './dashboard.html';
     }
 }
 checkAuthAndPermissions();
