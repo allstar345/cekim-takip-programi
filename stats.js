@@ -1,5 +1,5 @@
 
-import { supabaseUrl, supabaseAnonKey } from './config.js';
+import { db } from './config.js';
 
 
 // --- DOM Elementleri ---
