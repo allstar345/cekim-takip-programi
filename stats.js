@@ -1,14 +1,6 @@
-// =================================================================================
-// BÖLÜM 1: TEMEL KURULUM, DEĞİŞKENLER VE YARDIMCI FONKSİYONLAR
-// =================================================================================
 
-// --- Yetkilendirme ve Supabase Bağlantısı ---
-const SUPABASE_URL = 'https://vpxwjehzdbyekpfborbc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZweHdqZWh6ZGJ5ZWtwZmJvcmJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NDgwMzYsImV4cCI6MjA3MzMyNDAzNn0.nFKMdfFeoGOgjZAcAke4ZeHxAhH2FLLNfMzD-QLQd18';
+import { supabaseUrl, supabaseAnonKey } from './config.js';
 
-const authStorageAdapter = { getItem: (key) => localStorage.getItem(key) || sessionStorage.getItem(key), setItem: ()=>{}, removeItem: ()=>{} };
-const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorageAdapter } });
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM Elementleri ---
 const logoutBtn = document.getElementById('logout-btn');
